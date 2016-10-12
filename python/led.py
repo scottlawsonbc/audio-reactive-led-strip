@@ -63,14 +63,15 @@ def rainbow(brightness=255.0, speed=1.0, fps=10):
     def g(t): return (np.sin(t + (2.0 / 3.0) * np.pi) + 1.0) * brightness / 2.0 + offset
     def b(t): return (np.sin(t + (4.0 / 3.0) * np.pi) + 1.0) * brightness / 2.0 + offset
     while True:
-        t = time.time()*speed
+        t = time.time() * speed
         for n in range(N_pixels):
             T = t + n * dt
             set_pixel(N=n, R=r(T), G=g(T), B=b(T))
         update_pixels()
         time.sleep(1.0 / fps)
 
+
 if __name__ == '__main__':
     for i in range(N_pixels):
         set_all(0, 0, 0)
-    #rainbow(speed=0.025, fps=40, brightness=0)
+    # rainbow(speed=0.025, fps=40, brightness=0)
