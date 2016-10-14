@@ -1,17 +1,15 @@
 import pyaudio
+import config
 
-RATE = 44100
-FPS = 40
-CHUNK = int(RATE / FPS)
-
+CHUNK = int(config.MIC_RATE / config.FPS)
 
 def start_stream(callback):
     p = pyaudio.PyAudio()
     stream = p.open(format=pyaudio.paInt16,
                     channels=1,
-                    rate=RATE,
+                    rate=config.MIC_RATE,
                     input=True,
-                    frames_per_buffer=CHUNK)
+                    frames_per_buffer=int(config.MIC_RATE / config.FPS))
     while True:
         callback(stream)
     stream.stop_stream()

@@ -54,6 +54,9 @@ void loop() {
             pixels[N].G = (uint8_t)packetBuffer[i+2];
             pixels[N].B = (uint8_t)packetBuffer[i+3];
         }
-        ledstrip.show(pixels);
+        //ledstrip.show(pixels);
     }
+
+    // Always update strip to improve temporal dithering performance
+    ledstrip.show(pixels);
 }
