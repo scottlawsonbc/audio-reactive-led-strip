@@ -461,16 +461,23 @@ y_roll = np.random.rand(config.N_ROLLING_HISTORY, samples_per_frame) / 100.0
 # update_leds_6 = energy average normalized per-bin spectrum (GAMMA = True)
 
 
+# Low pass filter for the LEDs being output to the strip
+pixels_filt = dsp.ExponentialFilter(np.tile(0., (config.N_PIXELS, 3)), .2, .9)
+
+
 # This is the function responsible for updating LED values
 # Edit this function to change the visualization
 def led_visualization(onset_values):
+    # Visualizations that we want to use (normalized to [0, 1])
     pixels_A = update_leds_6(onset_values).astype(float) / 255.0
     pixels_B = update_leds_4(onset_values).astype(float) / 255.0
+    # Take the product of the visualizations and scale by 255
     pixels = pixels_A * pixels_B
-    pixels = pixels**1.0
     pixels *= 255.0
-    pixels = np.round(pixels).astype(int)
-    led.pixels = np.copy(pixels)
+    # Apply low-pass filter to the output
+    pixels_filt.update(np.copy(pixels))
+    # Display values on the LED strip
+    led.pixels = np.round(pixels_filt.value).astype(int)
     led.update()
 
 
