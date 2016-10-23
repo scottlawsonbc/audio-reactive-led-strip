@@ -5,7 +5,7 @@ import config
 
 _sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 _gamma = np.load('gamma_table.npy')
-_prev_pixels = np.tile(0, (config.N_PIXELS, 3))
+_prev_pixels = np.tile(255, (config.N_PIXELS, 3))
 
 pixels = np.tile(1, (config.N_PIXELS, 3))
 """Array containing the pixel values for the LED strip"""
@@ -28,6 +28,5 @@ def update():
 
 
 if __name__ == '__main__':
-
-    pixels += 0.0
+    pixels = pixels * 0
     update()

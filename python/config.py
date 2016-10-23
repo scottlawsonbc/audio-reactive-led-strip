@@ -3,14 +3,13 @@ from __future__ import print_function
 from __future__ import division
 import os
 
-N_PIXELS = 60
+N_PIXELS = 240
 """Number of pixels in the LED strip (must match ESP8266 firmware)"""
 
 GAMMA_TABLE_PATH = os.path.join(os.path.dirname(__file__), 'gamma_table.npy')
 """Location of the gamma correction table"""
 
-UDP_IP = '192.168.0.101'
-#UDP_IP = '192.168.137.28'
+UDP_IP = '192.168.1.150'
 """IP address of the ESP8266"""
 
 UDP_PORT = 7777
@@ -19,7 +18,7 @@ UDP_PORT = 7777
 MIC_RATE = 44100
 """Sampling frequency of the microphone in Hz"""
 
-FPS = 50
+FPS = 45
 """Desired LED strip update rate in frames (updates) per second
 
 This is the desired update rate of the LED strip. The actual refresh rate of
@@ -57,7 +56,7 @@ One downside to using a variance threshold is that it is an absolute threshold
 which is affected by the current volume.
 """
 
-N_SUBBANDS = 40  # 240 #48
+N_SUBBANDS = 80  # 240 #48
 """Number of frequency bins to use for beat detection
 
 More subbands improve beat detection sensitivity but it may become more

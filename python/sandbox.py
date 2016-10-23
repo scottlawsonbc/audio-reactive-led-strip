@@ -10,7 +10,6 @@ import dsp
 import led
 
 
-
 def rainbow(length, speed=1.0 / 5.0):
     """Returns a rainbow colored array with desired length
         
@@ -164,7 +163,6 @@ def update_leds_6(y):
         Array containing the onset energies that should be visualized.
         The 
     """
-    
     # Scale y to emphasize large spikes and attenuate small changes
     # Exponents < 1.0 emphasize small changes and penalize large spikes
     # Exponents > 1.0 emphasize large spikes and penalize small changes
@@ -394,11 +392,13 @@ def microphone_update(stream):
     plot_y = [onsets.value**i for i in np.linspace(1, 0.25, config.N_CURVES)]
     update_plot_1(plot_x, plot_y)
     app.processEvents()
-    print('{:.2f}\t{:.2f}\t{:.2f}\t{:.2f}\t{:.2f}'.format(SF_peak.value,
-                                                          NWPD_peak.value,
-                                                          RCD_peak.value,
-                                                          onset_peak.value,
-                                                          frames_per_second()))
+    print('FPS {:.2f} / {:.2f}'.format(frames_per_second(), config.FPS))
+
+    # print('{:.2f}\t{:.2f}\t{:.2f}\t{:.2f}\t{:.2f}'.format(SF_peak.value,
+    #                                                       NWPD_peak.value,
+    #                                                       RCD_peak.value,
+    #                                                       onset_peak.value,
+    #                                                       frames_per_second()))
 
 
 # Create plot and window
@@ -450,7 +450,7 @@ y_roll = np.random.rand(config.N_ROLLING_HISTORY, samples_per_frame) / 100.0
 # update_leds_4 = brightness modulation effect (GAMMA = True)
 # update_leds_5 = energy flux normalized per-bin spectrum (GAMMA = True)
 # update_leds_6 = energy average normalized per-bin spectrum (GAMMA = True)
-led_visualization = update_leds_6
+led_visualization = update_leds_1
 
 if __name__ == '__main__':
     led.update()
