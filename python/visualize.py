@@ -24,7 +24,7 @@ class Beat:
         self.pixels = np.roll(self.pixels, roll, axis=0)
         self.pixels[:roll] *= 0.0
 
-        # Apply Gaussian blur to create a dispersion effect
+        # Apply Gaussian  blur to create a dispersion effect
         # Dispersion increases in strength over time
         sigma = (2. * .14 * self.iteration / (config.N_PIXELS * self.speed))**4.
         self.pixels = gaussian_filter1d(self.pixels, sigma, mode='constant')
@@ -35,11 +35,13 @@ class Beat:
         self.pixels = np.round(self.pixels, decimals=2)
         self.pixels = np.clip(self.pixels, 0, 255)
 
+        self.speed *= np.exp(2. * np.log(.8) / config.N_PIXELS)
+
     def finished(self):
         return np.array_equal(self.pixels, self.pixels * 0.0)
 
 
-def rainbow(speed=1.0 / 5.0):
+def rainbow(speed=10.0 / 5.0):
     # Note: assumes array is N_PIXELS / 2 long
     dt = np.pi / config.N_PIXELS
     t = time.time() * speed
@@ -54,84 +56,70 @@ def rainbow(speed=1.0 / 5.0):
     return x
 
 
-def radiate(beats, beat_speed=1.0, max_length=26, min_beats=1):
-    N_beats = len(beats[beats == True])
-    # Add new beat if beats were detected
-    if N_beats > 0 and N_beats >= min_beats:
-        # Beat properties
-        beat_power = float(N_beats) / config.N_SUBBANDS
-        beat_brightness = min(beat_power * 40.0, 255.0)
-        beat_brightness = max(beat_brightness, 40)
-        beat_length = int(np.sqrt(beat_power) * max_length)
-        beat_length = max(beat_length, 2)
-        # Beat pixels
-        beat_pixels = np.zeros(config.N_PIXELS / 2)
-        beat_pixels[:beat_length] = beat_brightness
-        # Create and add the new beat
-        beat = Beat(beat_pixels, beat_speed)
-        radiate.beats = np.append(radiate.beats, beat)
-    # Pixels that will be displayed on the LED strip
-    pixels = np.zeros(config.N_PIXELS / 2)
-    if len(radiate.beats):
-        pixels += sum([b.pixels for b in radiate.beats])
-    for b in radiate.beats:
-        b.update_pixels()
-    # Only keep the beats that are still visible on the strip
-    radiate.beats = [b for b in radiate.beats if not b.finished()]
-    pixels = np.append(pixels[::-1], pixels)
-    pixels = np.clip(pixels, 0.0, 255.0)
-    pixels = (pixels * rainbow().T).T
-    pixels = np.round(pixels).astype(int)
-    led.pixels = pixels
-    led.update()
-
-
-def radiate2(beats, beat_speed=0.8, max_length=26, min_beats=1):
+def radiate(beats, energy, beat_speed=1.0, max_length=7, min_beats=1):
     N_beats = len(beats[beats == True])
 
     if N_beats > 0 and N_beats >= min_beats:
         index_to_color = rainbow()
         # Beat properties
         beat_power = float(N_beats) / config.N_SUBBANDS
+        # energy = np.copy(energy)
+        # energy -= np.min(energy) 
+        # energy /= (np.max(energy) - np.min(energy))
         beat_brightness = np.round(256.0 / config.N_SUBBANDS)
         beat_brightness *= np.sqrt(config.N_SUBBANDS / N_beats)
+        beat_brightness *= 1.3
         beat_length = int(np.sqrt(beat_power) * max_length)
         beat_length = max(beat_length, 2)
         beat_pixels = np.tile(0.0, (config.N_PIXELS / 2, 3))
         for i in range(len(beats)):
             if beats[i]:
-                beat_color = np.round(index_to_color[i] * beat_brightness)
+                beat_color = np.round(index_to_color[i] * beat_brightness * energy[i] / 2.0)
                 beat_pixels[:beat_length] += beat_color
         beat_pixels = np.clip(beat_pixels, 0.0, 255.0)
         beat = Beat(beat_pixels, beat_speed)
-        radiate2.beats = np.append(radiate2.beats, beat)
+        radiate.beats = np.append(radiate.beats, beat)
 
     # Pixels that will be displayed on the LED strip
     pixels = np.zeros((config.N_PIXELS / 2, 3))
-    if len(radiate2.beats):
-        pixels += sum([b.pixels for b in radiate2.beats])
-    for b in radiate2.beats:
+    if len(radiate.beats):
+        pixels += sum([b.pixels for b in radiate.beats])
+    for b in radiate.beats:
         b.update_pixels()
-    radiate2.beats = [b for b in radiate2.beats if not b.finished()]
+    radiate.beats = [b for b in radiate.beats if not b.finished()]
     pixels = np.append(pixels[::-1], pixels, axis=0)
     pixels = np.clip(pixels, 0.0, 255.0)
-    pixels = np.round(pixels).astype(int)
-    led.pixels = pixels
+    led.pixels = np.round(pixels).astype(int)
     led.update()
 
 
+# Number of audio samples to read every time frame
+samples_per_frame = int(config.MIC_RATE / config.FPS)
+# Array containing the rolling audio sample window
+y_roll = np.random.rand(config.N_ROLLING_HISTORY, samples_per_frame) / 100.0
+
 def microphone_update(stream):
-    frames_per_buffer = int(config.MIC_RATE / config.FPS)
-    data = np.fromstring(stream.read(frames_per_buffer), dtype=np.int16)
-    data = data / 2.0**15
-    xs, ys = dsp.fft_log_partition(data=data, subbands=config.N_SUBBANDS)
-    beats = dsp.beat_detect(ys)
-    radiate2(beats)
+    global y_roll
+    # Read new audio data
+    y = np.fromstring(stream.read(samples_per_frame), dtype=np.int16)
+    y = y / 2.0**15
+    # Construct rolling window of audio data
+    y_roll = np.roll(y_roll, -1, axis=0)
+    y_roll[-1, :] = np.copy(y)
+    y_data = np.concatenate(y_roll, axis=0)
+    # Take the real FFT with logarithmic bin spacing
+    xs, ys = dsp.rfft_log_partition(y_data, 
+                                    subbands=config.N_SUBBANDS, 
+                                    window=np.hamming,
+                                    fmin=1,
+                                    fmax=14000)
+    # Visualize the result
+    beats, energy, variance = dsp.beat_detect(ys)
+    radiate(beats, energy)
 
 
 # Initial values for the radiate effect
 radiate.beats = np.array([])
-radiate2.beats = np.array([])
 
 if __name__ == "__main__":
     mic.start_stream(microphone_update)

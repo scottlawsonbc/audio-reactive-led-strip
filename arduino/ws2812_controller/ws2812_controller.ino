@@ -9,7 +9,8 @@
 #define BUFFER_LEN 1024
 
 // Wifi and socket settings
-const char* ssid     = "LAWSON-LINK-2.4";
+//const char* ssid     = "LAWSON-LINK-2.4";
+const char* ssid     = "led_strip";
 const char* password = "felixlina10";
 unsigned int localPort = 7777;
 char packetBuffer[BUFFER_LEN];
@@ -19,11 +20,16 @@ static WS2812 ledstrip;
 static Pixel_t pixels[NUM_LEDS];
 WiFiUDP port;
 
+// Network information
+IPAddress ip(192, 168, 1, 150); 
+IPAddress gateway(192, 168, 1, 1);
+IPAddress subnet(255, 255, 255, 0);
+
 void setup() {
     Serial.begin(115200);
+    WiFi.config(ip, gateway, subnet);
     WiFi.begin(ssid, password);
     Serial.println("");
-
     // Connect to wifi and print the IP address over serial
     while (WiFi.status() != WL_CONNECTED) {
         delay(500);
