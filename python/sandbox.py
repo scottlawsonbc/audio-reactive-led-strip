@@ -136,6 +136,24 @@ def interpolate(y, new_length):
     return z
 
 
+def leak_saturated_pixels(pixels):
+    pixels = np.copy(pixels)
+    for i in range(pixels.shape[0]):
+        excess_red = max(pixels[i, 0] - 255.0, 0.0)
+        excess_green = max(pixels[i, 1] - 255.0, 0.0)
+        excess_blue = max(pixels[i, 2] - 255.0, 0.0)
+        # Share excess red
+        pixels[i, 1] += excess_red
+        pixels[i, 2] += excess_red
+        # Share excess green
+        pixels[i, 0] += excess_green
+        pixels[i, 2] += excess_green
+        # Share excess blue
+        pixels[i, 0] += excess_blue
+        pixels[i, 1] += excess_blue
+    return pixels
+
+
 _EA_norm = dsp.ExponentialFilter(np.tile(1e-4, config.N_PIXELS), 0.01, 0.25)
 """Onset energy per-bin normalization constants
 
@@ -170,16 +188,10 @@ def update_leds_6(y):
         Array containing the onset energies that should be visualized.
 
     """
-    # Scale y to emphasize large spikes and attenuate small changes
-    # Exponents < 1.0 emphasize small changes and penalize large spikes
-    # Exponents > 1.0 emphasize large spikes and penalize small changes
-    y = np.copy(y) ** 1.25
-
-    # Use automatic gain control to normalize bin values
+    y = np.copy(y)**1.25
     # Update normalization constants and then normalize each bin
     _EA_norm.update(y)
     y /= _EA_norm.value
-
     """Force saturated pixels to leak brighness into neighbouring pixels"""
     def smooth():
         for n in range(1, len(y) - 1):
@@ -188,58 +200,26 @@ def update_leds_6(y):
                 y[n] = 1.0
                 y[n - 1] += excess / 2.0
                 y[n + 1] += excess / 2.0
-    
     # Several iterations because the adjacent pixels could also be saturated
     for i in range(6):
         smooth()
-
     # Update the onset energy low-pass filter and discard value too dim
     _EA_smooth.update(y)
     _EA_smooth.value[_EA_smooth.value < .1] = 0.0
-
-    # If some pixels are too bright, allow saturated pixels to become white
-    color = rainbow(config.N_PIXELS) * 255.0
-
-    # Create the pixel array
-    pixels = np.tile(0, (y.shape[0], 3))
-
-    for i in range(config.N_PIXELS):
-        # Update LED strip pixel
-        pixels[i, :] = np.round(color[i, :] * _EA_smooth.value[i]**1.5)
-        # Leak excess red
-        excess_red = max(pixels[i, 0] - 255, 0)
-        pixels[i, 1] += excess_red
-        pixels[i, 2] += excess_red
-        # Leak excess green
-        excess_green = max(pixels[i, 1] - 255, 0)
-        pixels[i, 0] += excess_green
-        pixels[i, 2] += excess_green
-        # Leak excess blue
-        excess_blue = max(pixels[i, 2] - 255, 0)
-        pixels[i, 0] += excess_blue
-        pixels[i, 1] += excess_blue
+    # Return the pixels
+    pixels = np.copy(_EA_smooth.value)**1.5
     return pixels
 
 
 _EF_norm = dsp.ExponentialFilter(np.tile(1.0, config.N_PIXELS), 0.05, 0.9)
 _EF_smooth = dsp.ExponentialFilter(np.tile(1.0, config.N_PIXELS), 0.08, 0.9)
-
 _prev_energy = 0.0
 
 
 # Individually normalized energy flux
 def update_leds_5(y):
     global _prev_energy
-    # Scale y
     y = np.copy(y)
-    y = y ** 1.0
-    
-    # Calculate raw energy flux
-    # Update previous energy
-    # Rectify energy flux
-    # Update the normalization constants
-    # Normalize the individual energy flux values
-    # Smooth the result using another smoothing filter
     EF = y - _prev_energy
     _prev_energy = np.copy(y)
     EF[EF < 0] = 0.0
@@ -248,38 +228,18 @@ def update_leds_5(y):
     _EF_smooth.update(EF)
     # Cutoff values below 0.1
     _EF_smooth.value[_EF_smooth.value < 0.1] = 0.0
-
-    color = rainbow(config.N_PIXELS) * 255.0
-    pixels = np.tile(0, (y.shape[0], 3))
-
-    for i in range(config.N_PIXELS):
-        pixels[i, :] = np.round(color[i, :] * _EF_smooth.value[i])
-        # Share excess red
-        excess_red = max(pixels[i, 0] - 255, 0)
-        pixels[i, 1] += excess_red
-        pixels[i, 2] += excess_red
-        # Share excess green
-        excess_green = max(pixels[i, 1] - 255, 0)
-        pixels[i, 0] += excess_green
-        pixels[i, 2] += excess_green
-        # Share excess blue
-        excess_blue = max(pixels[i, 2] - 255, 0)
-        pixels[i, 0] += excess_blue
-        pixels[i, 1] += excess_blue
+    pixels = np.copy(_EF_smooth.value)
     return pixels
-
 
 _energy_flux = dsp.ExponentialFilter(1.0, alpha_decay=0.025, alpha_rise=0.9)
 
 
 # Modulate brightness of the entire strip with no individual addressing
 def update_leds_4(y):
-    y = np.copy(y)**1.0
+    y = np.copy(y)
     energy = np.sum(y)
     _energy_flux.update(energy)
-    energy /= _energy_flux.value
-    color = rainbow(config.N_PIXELS) * 255.0
-    pixels = np.round((color * energy)).astype(int)
+    pixels = energy / _energy_flux.value
     return pixels
 
 
@@ -293,85 +253,29 @@ def update_leds_3(y):
     _prev_energy = energy
     # Normalize energy flux
     _energy_flux.update(energy_flux)
-    # Update pixels
+    # Update and return pixels
     pixels = np.roll(pixels, 1)
-    color = np.roll(color, 1, axis=0)
-    pixels *= 0.99
     pixels[0] = energy_flux
-
-    new_pixels = np.copy(np.round((color.T * pixels).T).astype(int))
-    for i in range(config.N_PIXELS):
-        # Share excess red
-        excess_red = max(new_pixels[i, 0] - 255, 0)
-        new_pixels[i, 1] += excess_red
-        new_pixels[i, 2] += excess_red
-        # Share excess green
-        excess_green = max(new_pixels[i, 1] - 255, 0)
-        new_pixels[i, 0] += excess_green
-        new_pixels[i, 2] += excess_green
-        # Share excess blue
-        excess_blue = max(new_pixels[i, 2] - 255, 0)
-        new_pixels[i, 0] += excess_blue
-        new_pixels[i, 1] += excess_blue
-    # Update LEDs
-    return new_pixels
+    return np.copy(pixels)
 
 
 # Energy based motion across the LED strip
 def update_leds_2(y):
-    global pixels, color
+    global pixels
     y = np.copy(y)
     # Calculate energy
-    energy = np.sum(y**2.0)
+    energy = np.sum(y**1.5)
     onset_energy.update(energy)
     energy /= onset_energy.value
-    # Update pixels
+    # Update and return pixels
     pixels = np.roll(pixels, 1)
-    color = np.roll(color, 1, axis=0)
-    pixels *= 0.99
     pixels[0] = energy
-    pixels -= 0.005
-    pixels[pixels < 0.0] = 0.0
-
-    new_pixels = np.copy(np.round((color.T * pixels).T).astype(int))
-    for i in range(config.N_PIXELS):
-        # Share excess red
-        excess_red = max(new_pixels[i, 0] - 255, 0)
-        new_pixels[i, 1] += excess_red
-        new_pixels[i, 2] += excess_red
-        # Share excess green
-        excess_green = max(new_pixels[i, 1] - 255, 0)
-        new_pixels[i, 0] += excess_green
-        new_pixels[i, 2] += excess_green
-        # Share excess blue
-        excess_blue = max(new_pixels[i, 2] - 255, 0)
-        new_pixels[i, 0] += excess_blue
-        new_pixels[i, 1] += excess_blue
-    # Update LEDs
-    return new_pixels
+    return np.copy(pixels)
 
 
 def update_leds_1(y):
     """Display the raw onset spectrum on the LED strip"""
-    y = np.copy(y)
-    y = y ** 0.5
-    color = rainbow(y.shape[0]) * 255.0
-
-    pixels = np.copy(np.round((color.T * y).T).astype(int))
-    for i in range(y.shape[0]):
-        # Share excess red
-        excess_red = max(pixels[i, 0] - 255, 0)
-        pixels[i, 1] += excess_red
-        pixels[i, 2] += excess_red
-        # Share excess green
-        excess_green = max(pixels[i, 1] - 255, 0)
-        pixels[i, 0] += excess_green
-        pixels[i, 2] += excess_green
-        # Share excess blue
-        excess_blue = max(pixels[i, 2] - 255, 0)
-        pixels[i, 0] += excess_blue
-        pixels[i, 1] += excess_blue
-    return pixels
+    return np.copy(y)**0.5
 
 
 def microphone_update(stream):
@@ -432,7 +336,7 @@ pixels = np.tile(0.0, config.N_PIXELS)
 color = rainbow(config.N_PIXELS) * 255.0
 
 # Tracks average onset spectral energy
-onset_energy = dsp.ExponentialFilter(1.0, alpha_decay=0.1, alpha_rise=0.99)
+onset_energy = dsp.ExponentialFilter(1.0, alpha_decay=0.01, alpha_rise=0.65)
 
 # Tracks the location of the spectral median
 median = dsp.ExponentialFilter(val=config.N_SUBBANDS / 2.0,
@@ -462,18 +366,22 @@ y_roll = np.random.rand(config.N_ROLLING_HISTORY, samples_per_frame) / 100.0
 
 
 # Low pass filter for the LEDs being output to the strip
-pixels_filt = dsp.ExponentialFilter(np.tile(0., (config.N_PIXELS, 3)), .2, .9)
+pixels_filt = dsp.ExponentialFilter(np.tile(0., (config.N_PIXELS, 3)), .35, .9)
 
 
 # This is the function responsible for updating LED values
 # Edit this function to change the visualization
 def led_visualization(onset_values):
-    # Visualizations that we want to use (normalized to [0, 1])
-    pixels_A = update_leds_6(onset_values).astype(float) / 255.0
-    pixels_B = update_leds_4(onset_values).astype(float) / 255.0
+    # Visualizations that we want to use (normalized to ~[0, 1])
+    pixels_A = update_leds_6(onset_values)
+    pixels_B = update_leds_4(onset_values)
     # Take the product of the visualizations and scale by 255
     pixels = pixels_A * pixels_B
-    pixels *= 255.0
+    # Combine pixels with color map
+    color = rainbow(onset_values.shape[0]) * 255.0
+    pixels = (pixels * color.T).T
+    pixels = leak_saturated_pixels(pixels)
+    pixels = np.clip(pixels, 0.0, 255.0)
     # Apply low-pass filter to the output
     pixels_filt.update(np.copy(pixels))
     # Display values on the LED strip
