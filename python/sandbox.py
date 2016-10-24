@@ -8,6 +8,7 @@ import config
 import microphone
 import dsp
 import led
+from scipy.ndimage.filters import gaussian_filter1d
 
 
 def rainbow(length, speed=1.0 / 5.0):
@@ -53,10 +54,25 @@ def rainbow(length, speed=1.0 / 5.0):
     return x
 
 
+def rainbow_gen(length, speed=1./5., center=0.5, width=0.5, f=[1, 1, 1]):
+    dt = 2.0 * np.pi / length
+    t = time.time() * speed
+    phi = 2.0 / 3.0 * np.pi
+    def r(t): return np.clip(np.sin(f[0] * t + 0. * phi) * width + center, 0., 1.)
+    def g(t): return np.clip(np.sin(f[1] * t + 1. * phi) * width + center, 0., 1.)
+    def b(t): return np.clip(np.sin(f[2] * t + 2. * phi) * width + center, 0., 1.)
+    x = np.tile(0.0, (length, 3))
+    for i in range(length):
+        x[i][0] = r(i * dt + t)
+        x[i][1] = g(i * dt + t)
+        x[i][2] = b(i * dt + t)
+    return x
+
+
 _time_prev = time.time() * 1000.0
 """The previous time that the frames_per_second() function was called"""
 
-_fps = dsp.ExponentialFilter(val=config.FPS, alpha_decay=0.01, alpha_rise=0.01)
+_fps = dsp.ExponentialFilter(val=config.FPS, alpha_decay=0.05, alpha_rise=0.05)
 """The low-pass filter used to estimate frames-per-second"""
 
 
@@ -110,7 +126,7 @@ def update_plot_1(x, y):
         curves[i].setPen((colors[i][0], colors[i][1], colors[i][2]))
         curves[i].setData(x=x, y=y[i])
     p1.autoRange()
-    p1.setRange(yRange=(0, 2.0))
+    p1.setRange(yRange=(0.0, 2.0))
 
 
 def interpolate(y, new_length):
@@ -188,21 +204,10 @@ def update_leds_6(y):
         Array containing the onset energies that should be visualized.
 
     """
-    y = np.copy(y)**1.25
+    y = np.abs(y)**1.25
     # Update normalization constants and then normalize each bin
     _EA_norm.update(y)
     y /= _EA_norm.value
-    """Force saturated pixels to leak brighness into neighbouring pixels"""
-    def smooth():
-        for n in range(1, len(y) - 1):
-            excess = y[n] - 1.0
-            if excess > 0.0:
-                y[n] = 1.0
-                y[n - 1] += excess / 2.0
-                y[n + 1] += excess / 2.0
-    # Several iterations because the adjacent pixels could also be saturated
-    for i in range(6):
-        smooth()
     # Update the onset energy low-pass filter and discard value too dim
     _EA_smooth.update(y)
     _EA_smooth.value[_EA_smooth.value < .1] = 0.0
@@ -220,9 +225,8 @@ _prev_energy = 0.0
 def update_leds_5(y):
     global _prev_energy
     y = np.copy(y)
-    EF = y - _prev_energy
+    EF = np.max(y - _prev_energy, 0.0)
     _prev_energy = np.copy(y)
-    EF[EF < 0] = 0.0
     _EF_norm.update(EF)
     EF /= _EF_norm.value
     _EF_smooth.update(EF)
@@ -231,28 +235,33 @@ def update_leds_5(y):
     pixels = np.copy(_EF_smooth.value)
     return pixels
 
-_energy_flux = dsp.ExponentialFilter(1.0, alpha_decay=0.025, alpha_rise=0.9)
+
+_energy_norm = dsp.ExponentialFilter(10.0, alpha_decay=.15, alpha_rise=.9)
+_energy_smooth = dsp.ExponentialFilter(10.0, alpha_decay=0.1, alpha_rise=0.8)
 
 
-# Modulate brightness of the entire strip with no individual addressing
+# Modulate brightness by relative average rectified onset flux
 def update_leds_4(y):
-    y = np.copy(y)
-    energy = np.sum(y)
-    _energy_flux.update(energy)
-    pixels = energy / _energy_flux.value
+    global _prev_energy
+    energy = np.sum(y**1.0)
+    EF = max(energy - _prev_energy, 0.0)
+    _prev_energy = energy
+    _energy_norm.update(EF)
+    _energy_smooth.update(min(EF / _energy_norm.value, 1.0))
+    pixels = np.tile(_energy_smooth.value, y.shape[0])
     return pixels
 
 
 # Energy flux based motion across the LED strip
 def update_leds_3(y):
-    global pixels, color, _prev_energy, _energy_flux
+    global pixels, _prev_energy
     y = np.copy(y)
     # Calculate energy flux
     energy = np.sum(y)
     energy_flux = max(energy - _prev_energy, 0)
     _prev_energy = energy
     # Normalize energy flux
-    _energy_flux.update(energy_flux)
+    _energy_norm.update(energy_flux)
     # Update and return pixels
     pixels = np.roll(pixels, 1)
     pixels[0] = energy_flux
@@ -279,7 +288,7 @@ def update_leds_1(y):
 
 
 def microphone_update(stream):
-    global y_roll, median, onset, SF_peak, NWPD_peak, RCD_peak, onset_peak
+    global y_roll
     # Retrieve new audio samples and construct the rolling window
     y = np.fromstring(stream.read(samples_per_frame), dtype=np.int16)
     y = y / 2.0**15
@@ -288,6 +297,10 @@ def microphone_update(stream):
     y_data = np.concatenate(y_roll, axis=0)
     # Calculate onset detection functions
     SF, NWPD, RCD = dsp.onset(y_data)
+    # Apply Gaussian blur to improve agreement between onset functions
+    SF = gaussian_filter1d(SF, 1.0)
+    NWPD = gaussian_filter1d(NWPD, 1.0)
+    RCD = gaussian_filter1d(RCD, 1.0)
     # Update and normalize peak followers
     SF_peak.update(np.max(SF))
     NWPD_peak.update(np.max(NWPD))
@@ -296,8 +309,10 @@ def microphone_update(stream):
     NWPD /= NWPD_peak.value
     RCD /= RCD_peak.value
     # Normalize and update onset spectrum
+    # onset = np.sqrt(SF**2.0 + NWPD**2.0 + RCD**2.0)
     # onset = SF * NWPD * RCD
-    onset = SF + RCD
+    onset = SF + NWPD + RCD
+    # onset = SF + RCD
     onset_peak.update(np.max(onset))
     onset /= onset_peak.value
     onsets.update(onset)
@@ -306,13 +321,16 @@ def microphone_update(stream):
         onset_values = interpolate(onsets.value, config.N_PIXELS)
     else:
         onset_values = np.copy(onsets.value)
-    led_visualization(onset_values)    
+    brightness = led_visualization(onset_values)
     # Plot the onsets
     plot_x = np.array(range(1, len(onsets.value) + 1))
-    plot_y = [onsets.value**i for i in np.linspace(1.5, 0.25, config.N_CURVES)]
+    plot_y = [0*onsets.value**i for i in np.linspace(2.0, 0.25, config.N_CURVES)]
+    if brightness is not None:
+        plot_y = np.array([brightness, onsets.value])
+    #plot_y = brightness
     update_plot_1(plot_x, plot_y)
     app.processEvents()
-    print('FPS {:.2f} / {:.2f}'.format(frames_per_second(), config.FPS))
+    print('FPS {:.0f} / {:.0f}'.format(frames_per_second(), config.FPS))
 
 
 # Create plot and window
@@ -343,7 +361,7 @@ median = dsp.ExponentialFilter(val=config.N_SUBBANDS / 2.0,
                                alpha_decay=0.1, alpha_rise=0.1)
 # Smooths the decay of the onset detection function
 onsets = dsp.ExponentialFilter(val=np.tile(0.0, (config.N_SUBBANDS)),
-                               alpha_decay=0.05, alpha_rise=0.75)
+                               alpha_decay=0.15, alpha_rise=0.75)
 
 # Peak followers used for normalization
 SF_peak = dsp.ExponentialFilter(1.0, alpha_decay=0.01, alpha_rise=0.99)
@@ -366,8 +384,11 @@ y_roll = np.random.rand(config.N_ROLLING_HISTORY, samples_per_frame) / 100.0
 
 
 # Low pass filter for the LEDs being output to the strip
-pixels_filt = dsp.ExponentialFilter(np.tile(0., (config.N_PIXELS, 3)), .35, .9)
+pixels_filt = dsp.ExponentialFilter(np.tile(0., (config.N_PIXELS, 3)), .2, .8)
 
+
+def hyperbolic_tan(x):
+    return 1.0 - 2.0 / (np.exp(2.0 * x) + 1.0)
 
 # This is the function responsible for updating LED values
 # Edit this function to change the visualization
@@ -375,18 +396,26 @@ def led_visualization(onset_values):
     # Visualizations that we want to use (normalized to ~[0, 1])
     pixels_A = update_leds_6(onset_values)
     pixels_B = update_leds_4(onset_values)
-    # Take the product of the visualizations and scale by 255
-    pixels = pixels_A * pixels_B
+    # Combine the effects by taking the product
+    brightness = pixels_A * pixels_B
+    brightness = gaussian_filter1d(brightness, 1.0)**1.5
+    brightness = hyperbolic_tan(brightness)
     # Combine pixels with color map
-    color = rainbow(onset_values.shape[0]) * 255.0
-    pixels = (pixels * color.T).T
+    color = rainbow_gen(onset_values.shape[0],
+                        speed=1.,
+                        center=0.5,
+                        width=0.5,
+                        f=[1.0, 1.0, 1.]) * 255.0
+    # color = rainbow(onset_values.shape[0]) * 255.0
+    pixels = (brightness * color.T).T
     pixels = leak_saturated_pixels(pixels)
-    pixels = np.clip(pixels, 0.0, 255.0)
+    pixels = np.clip(pixels, 0., 255.)
     # Apply low-pass filter to the output
     pixels_filt.update(np.copy(pixels))
     # Display values on the LED strip
     led.pixels = np.round(pixels_filt.value).astype(int)
     led.update()
+    return brightness
 
 
 if __name__ == '__main__':

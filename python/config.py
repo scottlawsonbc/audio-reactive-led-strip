@@ -18,7 +18,7 @@ UDP_PORT = 7777
 MIC_RATE = 44100
 """Sampling frequency of the microphone in Hz"""
 
-FPS = 45
+FPS = 70
 """Desired LED strip update rate in frames (updates) per second
 
 This is the desired update rate of the LED strip. The actual refresh rate of
@@ -29,6 +29,15 @@ A high FPS results in low latency and smooth animations, but it also reduces
 the duration of the short-time Fourier transform. This can negatively affect
 low frequency (bass) response.
 """
+
+
+MIN_FREQUENCY = 5
+"""Frequencies below this value will be removed during onset detection"""
+
+
+MAX_FREQUENCY = 12000
+"""Frequencies above this value will be removed during onset detection"""
+
 
 ENERGY_THRESHOLD = 14.0
 """Energy threshold for determining whether a beat has been detected
@@ -56,7 +65,7 @@ One downside to using a variance threshold is that it is an absolute threshold
 which is affected by the current volume.
 """
 
-N_SUBBANDS = 80  # 240 #48
+N_SUBBANDS = 60  # 240 #48
 """Number of frequency bins to use for beat detection
 
 More subbands improve beat detection sensitivity but it may become more
@@ -86,9 +95,9 @@ GAMMA_CORRECTION = True
 """Whether to correct LED brightness for nonlinear brightness perception"""
 
 
-N_CURVES = 4
+N_CURVES = 2
 """Number of curves to plot in the visualization window"""
 
 
-N_ROLLING_HISTORY = 2
+N_ROLLING_HISTORY = 8
 """Number of past audio frames to include in the rolling window"""

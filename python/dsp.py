@@ -1,8 +1,6 @@
 from __future__ import print_function
-#from __future__ import division
 import numpy as np
 from scipy.interpolate import interp1d
-import scipy.fftpack
 import config
 
 
@@ -33,13 +31,13 @@ _ys_historical_energy = np.tile(1.0, (config.N_SUBBANDS, config.N_HISTORY))
 
 def beat_detect(ys):
     """Detect beats using an energy and variance theshold
-    
+
     Parameters
     ----------
     ys : numpy.array
         Array containing the magnitudes for each frequency bin of the
         fast fourier transformed audio data.
-    
+
     Returns
     -------
     has_beat : numpy.array
@@ -83,7 +81,7 @@ def onset(yt):
 
     Onset detection is perfomed using an ensemble of three onset detection
     functions.
-    
+
     The first onset detection function uses the rectified spectral flux (SF)
     of successive FFT data frames.
     The second onset detection function uses the normalized weighted phase
@@ -106,34 +104,31 @@ def onset(yt):
         Array of normalized weighted phase difference values
     RCD : numpy.array
         Array of rectified complex domain values
-    
+
     References
     ----------
     Dixon, Simon "Onset Detection Revisted"
     """
     global ys_prev, phase_prev, dphase_prev
-    xs, ys = fft_log_partition(yt, 
-                               subbands=config.N_SUBBANDS, 
-                               window=np.hamming,
-                               fmin=1,
-                               fmax=14000)
-    #ys = music_fft(yt)
+    xs, ys = fft(yt, window=np.hamming)
+    ys = ys[(xs >= config.MIN_FREQUENCY) * (xs <= config.MAX_FREQUENCY)]
+    xs = xs[(xs >= config.MIN_FREQUENCY) * (xs <= config.MAX_FREQUENCY)]
     magnitude = np.abs(ys)
-    phase = wrap_phase(np.angle(ys))
+    phase = np.angle(ys)
     # Special case for initialization
     if ys_prev is None:
         ys_prev = ys
         phase_prev = phase
         dphase_prev = phase
     # Rectified spectral flux
-    SF = np.abs(ys) - np.abs(ys_prev)
+    SF = magnitude - np.abs(ys_prev)
     SF[SF < 0.0] = 0.0
     # First difference of phase
-    dphase = wrap_phase(phase - phase_prev)
+    dphase = phase - phase_prev
     # Second difference of phase
-    ddphase = wrap_phase(dphase - dphase_prev)
+    ddphase = dphase - dphase_prev
     # Normalized weighted phase deviation
-    NWPD = np.abs(ddphase * magnitude) / magnitude
+    NWPD = np.abs(ddphase) * magnitude
     # Rectified complex domain onset detection function
     RCD = np.abs(ys - ys_prev * dphase_prev)
     RCD[RCD < 0.0] = 0.0
@@ -146,50 +141,35 @@ def onset(yt):
     SF = np.nan_to_num(SF)
     NWPD = np.nan_to_num(NWPD)
     RCD = np.nan_to_num(RCD)
+    _, SF = log_partition(xs, SF, subbands=config.N_SUBBANDS)
+    _, NWPD = log_partition(xs, NWPD, subbands=config.N_SUBBANDS)
+    _, RCD = log_partition(xs, RCD, subbands=config.N_SUBBANDS)
+
     return SF, NWPD, RCD
 
 
 def rfft(data, window=None):
-    if window is None:
-        window = 1.0
-    else:
-        window = window(len(data))
+    window = 1.0 if window is None else window(len(data))
     ys = np.abs(np.fft.rfft(data*window))
     xs = np.fft.rfftfreq(len(data), 1.0 / config.MIC_RATE)
     return xs, ys
 
 
-def rfft_log_partition(data, fmin=30, fmax=20000, subbands=64, window=None):
-    """Returns FFT partitioned into subbands that are logarithmically spaced"""
-    xs, ys = rfft(data, window=window)
-    xs_log = np.logspace(np.log10(fmin), np.log10(fmax), num=subbands * 32)
-    f = interp1d(xs, ys)
-    ys_log = f(xs_log)
-    X, Y = [], []
-    for i in range(0, subbands * 32, 32):
-        X.append(np.mean(xs_log[i:i + 32]))
-        Y.append(np.mean(ys_log[i:i + 32]))
-    return np.array(X), np.array(Y)
-
-
 def fft(data, window=None):
-    if window is None:
-        window = 1.0
-    else:
-        window = window(len(data))
+    window = 1.0 if window is None else window(len(data))
     ys = np.fft.fft(data*window)
     xs = np.fft.fftfreq(len(data), 1.0 / config.MIC_RATE)
     return xs, ys
 
 
-def fft_log_partition(data, fmin=30, fmax=20000, subbands=64, window=None):
-    """Returns FFT partitioned into subbands that are logarithmically spaced"""
-    xs, ys = fft(data, window=window)
-    xs_log = np.logspace(np.log10(fmin), np.log10(fmax), num=subbands * 32)
+def log_partition(xs, ys, subbands):
     f = interp1d(xs, ys)
+    xs_log = np.logspace(np.log10(xs[0]), np.log10(xs[-1]), num=subbands * 24)
+    xs_log[0] = xs[0]
+    xs_log[-1] = xs[-1]
     ys_log = f(xs_log)
     X, Y = [], []
-    for i in range(0, subbands * 32, 32):
-        X.append(np.mean(xs_log[i:i + 32]))
-        Y.append(np.mean(ys_log[i:i + 32]))
+    for i in range(0, subbands * 24, 24):
+        X.append(np.mean(xs_log[i:i + 24]))
+        Y.append(np.mean(ys_log[i:i + 24]))
     return np.array(X), np.array(Y)
