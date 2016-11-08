@@ -31,11 +31,11 @@ class Beat:
 
         # Exponentially decay the brightness over time
         # The decay helps to direct viewer's focus to newer and brighter beats
-        self.pixels *= np.exp(2. * np.log(.1) / (self.speed * config.N_PIXELS))
+        self.pixels *= np.exp(2. * np.log(.5) / (self.speed * config.N_PIXELS))
         self.pixels = np.round(self.pixels, decimals=2)
         self.pixels = np.clip(self.pixels, 0, 255)
 
-        self.speed *= np.exp(2. * np.log(.8) / config.N_PIXELS)
+        self.speed *= np.exp(2. * np.log(.95) / config.N_PIXELS)
 
     def finished(self):
         return np.array_equal(self.pixels, self.pixels * 0.0)
@@ -56,7 +56,7 @@ def rainbow(speed=10.0 / 5.0):
     return x
 
 
-def radiate(beats, energy, beat_speed=1.0, max_length=7, min_beats=1):
+def radiate(beats, energy, beat_speed=.6, max_length=7, min_beats=1):
     N_beats = len(beats[beats == True])
 
     if N_beats > 0 and N_beats >= min_beats:
@@ -108,12 +108,16 @@ def microphone_update(stream):
     y_roll[-1, :] = np.copy(y)
     y_data = np.concatenate(y_roll, axis=0)
     # Take the real FFT with logarithmic bin spacing
-    xs, ys = dsp.rfft_log_partition(y_data, 
-                                    subbands=config.N_SUBBANDS, 
-                                    window=np.hamming,
-                                    fmin=1,
-                                    fmax=14000)
-    # Visualize the result
+    xs, ys = dsp.rfft(y_data, window=np.hamming)
+    ys = ys[(xs >= config.MIN_FREQUENCY) * (xs <= config.MAX_FREQUENCY)]
+    xs = xs[(xs >= config.MIN_FREQUENCY) * (xs <= config.MAX_FREQUENCY)]
+    xs, ys = dsp.log_partition(xs, ys, config.N_SUBBANDS)
+    # xs, ys = dsp.rfft_log_partition(y_data, 
+    #                                 subbands=config.N_SUBBANDS, 
+    #                                 window=np.hamming,
+    #                                 fmin=1,
+    #                                 fmax=14000)
+    # # Visualize the result
     beats, energy, variance = dsp.beat_detect(ys)
     radiate(beats, energy)
 
