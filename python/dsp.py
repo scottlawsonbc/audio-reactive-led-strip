@@ -2,9 +2,10 @@ from __future__ import print_function
 import numpy as np
 from scipy.interpolate import interp1d
 import config
+import melbank
 
 
-class ExponentialFilter:
+class ExpFilter:
     """Simple exponential smoothing filter"""
     def __init__(self, val=0.0, alpha_decay=0.5, alpha_rise=0.5):
         """Small rise / decay factors = more smoothing"""
@@ -141,23 +142,23 @@ def onset(yt):
     SF = np.nan_to_num(SF)
     NWPD = np.nan_to_num(NWPD)
     RCD = np.nan_to_num(RCD)
+    # Convert onset detection to logarithmically spaced bins
     _, SF = log_partition(xs, SF, subbands=config.N_SUBBANDS)
     _, NWPD = log_partition(xs, NWPD, subbands=config.N_SUBBANDS)
     _, RCD = log_partition(xs, RCD, subbands=config.N_SUBBANDS)
-
     return SF, NWPD, RCD
 
 
 def rfft(data, window=None):
     window = 1.0 if window is None else window(len(data))
-    ys = np.abs(np.fft.rfft(data*window))
+    ys = np.abs(np.fft.rfft(data * window))
     xs = np.fft.rfftfreq(len(data), 1.0 / config.MIC_RATE)
     return xs, ys
 
 
 def fft(data, window=None):
     window = 1.0 if window is None else window(len(data))
-    ys = np.fft.fft(data*window)
+    ys = np.fft.fft(data * window)
     xs = np.fft.fftfreq(len(data), 1.0 / config.MIC_RATE)
     return xs, ys
 
@@ -173,3 +174,11 @@ def log_partition(xs, ys, subbands):
         X.append(np.mean(xs_log[i:i + 24]))
         Y.append(np.mean(ys_log[i:i + 24]))
     return np.array(X), np.array(Y)
+
+
+samples = int(round(config.MIC_RATE * config.N_ROLLING_HISTORY / (2.0 * config.FPS)))
+mel_y, (_, mel_x) = melbank.compute_melmat(num_mel_bands=config.N_SUBBANDS,
+                                           freq_min=config.MIN_FREQUENCY,
+                                           freq_max=config.MAX_FREQUENCY,
+                                           num_fft_bands=samples,
+                                           sample_rate=config.MIC_RATE)
