@@ -18,10 +18,10 @@ def update():
     p = _gamma[pixels] if config.GAMMA_CORRECTION else np.copy(pixels)
     for i in range(config.N_PIXELS):
         # Ignore pixels if they haven't changed (saves bandwidth)
-        if np.array_equal(pixels[i], _prev_pixels[i]):
+        if np.array_equal(p[i], _prev_pixels[i]):
             continue
         m += chr(i) + chr(p[i][0]) + chr(p[i][1]) + chr(p[i][2])
-    _prev_pixels = np.copy(pixels)
+    _prev_pixels = np.copy(p)
     _sock.sendto(m, (config.UDP_IP, config.UDP_PORT))
 
 
