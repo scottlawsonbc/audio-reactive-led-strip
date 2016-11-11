@@ -75,24 +75,32 @@ def normalize(f):
     return np.floor((f - lmin) / (lmax - lmin) * 255.0)
 
 
+# r_filt = dsp.ExpFilter(np.tile(0.01, config.N_PIXELS),
+#                        alpha_decay=0.075, alpha_rise=0.6)
+# g_filt = dsp.ExpFilter(np.tile(0.01, config.N_PIXELS),
+#                        alpha_decay=0.25, alpha_rise=0.9)
+# b_filt = dsp.ExpFilter(np.tile(0.01, config.N_PIXELS),
+#                        alpha_decay=0.5, alpha_rise=0.95)
 r_filt = dsp.ExpFilter(np.tile(0.01, config.N_PIXELS),
-                       alpha_decay=0.075, alpha_rise=0.6)
+                       alpha_decay=0.1, alpha_rise=0.6)
 g_filt = dsp.ExpFilter(np.tile(0.01, config.N_PIXELS),
-                       alpha_decay=0.25, alpha_rise=0.9)
+                       alpha_decay=0.75, alpha_rise=0.95)
 b_filt = dsp.ExpFilter(np.tile(0.01, config.N_PIXELS),
-                       alpha_decay=0.5, alpha_rise=0.95)
-
+                       alpha_decay=0.2, alpha_rise=0.4)
 
 def visualize(y):
     y = np.copy(interpolate(y, config.N_PIXELS)) * 255.0
     # Blur the color channels with different strengths
-    r = gaussian_filter1d(y, sigma=0.15)
-    g = gaussian_filter1d(y, sigma=2.0)
+    r = gaussian_filter1d(y, sigma=1.0)
+    g = gaussian_filter1d(y, sigma=0.0)
     b = gaussian_filter1d(y, sigma=0.0)
     # Take the geometric mean of the raw and normalized histograms
-    r = np.sqrt(r * normalize(r))
-    g = np.sqrt(g * normalize(g))
-    b = np.sqrt(b * normalize(b))
+    # r = np.sqrt(r * normalize(r))
+    # g = np.sqrt(g * normalize(g))
+    # b = np.sqrt(b * normalize(b))
+    r = np.roll(g, 0)
+    g = np.roll(g, 0)
+    b = np.roll(g, 0)
     # Update the low pass filters for each color channel
     r_filt.update(r)
     g_filt.update(g)
@@ -110,12 +118,17 @@ def visualize(y):
 
 mel_gain = dsp.ExpFilter(np.tile(1e-1, config.N_PIXELS),
                          alpha_decay=0.01, alpha_rise=0.99)
+# mel_gain = dsp.ExpFilter(np.tile(1e-1, config.N_PIXELS),
+#                          alpha_decay=0.01, alpha_rise=0.99)
 volume = dsp.ExpFilter(config.MIN_VOLUME_THRESHOLD,
                        alpha_decay=0.02, alpha_rise=0.02)
 
-
+rms = dsp.ExpFilter(0.1, alpha_decay=0.001, alpha_rise=0.001)
+exp = dsp.ExpFilter(0.5, alpha_decay=0.001, alpha_rise=0.001)
+prev_rms = 1.0
+prev_exp = 1.0
 def microphone_update(stream):
-    global y_roll
+    global y_roll, prev_rms, prev_exp
     # Normalize new audio samples
     y = np.fromstring(stream.read(samples_per_frame), dtype=np.int16)
     y = y / 2.0**15
@@ -137,13 +150,29 @@ def microphone_update(stream):
         YS = np.sum(YS, axis=0)**2.0
         mel = np.concatenate((YS[::-1], YS))
         mel = interpolate(mel, config.N_PIXELS)
-        mel = (mel)**2.
-        mel_gain.update(mel)
+        # mel = mel**0.4
+        mel = mel**exp.value
+        mel_gain.update(np.max(mel))
         mel = mel / mel_gain.value
+        rms.update(np.sqrt(np.mean(mel**2.0)))
+        if rms.value > 4e-1:
+            exp.update(exp.value * 1.2)
+        elif rms.value < 5e-2:
+            exp.update(exp.value * 0.8)
+    
+        rms_delta = '^' if rms.value - prev_rms > 0 else 'v'
+        exp_delta = '^' if exp.value - prev_exp > 0 else 'v'
+        print('|{}| {:.0e}, |{}| {:.2}'.format(rms_delta, rms.value, exp_delta, exp.value))
+        # WHAT IF I TAKE THE TEMPORAL VARIANCE OF EACH INDIVIDUAL BIN
+        # AND THEN CALCULATE THE COVARIANCE OF HOW THE DIFFERENT BIN VARIANCES
+        # CHANGE TOGETHER
+        # COULD COLOR BY COVARIANCE? BLUE PIXELS CHANGE TOGETHER, ETC
+        prev_exp = exp.value
+        prev_rms = rms.value
         visualize(mel)
 
     GUI.app.processEvents()
-    print('FPS {:.0f} / {:.0f}'.format(frames_per_second(), config.FPS))
+    #print('FPS {:.0f} / {:.0f}'.format(frames_per_second(), config.FPS))
 
 
 # Number of audio samples to read every time frame
@@ -158,13 +187,13 @@ if __name__ == '__main__':
     GUI = gui.GUI(width=800, height=400, title='Audio Visualization')
     # Audio plot
     GUI.add_plot('Color Channels')
-    r_pen = pg.mkPen((255, 30, 30, 200), width=3)
-    g_pen = pg.mkPen((30, 255, 30, 200), width=3)
-    b_pen = pg.mkPen((30, 30, 255, 200), width=3)
+    r_pen = pg.mkPen((255, 30, 30, 200), width=6)
+    g_pen = pg.mkPen((30, 255, 30, 200), width=6)
+    b_pen = pg.mkPen((30, 30, 255, 200), width=6)
     GUI.add_curve(plot_index=0, pen=r_pen)
     GUI.add_curve(plot_index=0, pen=g_pen)
     GUI.add_curve(plot_index=0, pen=b_pen)
-    GUI.plot[0].setRange(xRange=(0, 60), yRange=(-40, 275))
+    GUI.plot[0].setRange(xRange=(0, config.N_PIXELS), yRange=(-5, 275))
     # Initialize LEDs
     led.update()
     # Start listening to live audio stream
