@@ -26,47 +26,6 @@ class ExpFilter:
         return self.value
 
 
-# FFT statistics for a few previous updates
-_ys_historical_energy = np.tile(1.0, (config.N_SUBBANDS, config.N_HISTORY))
-
-
-def beat_detect(ys):
-    """Detect beats using an energy and variance theshold
-
-    Parameters
-    ----------
-    ys : numpy.array
-        Array containing the magnitudes for each frequency bin of the
-        fast fourier transformed audio data.
-
-    Returns
-    -------
-    has_beat : numpy.array
-        Array of booleans indicating a beat was detected in each of the
-        frequency bins of ys.
-    current_energy / mean_energy : numpy.array
-        Array containing the ratios of the energies relative to the
-        historical average energy for each of the frequency bins. The energies
-        are calculated as the square of the real FFT magnitudes
-    ys_variance : numpy.array
-        The historical variance of the energies associated with each frequency
-        bin in ys.
-    """
-    global _ys_historical_energy
-    # Beat energy criterion
-    current_energy = ys * ys
-    mean_energy = np.mean(_ys_historical_energy, axis=1)
-    has_beat_energy = current_energy > mean_energy * config.ENERGY_THRESHOLD
-    _ys_historical_energy = np.roll(_ys_historical_energy, shift=1, axis=1)
-    _ys_historical_energy[:, 0] = current_energy
-    # Beat variance criterion
-    ys_variance = np.var(_ys_historical_energy, axis=1)
-    has_beat_variance = ys_variance > config.VARIANCE_THRESHOLD
-    # Combined energy + variance detection
-    has_beat = has_beat_energy * has_beat_variance
-    return has_beat, current_energy / mean_energy, ys_variance
-
-
 def wrap_phase(phase):
     """Converts phases in the range [0, 2 pi] to [-pi, pi]"""
     return (phase + np.pi) % (2 * np.pi) - np.pi
