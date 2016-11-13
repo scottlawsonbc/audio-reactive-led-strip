@@ -153,11 +153,3 @@ def compute_melmat(num_mel_bands=12, freq_min=64, freq_max=8000,
         )
 
     return melmat, (center_frequencies_mel, freqs)
-
-# from pylab import plt
-
-# f1, f2 = 10, 12000
-# melmat, (melfreq, fftfreq) = compute_melmat(6, f1, f2, num_fft_bands=4097)
-
-# plt.plot(fftfreq, melmat.T)
-# # plt.show()
