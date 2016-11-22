@@ -9,7 +9,6 @@ import dsp
 import led
 import gui
 
-
 _time_prev = time.time() * 1000.0
 """The previous time that the frames_per_second() function was called"""
 
@@ -69,19 +68,38 @@ def interpolate(y, new_length):
 
 
 r_filt = dsp.ExpFilter(np.tile(0.01, config.N_PIXELS // 2),
-                       alpha_decay=0.05, alpha_rise=0.6)
+                       alpha_decay=0.08, alpha_rise=0.99)
 g_filt = dsp.ExpFilter(np.tile(0.01, config.N_PIXELS // 2),
-                       alpha_decay=0.75, alpha_rise=0.95)
+                       alpha_decay=0.15, alpha_rise=0.99)
 b_filt = dsp.ExpFilter(np.tile(0.01, config.N_PIXELS // 2),
-                       alpha_decay=0.2, alpha_rise=0.7)
+                       alpha_decay=0.25, alpha_rise=0.99)
+p_filt = dsp.ExpFilter(np.tile(1, (3, config.N_PIXELS // 2)),
+                       alpha_decay=0.05, alpha_rise=0.8)
+p = np.tile(1, (3, config.N_PIXELS // 2))
+gain = dsp.ExpFilter(np.tile(0.01, config.N_FFT_BINS),
+                     alpha_decay=0.001, alpha_rise=0.99)
 
-def visualize(y):
+
+def largest_indices(ary, n):
+    """Returns the n largest indices from a numpy array."""
+    flat = ary.flatten()
+    indices = np.argpartition(flat, -n)[-n:]
+    indices = indices[np.argsort(-flat[indices])]
+    return np.unravel_index(indices, ary.shape)
+
+
+def visualize_max(y):
     y = np.copy(interpolate(y, config.N_PIXELS // 2)) * 255.0
+    ind = largest_indices(y, 15)
+    y[ind] *= -1
+    y[y > 0] = 0
+    y[ind] *= -1
     # Blur the color channels with different strengths
-    r = gaussian_filter1d(y, sigma=0.0)
-    g = gaussian_filter1d(y, sigma=0.0)
-    b = gaussian_filter1d(y, sigma=1.0)
-    # Update the low pass filters for each color channel
+    r = gaussian_filter1d(y, sigma=0.25)
+    g = gaussian_filter1d(y, sigma=0.10)
+    b = gaussian_filter1d(y, sigma=0.00)
+    b = np.roll(b, 1)
+    b[0] = b[1]
     r_filt.update(r)
     g_filt.update(g)
     b_filt.update(b)
@@ -100,15 +118,78 @@ def visualize(y):
     led.update()
 
 
-mel_gain = dsp.ExpFilter(np.tile(1e-1, config.N_SUBBANDS),
-                         alpha_decay=0.01, alpha_rise=0.85)
+def visualize_scroll(y):
+    global p
+    y = gaussian_filter1d(y, sigma=1.0)**3.0
+    y = np.copy(y)
+    gain.update(y)
+    y /= gain.value
+    y *= 255.0
+    r = int(max(y[:len(y) // 3]))
+    g = int(max(y[len(y) // 3: 2 * len(y) // 3]))
+    b = int(max(y[2 * len(y) // 3:]))
+    p = np.roll(p, 1, axis=1)
+    p*= 0.98
+    p = gaussian_filter1d(p, sigma=0.2)
+    p[0, 0] = r
+    p[1, 0] = g
+    p[2, 0] = b
+    led.pixels = np.concatenate((p[:, ::-1], p), axis=1)
+    led.update()
+
+
+def visualize_energy(y):
+    global p
+    y = gaussian_filter1d(y, sigma=1.0)**3.0
+    gain.update(y)
+    y /= gain.value
+    y *= (config.N_PIXELS // 2) - 1
+    r = int(np.mean(y[:len(y) // 3]))
+    g = int(np.mean(y[len(y) // 3: 2 * len(y) // 3]))
+    b = int(np.mean(y[2 * len(y) // 3:]))
+    p[0, :r] = 255
+    p[0, r:] = 0
+    p[1, :g] = 255
+    p[1, g:] = 0
+    p[2, :b] = 255
+    p[2, b:] = 0
+    p_filt.update(p)
+    p = p_filt.value.astype(int)
+    p[0, :] = gaussian_filter1d(p[0, :], sigma=4.0)
+    p[1, :] = gaussian_filter1d(p[1, :], sigma=4.0)
+    p[2, :] = gaussian_filter1d(p[2, :], sigma=4.0)
+    led.pixels = np.concatenate((p[:, ::-1], p), axis=1)
+    led.update()
+
+
+def visualize_spectrum(y):
+    y = np.copy(interpolate(y, config.N_PIXELS // 2)) * 255.0
+    # Blur the color channels with different strengths
+    r = gaussian_filter1d(y, sigma=0.25)
+    g = gaussian_filter1d(y, sigma=0.10)
+    b = gaussian_filter1d(y, sigma=0.00)
+    r_filt.update(r)
+    g_filt.update(g)
+    b_filt.update(b)
+    # Pixel values
+    pixel_r = np.concatenate((r_filt.value[::-1], r_filt.value))
+    pixel_g = np.concatenate((g_filt.value[::-1], g_filt.value))
+    pixel_b = np.concatenate((b_filt.value[::-1], b_filt.value))
+    # Update the LED strip values
+    led.pixels[0, :] = pixel_r
+    led.pixels[1, :] = pixel_g
+    led.pixels[2, :] = pixel_b
+    # Update the GUI plots
+    GUI.curve[0][0].setData(y=pixel_r)
+    GUI.curve[0][1].setData(y=pixel_g)
+    GUI.curve[0][2].setData(y=pixel_b)
+    led.update()
+
+
+mel_gain = dsp.ExpFilter(np.tile(1e-1, config.N_FFT_BINS),
+                         alpha_decay=0.01, alpha_rise=0.99)
 volume = dsp.ExpFilter(config.MIN_VOLUME_THRESHOLD,
                        alpha_decay=0.02, alpha_rise=0.02)
-
-rms = dsp.ExpFilter(0.1, alpha_decay=0.001, alpha_rise=0.001)
-exp = dsp.ExpFilter(0.5, alpha_decay=0.001, alpha_rise=0.001)
-prev_rms = 1.0
-prev_exp = 1.0
 
 
 def microphone_update(stream):
@@ -125,32 +206,24 @@ def microphone_update(stream):
 
     if volume.value < config.MIN_VOLUME_THRESHOLD:
         print('No audio input. Volume below threshold. Volume:', volume.value)
-        visualize(np.tile(0.0, config.N_PIXELS))
+        led.pixels = np.tile(0, (3, config.N_PIXELS))
+        led.update()
     else:
         XS, YS = dsp.fft(y_data, window=np.hamming)
         YS = YS[:len(YS) // 2]
         XS = XS[:len(XS) // 2]
         YS = np.atleast_2d(np.abs(YS)).T * dsp.mel_y.T
         YS = np.sum(YS, axis=0)**2.0
-        mel = YS
-        mel = mel**exp.value
+        mel = YS**0.5
         mel = gaussian_filter1d(mel, sigma=1.0)
         mel_gain.update(np.max(mel))
         mel = mel / mel_gain.value
-        rms.update(np.sqrt(np.mean(mel**2.0)))
-        if rms.value > 4e-1:
-            exp.update(exp.value * 1.2)
-        elif rms.value < 5e-2:
-            exp.update(exp.value * 0.8)
-        rms_delta = '^' if rms.value - prev_rms > 0 else 'v'
-        exp_delta = '^' if exp.value - prev_exp > 0 else 'v'
-        print('|{}| {:.0e}, |{}| {:.2}\t\t{:.2f}'.format(
-            rms_delta, rms.value, exp_delta, exp.value, frames_per_second()))
-        prev_exp = exp.value
-        prev_rms = rms.value
-        visualize(mel)
+        visualize_spectrum(mel)
+        # visualize_max(mel)
+        # visualize_scroll(mel)
+        # visualize_energy(mel)
     GUI.app.processEvents()
-    #print('FPS {:.0f} / {:.0f}'.format(frames_per_second(), config.FPS))
+    print('FPS {:.0f} / {:.0f}'.format(frames_per_second(), config.FPS))
 
 
 # Number of audio samples to read every time frame
