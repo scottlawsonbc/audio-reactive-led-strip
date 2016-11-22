@@ -26,11 +26,6 @@ class ExpFilter:
         return self.value
 
 
-def wrap_phase(phase):
-    """Converts phases in the range [0, 2 pi] to [-pi, pi]"""
-    return (phase + np.pi) % (2 * np.pi) - np.pi
-
-
 ys_prev = None
 phase_prev = None
 dphase_prev = None
@@ -102,9 +97,9 @@ def onset(yt):
     NWPD = np.nan_to_num(NWPD)
     RCD = np.nan_to_num(RCD)
     # Convert onset detection to logarithmically spaced bins
-    _, SF = log_partition(xs, SF, subbands=config.N_SUBBANDS)
-    _, NWPD = log_partition(xs, NWPD, subbands=config.N_SUBBANDS)
-    _, RCD = log_partition(xs, RCD, subbands=config.N_SUBBANDS)
+    _, SF = log_partition(xs, SF, subbands=config.N_FFT_BINS)
+    _, NWPD = log_partition(xs, NWPD, subbands=config.N_FFT_BINS)
+    _, RCD = log_partition(xs, RCD, subbands=config.N_FFT_BINS)
     return SF, NWPD, RCD
 
 
@@ -122,23 +117,8 @@ def fft(data, window=None):
     return xs, ys
 
 
-def log_partition(xs, ys, subbands):
-    f = interp1d(xs, ys)
-    xs_log = np.logspace(np.log10(xs[0]), np.log10(xs[-1]), num=subbands * 24)
-    xs_log[0] = xs[0]
-    xs_log[-1] = xs[-1]
-    ys_log = f(xs_log)
-    X, Y = [], []
-    for i in range(0, subbands * 24, 24):
-        X.append(np.mean(xs_log[i:i + 24]))
-        Y.append(np.mean(ys_log[i:i + 24]))
-    return np.array(X), np.array(Y)
-
-
-
-
 samples = int(round(config.MIC_RATE * config.N_ROLLING_HISTORY / (2.0 * config.FPS)))
-mel_y, (_, mel_x) = melbank.compute_melmat(num_mel_bands=config.N_SUBBANDS,
+mel_y, (_, mel_x) = melbank.compute_melmat(num_mel_bands=config.N_FFT_BINS,
                                            freq_min=config.MIN_FREQUENCY,
                                            freq_max=config.MAX_FREQUENCY,
                                            num_fft_bands=samples,
@@ -148,7 +128,7 @@ def create_mel_bank(n_history):
     global samples, mel_y, mel_x
     config.N_ROLLING_HISTORY = n_history
     samples = int(round(config.MIC_RATE * config.N_ROLLING_HISTORY / (2.0 * config.FPS)))
-    mel_y, (_, mel_x) = melbank.compute_melmat(num_mel_bands=config.N_SUBBANDS,
+    mel_y, (_, mel_x) = melbank.compute_melmat(num_mel_bands=config.N_FFT_BINS,
                                                freq_min=config.MIN_FREQUENCY,
                                                freq_max=config.MAX_FREQUENCY,
                                                num_fft_bands=samples,
