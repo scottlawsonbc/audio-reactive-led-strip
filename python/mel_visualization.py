@@ -129,7 +129,7 @@ def visualize_scroll(y):
     g = int(max(y[len(y) // 3: 2 * len(y) // 3]))
     b = int(max(y[2 * len(y) // 3:]))
     p = np.roll(p, 1, axis=1)
-    p*= 0.98
+    p *= 0.98
     p = gaussian_filter1d(p, sigma=0.2)
     p[0, 0] = r
     p[1, 0] = g

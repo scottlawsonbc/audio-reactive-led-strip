@@ -27,7 +27,6 @@ class GUI:
 if __name__ == '__main__':
     N = 48
     gui = GUI(title='Test')
-    
     # Sin plot
     gui.add_plot(title='Sin Plot')
     gui.add_curve(plot_index=0)
@@ -38,9 +37,8 @@ if __name__ == '__main__':
 
     while True:
         t = time.time()
-        x = np.linspace(t, 2 * np.pi + t, N);
+        x = np.linspace(t, 2 * np.pi + t, N)
         gui.curve[0][0].setData(x=x, y=np.sin(x))
         gui.curve[1][0].setData(x=x, y=np.cos(x))
         gui.app.processEvents()
         time.sleep(1.0 / 30.0)
-

@@ -30,7 +30,6 @@ Functions
 ---------
 """
 
-
 from numpy import abs, append, arange, insert, linspace, log10, round, zeros
 
 
@@ -88,7 +87,6 @@ def melfrequencies_mel_filterbank(num_bands, freq_min, freq_max, num_fft_bands):
     lower_edges_mel = frequencies_mel[:-2]
     upper_edges_mel = frequencies_mel[2:]
     center_frequencies_mel = frequencies_mel[1:-1]
-
     return center_frequencies_mel, lower_edges_mel, upper_edges_mel
 
 
@@ -132,7 +130,6 @@ def compute_melmat(num_mel_bands=12, freq_min=64, freq_max=8000,
             num_fft_bands
         )
 
-    len_fft = float(num_fft_bands) / sample_rate
     center_frequencies_hz = mel_to_hertz(center_frequencies_mel)
     lower_edges_hz = mel_to_hertz(lower_edges_mel)
     upper_edges_hz = mel_to_hertz(upper_edges_mel)
