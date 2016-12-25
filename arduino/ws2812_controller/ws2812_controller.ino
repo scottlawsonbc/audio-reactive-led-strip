@@ -5,7 +5,7 @@
 #include <WiFiUdp.h>
 #include <ws2812_i2s.h>
 
-#define NUM_LEDS 240
+#define NUM_LEDS 260
 #define BUFFER_LEN 1024
 
 // Wifi and socket settings
@@ -21,8 +21,10 @@ static Pixel_t pixels[NUM_LEDS];
 WiFiUDP port;
 
 // Network information
-IPAddress ip(192, 168, 1, 150); 
-IPAddress gateway(192, 168, 1, 1);
+IPAddress ip(192, 168, 137, 150); 
+IPAddress gateway(192, 168, 137, 1);
+//IPAddress ip(192, 168, 0, 150); 
+//IPAddress gateway(192, 168, 0, 1);
 IPAddress subnet(255, 255, 255, 0);
 
 void setup() {
@@ -42,6 +44,7 @@ void setup() {
     Serial.println(WiFi.localIP());
     port.begin(localPort);
     ledstrip.init(NUM_LEDS);
+    pinMode(0, OUTPUT);
 }
 
 uint8_t N = 0;
@@ -52,17 +55,16 @@ void loop() {
     
     // If packets have been received, interpret the command
     if (packetSize) {
-        int len = port.read(packetBuffer, BUFFER_LEN);
+      digitalWrite(0, 1);
+      int len = port.read(packetBuffer, BUFFER_LEN);
         for(int i = 0; i < len; i+=4){
             packetBuffer[len] = 0;
             N = packetBuffer[i];
             pixels[N].R = (uint8_t)packetBuffer[i+1];
             pixels[N].G = (uint8_t)packetBuffer[i+2];
             pixels[N].B = (uint8_t)packetBuffer[i+3];
-        }
-        //ledstrip.show(pixels);
-    }
-
-    // Always update strip to improve temporal dithering performance
-    ledstrip.show(pixels);
+        } 
+      ledstrip.show(pixels);
+      digitalWrite(0, 0);
+  }
 }

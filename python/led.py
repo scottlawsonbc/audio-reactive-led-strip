@@ -1,4 +1,5 @@
 from __future__ import print_function
+from __future__ import division
 import socket
 import numpy as np
 import config
@@ -26,7 +27,5 @@ def update():
 
 
 if __name__ == '__main__':
-    pixels = pixels * 0
-    pixels = pixels
+    pixels *= 0
     update()
-
