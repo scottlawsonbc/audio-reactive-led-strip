@@ -1,6 +1,5 @@
 from __future__ import print_function
 import numpy as np
-from scipy.interpolate import interp1d
 import config
 import melbank
 
@@ -26,83 +25,6 @@ class ExpFilter:
         return self.value
 
 
-ys_prev = None
-phase_prev = None
-dphase_prev = None
-
-
-def onset(yt):
-    """Detects onsets in the given audio time series data
-
-    Onset detection is perfomed using an ensemble of three onset detection
-    functions.
-
-    The first onset detection function uses the rectified spectral flux (SF)
-    of successive FFT data frames.
-    The second onset detection function uses the normalized weighted phase
-    difference (NWPD) of successive FFT data frames.
-    The third is a rectified complex domain onset detection function.
-
-    The product of these three functions forms an ensemble onset detection
-    function that returns continuous valued onset detection estimates.
-
-    Parameters
-    ----------
-    yt : numpy.array
-        Array of time series data to perform onset detection on
-
-    Returns
-    -------
-    SF : numpy.array
-        Array of rectified spectral flux values
-    NWPD : numpy.array
-        Array of normalized weighted phase difference values
-    RCD : numpy.array
-        Array of rectified complex domain values
-
-    References
-    ----------
-    Dixon, Simon "Onset Detection Revisted"
-    """
-    global ys_prev, phase_prev, dphase_prev
-    xs, ys = fft(yt, window=np.hamming)
-    ys = ys[(xs >= config.MIN_FREQUENCY) * (xs <= config.MAX_FREQUENCY)]
-    xs = xs[(xs >= config.MIN_FREQUENCY) * (xs <= config.MAX_FREQUENCY)]
-    magnitude = np.abs(ys)
-    phase = np.angle(ys)
-    # Special case for initialization
-    if ys_prev is None:
-        ys_prev = ys
-        phase_prev = phase
-        dphase_prev = phase
-    # Rectified spectral flux
-    SF = magnitude - np.abs(ys_prev)
-    SF[SF < 0.0] = 0.0
-    # First difference of phase
-    dphase = phase - phase_prev
-    # Second difference of phase
-    ddphase = dphase - dphase_prev
-    # Normalized weighted phase deviation
-    NWPD = np.abs(ddphase) * magnitude
-    # Rectified complex domain onset detection function
-    RCD = np.abs(ys - ys_prev * dphase_prev)
-    RCD[RCD < 0.0] = 0.0
-    RCD = RCD
-    # Update previous values
-    ys_prev = ys
-    phase_prev = phase
-    dphase_prev = dphase
-    # Replace NaN values with zero
-    SF = np.nan_to_num(SF)
-    NWPD = np.nan_to_num(NWPD)
-    RCD = np.nan_to_num(RCD)
-    # Convert onset detection to logarithmically spaced bins
-    _, SF = log_partition(xs, SF, subbands=config.N_FFT_BINS)
-    _, NWPD = log_partition(xs, NWPD, subbands=config.N_FFT_BINS)
-    _, RCD = log_partition(xs, RCD, subbands=config.N_FFT_BINS)
-    return SF, NWPD, RCD
-
-
 def rfft(data, window=None):
     window = 1.0 if window is None else window(len(data))
     ys = np.abs(np.fft.rfft(data * window))
@@ -123,6 +45,7 @@ mel_y, (_, mel_x) = melbank.compute_melmat(num_mel_bands=config.N_FFT_BINS,
                                            freq_max=config.MAX_FREQUENCY,
                                            num_fft_bands=samples,
                                            sample_rate=config.MIC_RATE)
+
 
 def create_mel_bank(n_history):
     global samples, mel_y, mel_x
