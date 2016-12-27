@@ -1,9 +1,11 @@
 # audio-reactive-led-strip
-:headphones: Audio reactive lighting using ESP8266 and ws2812 LED strips
+Real-time LED strip music visualization using the ESP82666
+
+![description](block-diagram.png)
 
 ## Getting Started
 
-![description](description.gif)
+![description](description-cropped.gif)
 
 These instructions will get you a copy of the project up and running on your local machine for development and testing purposes. See deployment for notes on how to deploy the project on a live system.
 
