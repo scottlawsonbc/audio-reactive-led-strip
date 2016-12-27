@@ -38,6 +38,8 @@ There are only a handful of Python dependencies:
 
 On Windows machines, the use of [Anaconda](https://www.continuum.io/downloads) is **highly recommended**. Anaconda simplifies the installation of Python dependencies, which is sometimes difficult on Windows.
 
-# Arduino dependencies
+## Arduino dependencies
 The [ws2812b i2s library](https://github.com/JoDaNl/esp8266_ws2812_i2s) must be downloaded and installed in the Arduino libraries folder.
 
+# Setup / Getting Started
+Information coming soon. README is currently under active development.
