@@ -26,7 +26,7 @@ The following hardware is needed to build an LED strip music visualizer:
   - NodeMCU v3
   - Adafruit HUZZAH
   - Adafruit Feather HUZZAH
- - Any ws2812b LED strip (such as Adafruit Neopixels)
+- Any ws2812b LED strip (such as Adafruit Neopixels)
 
 # Dependencies
 ## Python
