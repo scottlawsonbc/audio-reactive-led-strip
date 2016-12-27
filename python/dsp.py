@@ -15,7 +15,7 @@ class ExpFilter:
         self.value = val
 
     def update(self, value):
-        if not isinstance(self.value, (int, long, float)):
+        if isinstance(self.value, (list, np.ndarray, tuple)):
             alpha = value - self.value
             alpha[alpha > 0.0] = self.alpha_rise
             alpha[alpha <= 0.0] = self.alpha_decay

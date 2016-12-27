@@ -1,5 +1,6 @@
 from __future__ import print_function
 from __future__ import division
+from __future__ import unicode_literals
 import socket
 import numpy as np
 import config
@@ -23,7 +24,7 @@ def update():
             continue
         m += chr(i) + chr(p[0][i]) + chr(p[1][i]) + chr(p[2][i])
     _prev_pixels = np.copy(p)
-    _sock.sendto(m, (config.UDP_IP, config.UDP_PORT))
+    _sock.sendto(m.encode(), (config.UDP_IP, config.UDP_PORT))
 
 
 if __name__ == '__main__':
