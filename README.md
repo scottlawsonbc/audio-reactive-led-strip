@@ -28,15 +28,37 @@ The following hardware is needed to build an LED strip music visualizer:
   - Adafruit Feather HUZZAH
 - Any ws2812b LED strip (such as Adafruit Neopixels)
 
-# Dependencies
-## Python
-There are only a handful of Python dependencies:
+# Installation
+## Python Dependencies
+Visualization code is compatible with Python 2.7 or 3.5. A few Python dependencies must also be installed:
 - Numpy
 - Scipy (for digital signal processing)
 - PyQtGraph (for GUI visualization)
 - PyAudio (for recording audio with microphone)
 
 On Windows machines, the use of [Anaconda](https://www.continuum.io/downloads) is **highly recommended**. Anaconda simplifies the installation of Python dependencies, which is sometimes difficult on Windows.
+
+### Installing dependencies with Anaconda
+Create a [conda virtual environment](http://conda.pydata.org/docs/using/envs.html) (this step is optional but recommended)
+```
+conda create --name visualization-env python=3.5
+activate visualization-env
+```
+Install dependencies using pip and the conda package manager
+```
+conda install numpy scipy pyqtgraph
+pip install pyaudio
+```
+
+### Installing dependencies without Anaconda
+The pip package manager can also be used to install the python dependencies.
+```
+pip install numpy
+pip install scipy
+pip install pyqtgraph
+pip install pyaudio
+```
+If `pip` is not found try using `python -m pip install` instead.
 
 ## Arduino dependencies
 The [ws2812b i2s library](https://github.com/JoDaNl/esp8266_ws2812_i2s) must be downloaded and installed in the Arduino libraries folder.
