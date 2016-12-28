@@ -68,6 +68,8 @@ This [ws2812b i2s library](https://github.com/JoDaNl/esp8266_ws2812_i2s) must be
 # Hardware Connections
 The ESP8266 has hardware support for [I²S](https://en.wikipedia.org/wiki/I%C2%B2S) and this peripheral is used by the [ws2812b i2s library](https://github.com/JoDaNl/esp8266_ws2812_i2s) to control the ws2812b LED strip. This signficantly improves performance compared to bit-banging the IO pin. Unfortunately, this means that the LED strip **must** be connected to the RX1 pin, which is not accessible in some ESP8266 modules (such as the ESP-01).
 
+The RX1 pin on the ESP8266 module should be connected to the data input pin of the ws2812b LED strip (often labelled DIN or D0).
+
 For the NodeMCU v3 and Adafruit Feather HUZZAH, the location of the RX1 pin is shown in the images below. Many other modules also expose the RX1 pin.
 
 ![nodemcu-pinout](images/NodeMCUv3-small.png)
