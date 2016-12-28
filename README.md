@@ -22,11 +22,11 @@ The repository includes everything needed to build an LED strip music visualizer
 # What do I need to make one?
 The following hardware is needed to build an LED strip music visualizer:
 - Computer with Python 2.7 or 3.5 ([Anaconda](https://www.continuum.io/downloads) is recommended on Windows)
-- Any ESP8266 module with RX1 pin exposed. These modules are known to be compatible (but many others work too):
+- Any ESP8266 module with RX1 pin exposed. ESP8266 modules can be purchased for as little as $5 to $10 USD. These modules are known to be compatible (but many others work too):
   - NodeMCU v3
   - Adafruit HUZZAH
   - Adafruit Feather HUZZAH
-- Any ws2812b LED strip (such as Adafruit Neopixels)
+- Any ws2812b LED strip (such as Adafruit Neopixels). Many suppliers sell ws2812b LED strips for as little as $5-15 USD per meter.
 
 # Installation
 ## Python Dependencies
