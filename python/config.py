@@ -10,7 +10,7 @@ GAMMA_TABLE_PATH = os.path.join(os.path.dirname(__file__), 'gamma_table.npy')
 """Location of the gamma correction table"""
 
 UDP_IP = '192.168.137.150'
-"""IP address of the ESP8266"""
+"""IP address of the ESP8266. Must match IP in ws2812_controller.ino"""
 
 UDP_PORT = 7777
 """Port number used for socket communication between Python and ESP8266"""

@@ -9,9 +9,8 @@
 #define BUFFER_LEN 1024
 
 // Wifi and socket settings
-//const char* ssid     = "LAWSON-LINK-2.4";
-const char* ssid     = "led_strip";
-const char* password = "felixlina10";
+const char* ssid     = "YOUR_WIFI_SSID";
+const char* password = "YOUR_WIFI_PASSWORD";
 unsigned int localPort = 7777;
 char packetBuffer[BUFFER_LEN];
 
@@ -21,10 +20,10 @@ static Pixel_t pixels[NUM_LEDS];
 WiFiUDP port;
 
 // Network information
-IPAddress ip(192, 168, 137, 150); 
-IPAddress gateway(192, 168, 137, 1);
-//IPAddress ip(192, 168, 0, 150); 
-//IPAddress gateway(192, 168, 0, 1);
+// IP must match the IP in config.py
+IPAddress ip(192, 168, 0, 150);
+// Set gateway to your router's gateway
+IPAddress gateway(192, 168, 0, 1);
 IPAddress subnet(255, 255, 255, 0);
 
 void setup() {
@@ -52,7 +51,6 @@ uint8_t N = 0;
 void loop() {
     // Read data over socket
     int packetSize = port.parsePacket();
-    
     // If packets have been received, interpret the command
     if (packetSize) {
       digitalWrite(0, 1);
