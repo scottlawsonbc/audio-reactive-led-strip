@@ -5,6 +5,7 @@
 #include <WiFiUdp.h>
 #include <ws2812_i2s.h>
 
+// Set this to the number of LEDs in your LED strip
 #define NUM_LEDS 260
 #define BUFFER_LEN 1024
 
