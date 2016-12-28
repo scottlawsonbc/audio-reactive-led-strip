@@ -61,7 +61,9 @@ pip install pyaudio
 If `pip` is not found try using `python -m pip install` instead.
 
 ## Arduino dependencies
-The [ws2812b i2s library](https://github.com/JoDaNl/esp8266_ws2812_i2s) must be downloaded and installed in the Arduino libraries folder.
+ESP8266 firmare is uploaded using the Arduino IDE. See [this tutorial](https://learn.sparkfun.com/tutorials/esp8266-thing-hookup-guide/installing-the-esp8266-arduino-addon) to setup the Arduino IDE for ESP8266.
+
+cThis [ws2812b i2s library](https://github.com/JoDaNl/esp8266_ws2812_i2s) must be downloaded and installed in the Arduino libraries folder.
 
 # Setup / Getting Started
 Information coming soon. README is currently under active development.
