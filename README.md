@@ -83,15 +83,15 @@ For the NodeMCU v3 and Adafruit Feather HUZZAH, the location of the RX1 pin is s
   - Set `IPAddress gateway` to match your router's gateway
   - Set `IPAddress ip` to the IP address that you would like your ESP8266 to use (your choice)
   - Set `#define NUM_LEDS` to the number of LEDs in your LED strip
-5. In [config.py](python/config.py):
+5. Upload the [ws2812_controller.ino](arduino/ws2812_controller/ws2812_controller.ino) firmware to the ESP8266. Ensure that you have selected the correct ESP8266 board from the boards menu. In the dropdown menu, set `CPU Frequency` to 160 MHz for optimal performance.
+6. In [config.py](python/config.py):
   - Set `N_PIXELS` to the number of LEDs in your LED strip (must match `NUM_LEDS` in [ws2812_controller.ino](arduino/ws2812_controller/ws2812_controller.ino))
   - Set `UDP_IP` to the IP address of your ESP8266 (must match `ip` in [ws2812_controller.ino](arduino/ws2812_controller/ws2812_controller.ino))
-  - If needed, set `MIC_RATE` to your microphone sampling rate in Hz
+  - If needed, set `MIC_RATE` to your microphone sampling rate in Hz. Most of the time you will not need to change this.
 
 # Running the Visualization
 Once everything has been configured, run [visualization.py](python/visualization.py) to start the visualization. The visualization will automatically use your default recording device (microphone) as the audio input.
 
 A PyQtGraph GUI will open to display the output of the visualization on the computer.
-
 
 If you encounter any issues or have questions about this project, feel free to open a new issue.
