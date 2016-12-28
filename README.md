@@ -98,3 +98,6 @@ Once everything has been configured, run [visualization.py](python/visualization
 A PyQtGraph GUI will open to display the output of the visualization on the computer.
 
 If you encounter any issues or have questions about this project, feel free to open a new issue.
+
+# License
+All code in this project is released under the MIT License.
