@@ -1,13 +1,13 @@
 # audio-reactive-led-strip
 Real-time LED strip music visualization using the ESP8266 and Python
 
-![block diagram](block-diagram.png)
+![block diagram](images/block-diagram.png)
 
-![overview](description-cropped.gif)
+![overview](images/description-cropped.gif)
 
 # Demo (click gif for video)
 
-[![visualizer demo](scroll-effect-demo.gif)](https://www.youtube.com/watch?v=HNtM7jH5GXgD)
+[![visualizer demo](images/scroll-effect-demo.gif)](https://www.youtube.com/watch?v=HNtM7jH5GXgD)
 
 # Overview
 The repository includes everything needed to build an LED strip music visualizer (excluding hardware):
