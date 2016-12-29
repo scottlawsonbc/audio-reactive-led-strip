@@ -15,7 +15,7 @@ pixels = np.tile(1, (3, config.N_PIXELS))
 
 def update():
     global pixels, _prev_pixels
-    pixels = np.clip(pixels, 0, 255)
+    pixels = np.clip(pixels, 0, 255).astype(int)
     m = ''
     p = _gamma[pixels] if config.GAMMA_CORRECTION else np.copy(pixels)
     for i in range(config.N_PIXELS):
