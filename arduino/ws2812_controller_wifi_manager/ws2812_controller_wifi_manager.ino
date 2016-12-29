@@ -40,6 +40,7 @@ void setup() {
     port.begin(localPort);
     ledstrip.init(NUM_LEDS);
     pinMode(0, OUTPUT);
+    pinMode(LED_BUILTIN, OUTPUT);
 }
 
 uint8_t N = 0;
@@ -71,6 +72,12 @@ void loop() {
     secondTimer = millis();
 
     Serial.printf("FPS: %d\n", fpsCounter);
+    if(fpsCounter < 60)
+    {
+      digitalWrite(LED_BUILTIN, HIGH);   // turn the LED on (HIGH is the voltage level)
+    }else{
+      digitalWrite(LED_BUILTIN, LOW);
+    }
     fpsCounter = 0;
   }
 }
