@@ -6,7 +6,7 @@
 #include <ws2812_i2s.h>
 
 // Set this to the number of LEDs in your LED strip
-#define NUM_LEDS 260
+#define NUM_LEDS 50
 #define BUFFER_LEN 1024
 #define PRINT_FPS 1
 
@@ -48,11 +48,11 @@ void setup() {
 }
 
 uint8_t N = 0;
-if(PRINT_FPS == 1)
-{
+#ifdef PRINT_FPS
     int fpsCounter = 0;
     int secondTimer = 0;
-}
+#endif
+
 void loop() {
     // Read data over socket
     int packetSize = port.parsePacket();
