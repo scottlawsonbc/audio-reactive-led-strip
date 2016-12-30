@@ -8,6 +8,7 @@
 // Set this to the number of LEDs in your LED strip
 #define NUM_LEDS 260
 #define BUFFER_LEN 1024
+#define PRINT_FPS 1
 
 // Wifi and socket settings
 const char* ssid     = "YOUR_WIFI_SSID";
@@ -44,13 +45,13 @@ void setup() {
     Serial.println(WiFi.localIP());
     port.begin(localPort);
     ledstrip.init(NUM_LEDS);
-    pinMode(0, OUTPUT);
 }
 
 uint8_t N = 0;
+#ifdef PRINT_FPS
 int fpsCounter = 0;
 int secondTimer = 0;
-int redLedTimer = 0;
+#endif
 void loop() {
     // Read data over socket
     int packetSize = port.parsePacket();
@@ -67,10 +68,11 @@ void loop() {
         } 
       ledstrip.show(pixels);
       Serial.print("*");
-      fpsCounter++;
-      digitalWrite(0, 0);
+      #ifdef PRINT_FPS
+        fpsCounter++;
+      #endif
   }
-  
+  #ifdef PRINT_FPS
   if(millis() - secondTimer >= 1000)
   {
     secondTimer = millis();
@@ -78,4 +80,5 @@ void loop() {
     Serial.printf("FPS: %d\n", fpsCounter);
     fpsCounter = 0;
   }
+  #endif 
 }
