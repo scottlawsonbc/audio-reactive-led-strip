@@ -48,10 +48,11 @@ void setup() {
 }
 
 uint8_t N = 0;
-#ifdef PRINT_FPS
-int fpsCounter = 0;
-int secondTimer = 0;
-#endif
+if(PRINT_FPS == 1)
+{
+    int fpsCounter = 0;
+    int secondTimer = 0;
+}
 void loop() {
     // Read data over socket
     int packetSize = port.parsePacket();
@@ -66,12 +67,14 @@ void loop() {
             pixels[N].B = (uint8_t)packetBuffer[i+3];
         } 
       ledstrip.show(pixels);
-      Serial.print("*");
-      #ifdef PRINT_FPS
+      
+      if(PRINT_FPS == 1)
+      {
+        Serial.print("*");
         fpsCounter++;
-      #endif
+      }
   }
-  #ifdef PRINT_FPS
+ if(PRINT_FPS == 1){
   if(millis() - secondTimer >= 1000)
   {
     secondTimer = millis();
@@ -79,5 +82,5 @@ void loop() {
     Serial.printf("FPS: %d\n", fpsCounter);
     fpsCounter = 0;
   }
-  #endif 
+ }
 }
