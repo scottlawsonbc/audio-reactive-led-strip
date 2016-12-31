@@ -238,7 +238,7 @@ def microphone_update(stream):
         mel_gain.update(np.max(mel))
         mel = mel / mel_gain.value
         # Visualize the filterbank output
-        visualize_spectrum(mel)
+        # visualize_spectrum(mel)
         # visualize_max(mel)
         # visualize_scroll(mel)
         visualize_energy(mel)
