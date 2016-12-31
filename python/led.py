@@ -16,15 +16,18 @@ pixels = np.tile(1, (3, config.N_PIXELS))
 def update():
     global pixels, _prev_pixels
     pixels = np.clip(pixels, 0, 255).astype(int)
-    m = ''
     p = _gamma[pixels] if config.GAMMA_CORRECTION else np.copy(pixels)
+    m = []
     for i in range(config.N_PIXELS):
         # Ignore pixels if they haven't changed (saves bandwidth)
         if np.array_equal(p[:, i], _prev_pixels[:, i]):
             continue
-        m += chr(i) + chr(p[0][i]) + chr(p[1][i]) + chr(p[2][i])
+        m.append(i)  # Index of pixel to change
+        m.append(p[0][i])  # Pixel red value
+        m.append(p[1][i])  # Pixel green value
+        m.append(p[2][i])  # Pixel blue value
     _prev_pixels = np.copy(p)
-    _sock.sendto(m.encode(), (config.UDP_IP, config.UDP_PORT))
+    _sock.sendto(bytes(m), (config.UDP_IP, config.UDP_PORT))
 
 
 # Execute this file to run a LED strand test
@@ -42,4 +45,3 @@ if __name__ == '__main__':
         pixels = np.roll(pixels, 1, axis=1)
         update()
         time.sleep(0.2)
-
