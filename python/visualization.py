@@ -75,13 +75,13 @@ b_filt = dsp.ExpFilter(np.tile(0.01, config.N_PIXELS // 2),
                        alpha_decay=0.25, alpha_rise=0.99)
 p_filt = dsp.ExpFilter(np.tile(1, (3, config.N_PIXELS // 2)),
                        alpha_decay=0.05, alpha_rise=0.8)
-p = np.tile(1, (3, config.N_PIXELS // 2))
+p = np.tile(1.0, (3, config.N_PIXELS // 2))
 gain = dsp.ExpFilter(np.tile(0.01, config.N_FFT_BINS),
                      alpha_decay=0.001, alpha_rise=0.99)
 
 
 def largest_indices(ary, n):
-    """Returns the n largest indices from a numpy array."""
+    """Returns indices of the n largest values in the given a numpy array"""
     flat = ary.flatten()
     indices = np.argpartition(flat, -n)[-n:]
     indices = indices[np.argsort(-flat[indices])]
@@ -89,11 +89,12 @@ def largest_indices(ary, n):
 
 
 def visualize_max(y):
+    """Experimental sandbox effect. Not recommended for use"""
     y = np.copy(interpolate(y, config.N_PIXELS // 2)) * 255.0
     ind = largest_indices(y, 15)
-    y[ind] *= -1
-    y[y > 0] = 0
-    y[ind] *= -1
+    y[ind] *= -1.0
+    y[y > 0] = 0.0
+    y[ind] *= -1.0
     # Blur the color channels with different strengths
     r = gaussian_filter1d(y, sigma=0.25)
     g = gaussian_filter1d(y, sigma=0.10)
@@ -111,14 +112,15 @@ def visualize_max(y):
     led.pixels[0, :] = pixel_r
     led.pixels[1, :] = pixel_g
     led.pixels[2, :] = pixel_b
+    led.update()
     # Update the GUI plots
     GUI.curve[0][0].setData(y=pixel_r)
     GUI.curve[0][1].setData(y=pixel_g)
     GUI.curve[0][2].setData(y=pixel_b)
-    led.update()
 
 
 def visualize_scroll(y):
+    """Effect that originates in the center and scrolls outwards"""
     global p
     y = gaussian_filter1d(y, sigma=1.0)**3.0
     y = np.copy(y)
@@ -134,11 +136,17 @@ def visualize_scroll(y):
     p[0, 0] = r
     p[1, 0] = g
     p[2, 0] = b
+    # Update the LED strip
     led.pixels = np.concatenate((p[:, ::-1], p), axis=1)
     led.update()
+    # Update the GUI plots
+    GUI.curve[0][0].setData(y=np.concatenate((p[0, :][::-1], p[0, :])))
+    GUI.curve[0][1].setData(y=np.concatenate((p[1, :][::-1], p[1, :])))
+    GUI.curve[0][2].setData(y=np.concatenate((p[2, :][::-1], p[2, :])))
 
 
 def visualize_energy(y):
+    """Effect that expands from the center with increasing sound energy"""
     global p
     y = gaussian_filter1d(y, sigma=1.0)**3.0
     gain.update(y)
@@ -147,22 +155,28 @@ def visualize_energy(y):
     r = int(np.mean(y[:len(y) // 3]))
     g = int(np.mean(y[len(y) // 3: 2 * len(y) // 3]))
     b = int(np.mean(y[2 * len(y) // 3:]))
-    p[0, :r] = 255
-    p[0, r:] = 0
-    p[1, :g] = 255
-    p[1, g:] = 0
-    p[2, :b] = 255
-    p[2, b:] = 0
+    p[0, :r] = 255.0
+    p[0, r:] = 0.0
+    p[1, :g] = 255.0
+    p[1, g:] = 0.0
+    p[2, :b] = 255.0
+    p[2, b:] = 0.0
     p_filt.update(p)
     p = p_filt.value.astype(int)
     p[0, :] = gaussian_filter1d(p[0, :], sigma=4.0)
     p[1, :] = gaussian_filter1d(p[1, :], sigma=4.0)
     p[2, :] = gaussian_filter1d(p[2, :], sigma=4.0)
+    # Update LED pixel arrays
     led.pixels = np.concatenate((p[:, ::-1], p), axis=1)
     led.update()
+    # Update the GUI plots
+    GUI.curve[0][0].setData(y=np.concatenate((p[0, :][::-1], p[0, :])))
+    GUI.curve[0][1].setData(y=np.concatenate((p[1, :][::-1], p[1, :])))
+    GUI.curve[0][2].setData(y=np.concatenate((p[2, :][::-1], p[2, :])))
 
 
 def visualize_spectrum(y):
+    """Effect that maps the Mel filterbank frequencies onto the LED strip"""
     y = np.copy(interpolate(y, config.N_PIXELS // 2)) * 255.0
     # Blur the color channels with different strengths
     r = gaussian_filter1d(y, sigma=0.25)
@@ -179,11 +193,11 @@ def visualize_spectrum(y):
     led.pixels[0, :] = pixel_r
     led.pixels[1, :] = pixel_g
     led.pixels[2, :] = pixel_b
+    led.update()
     # Update the GUI plots
     GUI.curve[0][0].setData(y=pixel_r)
     GUI.curve[0][1].setData(y=pixel_g)
     GUI.curve[0][2].setData(y=pixel_b)
-    led.update()
 
 
 mel_gain = dsp.ExpFilter(np.tile(1e-1, config.N_FFT_BINS),
@@ -194,7 +208,7 @@ volume = dsp.ExpFilter(config.MIN_VOLUME_THRESHOLD,
 
 def microphone_update(stream):
     global y_roll, prev_rms, prev_exp
-    # Normalize new audio samples
+    # Retrieve and normalize the new audio samples
     y = np.fromstring(stream.read(samples_per_frame,
                                   exception_on_overflow=False), dtype=np.int16)
     y = y / 2.0**15
@@ -209,19 +223,25 @@ def microphone_update(stream):
         led.pixels = np.tile(0, (3, config.N_PIXELS))
         led.update()
     else:
+        # Transform audio input into the frequency domain
         XS, YS = dsp.fft(y_data, window=np.hamming)
+        # Remove half of the FFT data because of symmetry
         YS = YS[:len(YS) // 2]
         XS = XS[:len(XS) // 2]
+        # Construct a Mel filterbank from the FFT data
         YS = np.atleast_2d(np.abs(YS)).T * dsp.mel_y.T
+        # Scale data to values more suitable for visualization
         YS = np.sum(YS, axis=0)**2.0
         mel = YS**0.5
         mel = gaussian_filter1d(mel, sigma=1.0)
+        # Normalize the Mel filterbank to make it volume independent
         mel_gain.update(np.max(mel))
         mel = mel / mel_gain.value
-        visualize_spectrum(mel)
+        # Visualize the filterbank output
+        # visualize_spectrum(mel)
         # visualize_max(mel)
         # visualize_scroll(mel)
-        # visualize_energy(mel)
+        visualize_energy(mel)
     GUI.app.processEvents()
     print('FPS {:.0f} / {:.0f}'.format(frames_per_second(), config.FPS))
 
@@ -235,8 +255,8 @@ y_roll = np.random.rand(config.N_ROLLING_HISTORY, samples_per_frame) / 1e16
 
 if __name__ == '__main__':
     import pyqtgraph as pg
+    # Create GUI plot for visualizing LED strip output
     GUI = gui.GUI(width=800, height=400, title='Audio Visualization')
-    # Audio plot
     GUI.add_plot('Color Channels')
     r_pen = pg.mkPen((255, 30, 30, 200), width=6)
     g_pen = pg.mkPen((30, 255, 30, 200), width=6)
