@@ -100,7 +100,7 @@ A PyQtGraph GUI will open to display the output of the visualization on the comp
 If you encounter any issues or have questions about this project, feel free to open a new issue.
 
 # Limitations
-The visualization code currently supports up to 255 LEDs. Support for additional LEDs will be added in the near future.
+The visualization code currently supports up to 256 LEDs. Support for additional LEDs will be added in the near future.
 
 # License
 All code in this project is released under the MIT License.
