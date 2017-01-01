@@ -162,7 +162,7 @@ def visualize_energy(y):
     p[2, :b] = 255.0
     p[2, b:] = 0.0
     p_filt.update(p)
-    p = p_filt.value.astype(int)
+    p = np.round(p_filt.value)
     p[0, :] = gaussian_filter1d(p[0, :], sigma=4.0)
     p[1, :] = gaussian_filter1d(p[1, :], sigma=4.0)
     p[2, :] = gaussian_filter1d(p[2, :], sigma=4.0)
@@ -238,10 +238,7 @@ def microphone_update(stream):
         mel_gain.update(np.max(mel))
         mel = mel / mel_gain.value
         # Visualize the filterbank output
-        # visualize_spectrum(mel)
-        # visualize_max(mel)
-        # visualize_scroll(mel)
-        visualize_energy(mel)
+        visualization_effect(mel)
     GUI.app.processEvents()
     print('FPS {:.0f} / {:.0f}'.format(frames_per_second(), config.FPS))
 
@@ -252,6 +249,8 @@ samples_per_frame = int(config.MIC_RATE / config.FPS)
 # Array containing the rolling audio sample window
 y_roll = np.random.rand(config.N_ROLLING_HISTORY, samples_per_frame) / 1e16
 
+visualization_effect = visualize_spectrum
+"""Visualization effect to display on the LED strip"""
 
 if __name__ == '__main__':
     import pyqtgraph as pg
@@ -268,6 +267,18 @@ if __name__ == '__main__':
     GUI.curve[0][0].setData(x=range(config.N_PIXELS))
     GUI.curve[0][1].setData(x=range(config.N_PIXELS))
     GUI.curve[0][2].setData(x=range(config.N_PIXELS))
+    # Add ComboBox for effect selection
+    effect_list = {
+        'Scroll effect' : visualize_scroll, 
+        'Spectrum effect' : visualize_spectrum,
+        'Energy effect' : visualize_energy
+        }
+    effect_combobox = pg.ComboBox(items=effect_list)
+    def effect_change():
+        global visualization_effect
+        visualization_effect = effect_combobox.value()
+    effect_combobox.currentIndexChanged.connect(effect_change)
+    GUI.layout.addWidget(effect_combobox)
     # Initialize LEDs
     led.update()
     # Start listening to live audio stream
