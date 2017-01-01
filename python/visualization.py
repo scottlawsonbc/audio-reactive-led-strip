@@ -277,6 +277,7 @@ if __name__ == '__main__':
     def effect_change():
         global visualization_effect
         visualization_effect = effect_combobox.value()
+    effect_combobox.setValue(visualization_effect)
     effect_combobox.currentIndexChanged.connect(effect_change)
     GUI.layout.addWidget(effect_combobox)
     # Initialize LEDs
