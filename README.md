@@ -98,6 +98,19 @@ Once everything has been configured, run [visualization.py](python/visualization
 A PyQtGraph GUI will open to display the output of the visualization on the computer.
 
 If you encounter any issues or have questions about this project, feel free to open a new issue.
+# Changing the effect
+To change the effect(scroll, spectrum, max, or energy), open `visualization.py` and around line 240, you should see 4 lines:
+```
+  #visualize_spectrum(mel)
+  #visualize_max(mel)
+  #visualize_scroll(mel)
+  visualize_energy(mel)
+```
+Uncomment which effect (you can do multiple) you want to use.
+
+
+
+
 
 # Limitations
 The visualization code currently supports up to 256 LEDs. Support for additional LEDs will be added in the near future.
