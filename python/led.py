@@ -44,7 +44,7 @@ def _update_esp8266():
     """
     global pixels, _prev_pixels
     # Truncate values and cast to integer
-    pixels = np.clip(pixels, 0, 255).astype(long)
+    pixels = np.clip(pixels, 0, 255).astype(int)
     # Optionally apply gamma correctio
     p = _gamma[pixels] if config.GAMMA_CORRECTION else np.copy(pixels)
     # Send UDP packets when using ESP8266
