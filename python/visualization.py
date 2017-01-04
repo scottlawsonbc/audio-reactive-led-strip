@@ -254,11 +254,12 @@ if __name__ == '__main__':
         GUI.curve[0][2].setData(x=range(config.N_PIXELS))
         # Add ComboBox for effect selection
         effect_list = {
-            'Scroll effect': visualize_scroll, 
+            'Scroll effect': visualize_scroll,
             'Spectrum effect': visualize_spectrum,
             'Energy effect': visualize_energy
-            }
+        }
         effect_combobox = pg.ComboBox(items=effect_list)
+
         def effect_change():
             global visualization_effect
             visualization_effect = effect_combobox.value()
