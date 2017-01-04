@@ -92,6 +92,74 @@ For the NodeMCU v3 and Adafruit Feather HUZZAH, the location of the RX1 pin is s
   - Set `UDP_IP` to the IP address of your ESP8266 (must match `ip` in [ws2812_controller.ino](arduino/ws2812_controller/ws2812_controller.ino))
   - If needed, set `MIC_RATE` to your microphone sampling rate in Hz. Most of the time you will not need to change this.
 
+# Installation for Raspberry Pi
+## Basic setup for headless operation
+1. Enable SSH by creating 'ssh' file in the boot directory of SD card
+2. Determine the pi's IP address by viewing router DHCP client list
+3. SSH into the pi using 'ssh pi@[pi-ip-here]' without the '[]'
+4. Change the password using the 'passwd' command
+
+## Installing the Python dependencies
+Install python dependencies using apt-get
+```
+sudo apt-get update
+sudo apt-get install python-numpy python-scipy python-pyaudio python-skimage
+```
+
+## Install ws281x library
+To install the ws281x library I recommend following this [Adafruit tutorial](https://learn.adafruit.com/neopixels-on-raspberry-pi/software).
+```
+sudo apt-get install build-essential python-dev git scons swig
+git clone https://github.com/jgarff/rpi_ws281x.git
+cd rpi_ws281x
+scons
+cd python
+sudo python setup.py install
+```
+
+## Audio device configuration
+For the Raspberry Pi, a USB audio device needs to be configured as the default audio device.
+
+Create/edit `/etc/asound.conf`
+```
+sudo nano /etc/asound.conf
+```
+Set the file to the following text
+```
+pcm.!default {
+    type hw
+    card 1
+}
+ctl.!default {
+    type hw
+    card 1
+}
+```
+
+Next, set the USB device to as the default device by editing `/usr/share/alsa/alsa.conf`
+```
+sudo nano /usr/share/alsa/alsa.conf:
+```
+Change
+```
+defaults.ctl.card 0
+defaults.pcm.card 0
+```
+To
+```
+defaults.ctl.card 1
+defaults.pcm.card 1
+```
+
+## Test the LED strip
+1. cd rpi_ws281x/python/examples
+2. sudo nano strandtest.py
+3. Configure the options at the top of the file. Enable logic inverting if you are using an inverting logic-level converter. Set the correct GPIO pin and number of pixels for the LED strip. You will likely need a logic-level converter to convert the Raspberry Pi's 3.3V logic to the 5V logic used by the ws2812b LED strip.
+4. Run example with 'sudo python strandtest.py'
+
+## Configure the visualization code
+In `config.py`, set the device to `'pi'` and configure the GPIO, LED and other hardware settings.
+
 # Running the Visualization
 Once everything has been configured, run [visualization.py](python/visualization.py) to start the visualization. The visualization will automatically use your default recording device (microphone) as the audio input.
 
