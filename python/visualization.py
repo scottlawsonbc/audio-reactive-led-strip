@@ -7,6 +7,7 @@ import config
 import microphone
 import dsp
 import led
+import image
 if config.USE_GUI:
     import gui
 
@@ -75,7 +76,7 @@ g_filt = dsp.ExpFilter(np.tile(0.01, config.N_PIXELS // 2),
 b_filt = dsp.ExpFilter(np.tile(0.01, config.N_PIXELS // 2),
                        alpha_decay=0.25, alpha_rise=0.99)
 p_filt = dsp.ExpFilter(np.tile(1, (3, config.N_PIXELS // 2)),
-                       alpha_decay=0.2, alpha_rise=0.99)
+                       alpha_decay=0.1, alpha_rise=0.99)
 p = np.tile(1.0, (3, config.N_PIXELS // 2))
 gain = dsp.ExpFilter(np.tile(0.01, config.N_FFT_BINS),
                      alpha_decay=0.001, alpha_rise=0.99)
@@ -84,21 +85,32 @@ gain = dsp.ExpFilter(np.tile(0.01, config.N_FFT_BINS),
 def visualize_scroll(y):
     """Effect that originates in the center and scrolls outwards"""
     global p
-    y = np.copy(y)**1.0
+    # y = np.copy(y)**1.5
+    # Scaling adjustment
+    y = np.copy(y)**(g_contrast / 50.0)
     gain.update(y)
     y /= gain.value
+    # Constrast adjustment
+    y = image.contrast(y, gain=r_contrast)
     y *= 255.0
+    # r = int(np.mean(y[:len(y) // 3]))
+    # g = int(np.mean(y[len(y) // 3: 2 * len(y) // 3]))
+    # b = int(np.mean(y[2 * len(y) // 3:]))
     r = int(max(y[:len(y) // 3]))
     g = int(max(y[len(y) // 3: 2 * len(y) // 3]))
     b = int(max(y[2 * len(y) // 3:]))
     # Scrolling effect window
     p = np.roll(p, 1, axis=1)
     p *= 0.98
-    # p = gaussian_filter1d(p, sigma=0.2)
+    p = gaussian_filter1d(p, sigma=0.2)
     # Create new color originating at the center
     p[0, 0] = r
     p[1, 0] = g
     p[2, 0] = b
+    # # Contrast adjustment
+    # p[0, :] = image.contrast(p[0, :] / 255.0, gain=r_contrast) * 255.0
+    # p[1, :] = image.contrast(p[1, :] / 255.0, gain=g_contrast) * 255.0
+    # p[2, :] = image.contrast(p[2, :] / 255.0, gain=b_contrast) * 255.0
     # Update the LED strip
     led.pixels = np.concatenate((p[:, ::-1], p), axis=1)
     led.update()
@@ -135,6 +147,10 @@ def visualize_energy(y):
     p[0, :] = gaussian_filter1d(p[0, :], sigma=4.0)
     p[1, :] = gaussian_filter1d(p[1, :], sigma=4.0)
     p[2, :] = gaussian_filter1d(p[2, :], sigma=4.0)
+    # Contrast adjustment
+    p[0, :] = image.contrast(p[0, :] / 255.0, gain=r_contrast) * 255.0
+    p[1, :] = image.contrast(p[1, :] / 255.0, gain=g_contrast) * 255.0
+    p[2, :] = image.contrast(p[2, :] / 255.0, gain=b_contrast) * 255.0
     # Set the new pixel value
     led.pixels = np.concatenate((p[:, ::-1], p), axis=1)
     led.update()
@@ -149,9 +165,13 @@ def visualize_spectrum(y):
     """Effect that maps the Mel filterbank frequencies onto the LED strip"""
     y = np.copy(interpolate(y, config.N_PIXELS // 2))
     # Blur the color channels with different strengths
-    r = gaussian_filter1d(y, sigma=1., order=0)
-    g = gaussian_filter1d(y, sigma=1., order=0)
-    b = gaussian_filter1d(y, sigma=1., order=0)
+    r = gaussian_filter1d(y, sigma=1.0, order=0)
+    g = gaussian_filter1d(y, sigma=1.0, order=0)
+    b = gaussian_filter1d(y, sigma=1.0, order=0)
+    # Contrast adjustment
+    r = image.contrast(r, gain=r_contrast)
+    g = image.contrast(g, gain=g_contrast)
+    b = image.contrast(b, gain=b_contrast)
     # Update temporal filters
     r_filt.update(r)
     g_filt.update(g)
@@ -226,6 +246,11 @@ def microphone_update(stream):
     if config.DISPLAY_FPS:
         print('FPS {:.0f} / {:.0f}'.format(frames_per_second(), config.FPS))
 
+# Contrast adjustment values
+# Adjusting these values will change the visualization
+r_contrast = 190
+g_contrast = 143
+b_contrast = 200
 
 # Number of audio samples to read every time frame
 samples_per_frame = int(config.MIC_RATE / config.FPS)
@@ -239,6 +264,7 @@ visualization_effect = visualize_energy
 if __name__ == '__main__':
     if config.USE_GUI:
         import pyqtgraph as pg
+        from pyqtgraph.Qt import QtGui, QtCore
         # Create GUI plot for visualizing LED strip output
         GUI = gui.GUI(width=800, height=400, title='Audio Visualization')
         GUI.add_plot('Color Channels')
@@ -259,13 +285,38 @@ if __name__ == '__main__':
             'Energy effect': visualize_energy
         }
         effect_combobox = pg.ComboBox(items=effect_list)
-
+        # ComboBox event handler
         def effect_change():
             global visualization_effect
             visualization_effect = effect_combobox.value()
         effect_combobox.setValue(visualization_effect)
         effect_combobox.currentIndexChanged.connect(effect_change)
         GUI.layout.addWidget(effect_combobox)
+        # Contrast
+        r_slider = QtGui.QSlider(QtCore.Qt.Horizontal)
+        g_slider = QtGui.QSlider(QtCore.Qt.Horizontal)
+        b_slider = QtGui.QSlider(QtCore.Qt.Horizontal)
+        r_slider.setRange(0, 200)
+        g_slider.setRange(0, 200)
+        b_slider.setRange(0, 200)
+        # Slider event handler
+        def adjust_contrast():
+            global r_contrast, g_contrast, b_contrast
+            r_contrast = r_slider.value()
+            g_contrast = g_slider.value()
+            b_contrast = b_slider.value()
+            print(r_contrast, g_contrast, b_contrast)
+        r_slider.valueChanged.connect(adjust_contrast)
+        g_slider.valueChanged.connect(adjust_contrast)
+        b_slider.valueChanged.connect(adjust_contrast)
+        # Set initial contrast
+        r_slider.setValue(100)
+        g_slider.setValue(100)
+        b_slider.setValue(100)
+        adjust_contrast()
+        GUI.layout.addWidget(r_slider)
+        GUI.layout.addWidget(g_slider)
+        GUI.layout.addWidget(b_slider)
     # Initialize LEDs
     led.update()
     # Start listening to live audio stream
