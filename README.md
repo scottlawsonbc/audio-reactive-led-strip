@@ -96,7 +96,7 @@ For the NodeMCU v3 and Adafruit Feather HUZZAH, the location of the RX1 pin is s
 Once everything has been configured, run [visualization.py](python/visualization.py) to start the visualization. The visualization will automatically use your default recording device (microphone) as the audio input.
 
 A PyQtGraph GUI will open to display the output of the visualization on the computer.
-
+![visualization-gui](images/visualization-gui.png)
 If you encounter any issues or have questions about this project, feel free to open a new issue.
 
 # Limitations
