@@ -7,7 +7,8 @@ import config
 import microphone
 import dsp
 import led
-import gui
+if config.USE_GUI:
+    import gui
 
 _time_prev = time.time() * 1000.0
 """The previous time that the frames_per_second() function was called"""
@@ -68,93 +69,60 @@ def interpolate(y, new_length):
 
 
 r_filt = dsp.ExpFilter(np.tile(0.01, config.N_PIXELS // 2),
-                       alpha_decay=0.08, alpha_rise=0.99)
+                       alpha_decay=0.04, alpha_rise=0.4)
 g_filt = dsp.ExpFilter(np.tile(0.01, config.N_PIXELS // 2),
                        alpha_decay=0.15, alpha_rise=0.99)
 b_filt = dsp.ExpFilter(np.tile(0.01, config.N_PIXELS // 2),
                        alpha_decay=0.25, alpha_rise=0.99)
 p_filt = dsp.ExpFilter(np.tile(1, (3, config.N_PIXELS // 2)),
-                       alpha_decay=0.05, alpha_rise=0.8)
+                       alpha_decay=0.2, alpha_rise=0.99)
 p = np.tile(1.0, (3, config.N_PIXELS // 2))
 gain = dsp.ExpFilter(np.tile(0.01, config.N_FFT_BINS),
                      alpha_decay=0.001, alpha_rise=0.99)
 
 
-def largest_indices(ary, n):
-    """Returns indices of the n largest values in the given a numpy array"""
-    flat = ary.flatten()
-    indices = np.argpartition(flat, -n)[-n:]
-    indices = indices[np.argsort(-flat[indices])]
-    return np.unravel_index(indices, ary.shape)
-
-
-def visualize_max(y):
-    """Experimental sandbox effect. Not recommended for use"""
-    y = np.copy(interpolate(y, config.N_PIXELS // 2)) * 255.0
-    ind = largest_indices(y, 15)
-    y[ind] *= -1.0
-    y[y > 0] = 0.0
-    y[ind] *= -1.0
-    # Blur the color channels with different strengths
-    r = gaussian_filter1d(y, sigma=0.25)
-    g = gaussian_filter1d(y, sigma=0.10)
-    b = gaussian_filter1d(y, sigma=0.00)
-    b = np.roll(b, 1)
-    b[0] = b[1]
-    r_filt.update(r)
-    g_filt.update(g)
-    b_filt.update(b)
-    # Pixel values
-    pixel_r = np.concatenate((r_filt.value[::-1], r_filt.value))
-    pixel_g = np.concatenate((g_filt.value[::-1], g_filt.value))
-    pixel_b = np.concatenate((b_filt.value[::-1], b_filt.value))
-    # Update the LED strip values
-    led.pixels[0, :] = pixel_r
-    led.pixels[1, :] = pixel_g
-    led.pixels[2, :] = pixel_b
-    led.update()
-    # Update the GUI plots
-    GUI.curve[0][0].setData(y=pixel_r)
-    GUI.curve[0][1].setData(y=pixel_g)
-    GUI.curve[0][2].setData(y=pixel_b)
-
-
 def visualize_scroll(y):
     """Effect that originates in the center and scrolls outwards"""
     global p
-    y = gaussian_filter1d(y, sigma=1.0)**3.0
-    y = np.copy(y)
+    y = np.copy(y)**1.0
     gain.update(y)
     y /= gain.value
     y *= 255.0
     r = int(max(y[:len(y) // 3]))
     g = int(max(y[len(y) // 3: 2 * len(y) // 3]))
     b = int(max(y[2 * len(y) // 3:]))
+    # Scrolling effect window
     p = np.roll(p, 1, axis=1)
     p *= 0.98
-    p = gaussian_filter1d(p, sigma=0.2)
+    # p = gaussian_filter1d(p, sigma=0.2)
+    # Create new color originating at the center
     p[0, 0] = r
     p[1, 0] = g
     p[2, 0] = b
     # Update the LED strip
     led.pixels = np.concatenate((p[:, ::-1], p), axis=1)
     led.update()
-    # Update the GUI plots
-    GUI.curve[0][0].setData(y=np.concatenate((p[0, :][::-1], p[0, :])))
-    GUI.curve[0][1].setData(y=np.concatenate((p[1, :][::-1], p[1, :])))
-    GUI.curve[0][2].setData(y=np.concatenate((p[2, :][::-1], p[2, :])))
+    if config.USE_GUI:
+        # Update the GUI plots
+        GUI.curve[0][0].setData(y=np.concatenate((p[0, :][::-1], p[0, :])))
+        GUI.curve[0][1].setData(y=np.concatenate((p[1, :][::-1], p[1, :])))
+        GUI.curve[0][2].setData(y=np.concatenate((p[2, :][::-1], p[2, :])))
 
 
 def visualize_energy(y):
     """Effect that expands from the center with increasing sound energy"""
     global p
-    y = gaussian_filter1d(y, sigma=1.0)**3.0
+    y = np.copy(y)**2.0
     gain.update(y)
     y /= gain.value
-    y *= (config.N_PIXELS // 2) - 1
-    r = int(np.mean(y[:len(y) // 3]))
-    g = int(np.mean(y[len(y) // 3: 2 * len(y) // 3]))
-    b = int(np.mean(y[2 * len(y) // 3:]))
+    # Scale by the width of the LED strip
+    y *= float((config.N_PIXELS // 2) - 1)
+    # Map color channels according to energy in the different freq bands
+    scale = 0.9
+    r = int(np.mean(y[:len(y) // 3]**scale))
+    g = int(np.mean(y[len(y) // 3: 2 * len(y) // 3]**scale))
+    b = int(np.mean(y[2 * len(y) // 3:]**scale))
+    # Assign color to different frequency regions
     p[0, :r] = 255.0
     p[0, r:] = 0.0
     p[1, :g] = 255.0
@@ -163,41 +131,45 @@ def visualize_energy(y):
     p[2, b:] = 0.0
     p_filt.update(p)
     p = np.round(p_filt.value)
+    # Apply substantial blur to smooth the edges
     p[0, :] = gaussian_filter1d(p[0, :], sigma=4.0)
     p[1, :] = gaussian_filter1d(p[1, :], sigma=4.0)
     p[2, :] = gaussian_filter1d(p[2, :], sigma=4.0)
-    # Update LED pixel arrays
+    # Set the new pixel value
     led.pixels = np.concatenate((p[:, ::-1], p), axis=1)
     led.update()
-    # Update the GUI plots
-    GUI.curve[0][0].setData(y=np.concatenate((p[0, :][::-1], p[0, :])))
-    GUI.curve[0][1].setData(y=np.concatenate((p[1, :][::-1], p[1, :])))
-    GUI.curve[0][2].setData(y=np.concatenate((p[2, :][::-1], p[2, :])))
+    if config.USE_GUI:
+        # Update the GUI plots
+        GUI.curve[0][0].setData(y=np.concatenate((p[0, :][::-1], p[0, :])))
+        GUI.curve[0][1].setData(y=np.concatenate((p[1, :][::-1], p[1, :])))
+        GUI.curve[0][2].setData(y=np.concatenate((p[2, :][::-1], p[2, :])))
 
 
 def visualize_spectrum(y):
     """Effect that maps the Mel filterbank frequencies onto the LED strip"""
-    y = np.copy(interpolate(y, config.N_PIXELS // 2)) * 255.0
+    y = np.copy(interpolate(y, config.N_PIXELS // 2))
     # Blur the color channels with different strengths
-    r = gaussian_filter1d(y, sigma=0.25)
-    g = gaussian_filter1d(y, sigma=0.10)
-    b = gaussian_filter1d(y, sigma=0.00)
+    r = gaussian_filter1d(y, sigma=1., order=0)
+    g = gaussian_filter1d(y, sigma=1., order=0)
+    b = gaussian_filter1d(y, sigma=1., order=0)
+    # Update temporal filters
     r_filt.update(r)
     g_filt.update(g)
     b_filt.update(b)
     # Pixel values
-    pixel_r = np.concatenate((r_filt.value[::-1], r_filt.value))
-    pixel_g = np.concatenate((g_filt.value[::-1], g_filt.value))
-    pixel_b = np.concatenate((b_filt.value[::-1], b_filt.value))
+    pixel_r = np.concatenate((r_filt.value[::-1], r_filt.value)) * 255.0
+    pixel_g = np.concatenate((g_filt.value[::-1], g_filt.value)) * 255.0
+    pixel_b = np.concatenate((b_filt.value[::-1], b_filt.value)) * 255.0
     # Update the LED strip values
     led.pixels[0, :] = pixel_r
     led.pixels[1, :] = pixel_g
     led.pixels[2, :] = pixel_b
     led.update()
-    # Update the GUI plots
-    GUI.curve[0][0].setData(y=pixel_r)
-    GUI.curve[0][1].setData(y=pixel_g)
-    GUI.curve[0][2].setData(y=pixel_b)
+    if config.USE_GUI:
+        # Update the GUI plots
+        GUI.curve[0][0].setData(y=pixel_r)
+        GUI.curve[0][1].setData(y=pixel_g)
+        GUI.curve[0][2].setData(y=pixel_b)
 
 
 mel_gain = dsp.ExpFilter(np.tile(1e-1, config.N_FFT_BINS),
@@ -205,12 +177,22 @@ mel_gain = dsp.ExpFilter(np.tile(1e-1, config.N_FFT_BINS),
 volume = dsp.ExpFilter(config.MIN_VOLUME_THRESHOLD,
                        alpha_decay=0.02, alpha_rise=0.02)
 
+# Keeps track of the number of buffer overflows
+# Lots of buffer overflows could mean that FPS is set too high
+buffer_overflows = 1
 
 def microphone_update(stream):
     global y_roll, prev_rms, prev_exp
     # Retrieve and normalize the new audio samples
-    y = np.fromstring(stream.read(samples_per_frame,
-                                  exception_on_overflow=False), dtype=np.int16)
+    try:
+        y = np.fromstring(stream.read(samples_per_frame), dtype=np.int16)
+                                       #  exception_on_overflow=False), dtype=np.int16)
+    except IOError:
+        y = y_roll[config.N_ROLLING_HISTORY - 1, :]
+        global buffer_overflows
+        print('Buffer overflows: {0}'.format(buffer_overflows))
+        buffer_overflows += 1
+    # Normalize samples between 0 and 1
     y = y / 2.0**15
     # Construct a rolling window of audio samples
     y_roll = np.roll(y_roll, -1, axis=0)
@@ -239,8 +221,10 @@ def microphone_update(stream):
         mel = mel / mel_gain.value
         # Visualize the filterbank output
         visualization_effect(mel)
-    GUI.app.processEvents()
-    print('FPS {:.0f} / {:.0f}'.format(frames_per_second(), config.FPS))
+    if config.USE_GUI:
+        GUI.app.processEvents()
+    if config.DISPLAY_FPS:
+        print('FPS {:.0f} / {:.0f}'.format(frames_per_second(), config.FPS))
 
 
 # Number of audio samples to read every time frame
@@ -249,37 +233,38 @@ samples_per_frame = int(config.MIC_RATE / config.FPS)
 # Array containing the rolling audio sample window
 y_roll = np.random.rand(config.N_ROLLING_HISTORY, samples_per_frame) / 1e16
 
-visualization_effect = visualize_spectrum
+visualization_effect = visualize_energy
 """Visualization effect to display on the LED strip"""
 
 if __name__ == '__main__':
-    import pyqtgraph as pg
-    # Create GUI plot for visualizing LED strip output
-    GUI = gui.GUI(width=800, height=400, title='Audio Visualization')
-    GUI.add_plot('Color Channels')
-    r_pen = pg.mkPen((255, 30, 30, 200), width=6)
-    g_pen = pg.mkPen((30, 255, 30, 200), width=6)
-    b_pen = pg.mkPen((30, 30, 255, 200), width=6)
-    GUI.add_curve(plot_index=0, pen=r_pen)
-    GUI.add_curve(plot_index=0, pen=g_pen)
-    GUI.add_curve(plot_index=0, pen=b_pen)
-    GUI.plot[0].setRange(xRange=(0, config.N_PIXELS), yRange=(-5, 275))
-    GUI.curve[0][0].setData(x=range(config.N_PIXELS))
-    GUI.curve[0][1].setData(x=range(config.N_PIXELS))
-    GUI.curve[0][2].setData(x=range(config.N_PIXELS))
-    # Add ComboBox for effect selection
-    effect_list = {
-        'Scroll effect' : visualize_scroll, 
-        'Spectrum effect' : visualize_spectrum,
-        'Energy effect' : visualize_energy
-        }
-    effect_combobox = pg.ComboBox(items=effect_list)
-    def effect_change():
-        global visualization_effect
-        visualization_effect = effect_combobox.value()
-    effect_combobox.setValue(visualization_effect)
-    effect_combobox.currentIndexChanged.connect(effect_change)
-    GUI.layout.addWidget(effect_combobox)
+    if config.USE_GUI:
+        import pyqtgraph as pg
+        # Create GUI plot for visualizing LED strip output
+        GUI = gui.GUI(width=800, height=400, title='Audio Visualization')
+        GUI.add_plot('Color Channels')
+        r_pen = pg.mkPen((255, 30, 30, 200), width=6)
+        g_pen = pg.mkPen((30, 255, 30, 200), width=6)
+        b_pen = pg.mkPen((30, 30, 255, 200), width=6)
+        GUI.add_curve(plot_index=0, pen=r_pen)
+        GUI.add_curve(plot_index=0, pen=g_pen)
+        GUI.add_curve(plot_index=0, pen=b_pen)
+        GUI.plot[0].setRange(xRange=(0, config.N_PIXELS), yRange=(-5, 275))
+        GUI.curve[0][0].setData(x=range(config.N_PIXELS))
+        GUI.curve[0][1].setData(x=range(config.N_PIXELS))
+        GUI.curve[0][2].setData(x=range(config.N_PIXELS))
+        # Add ComboBox for effect selection
+        effect_list = {
+            'Scroll effect' : visualize_scroll, 
+            'Spectrum effect' : visualize_spectrum,
+            'Energy effect' : visualize_energy
+            }
+        effect_combobox = pg.ComboBox(items=effect_list)
+        def effect_change():
+            global visualization_effect
+            visualization_effect = effect_combobox.value()
+        effect_combobox.setValue(visualization_effect)
+        effect_combobox.currentIndexChanged.connect(effect_change)
+        GUI.layout.addWidget(effect_combobox)
     # Initialize LEDs
     led.update()
     # Start listening to live audio stream

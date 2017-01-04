@@ -3,19 +3,43 @@ from __future__ import print_function
 from __future__ import division
 import os
 
+DEVICE = 'pi'
+"""Device used to control LED strip. Must be 'pi' or 'esp8266'"""
+
+if DEVICE == 'esp8266':
+    UDP_IP = '192.168.137.150'
+    """IP address of the ESP8266. Must match IP in ws2812_controller.ino"""
+    UDP_PORT = 7777
+    """Port number used for socket communication between Python and ESP8266"""
+
+if DEVICE == 'pi':
+    LED_PIN = 18
+    """GPIO pin connected to the LED strip pixels (must support PWM)"""
+    LED_FREQ_HZ = 800000
+    """LED signal frequency in Hz (usually 800kHz)"""
+    LED_DMA = 5
+    """DMA channel used for generating PWM signal (try 5)"""
+    BRIGHTNESS = 255
+    """Brightness of LED strip between 0 and 255"""
+    LED_INVERT = True
+    """Set True if using an inverting logic level converter"""
+
+USE_GUI = False
+"""Whether or not to display a PyQtGraph GUI plot of visualization"""
+
+DISPLAY_FPS = False
+"""Whether to display the FPS when running (can reduce performance)"""
+
 N_PIXELS = 60
 """Number of pixels in the LED strip (must match ESP8266 firmware)"""
 
 GAMMA_TABLE_PATH = os.path.join(os.path.dirname(__file__), 'gamma_table.npy')
 """Location of the gamma correction table"""
 
-UDP_IP = '192.168.137.150'
-"""IP address of the ESP8266. Must match IP in ws2812_controller.ino"""
+GAMMA_CORRECTION = True
+"""Whether to correct LED brightness for nonlinear brightness perception"""
 
-UDP_PORT = 7777
-"""Port number used for socket communication between Python and ESP8266"""
-
-MIC_RATE = 48000
+MIC_RATE = 44100
 """Sampling frequency of the microphone in Hz"""
 
 FPS = 60
@@ -43,7 +67,7 @@ MIN_FREQUENCY = 200
 MAX_FREQUENCY = 12000
 """Frequencies above this value will be removed during audio processing"""
 
-N_FFT_BINS = 30
+N_FFT_BINS = 15
 """Number of frequency bins to use when transforming audio to frequency domain
 
 Fast Fourier transforms are used to transform time-domain audio data to the
@@ -57,9 +81,6 @@ number of bins.
 
 There is no point using more bins than there are pixels on the LED strip.
 """
-
-GAMMA_CORRECTION = True
-"""Whether to correct LED brightness for nonlinear brightness perception"""
 
 N_ROLLING_HISTORY = 2
 """Number of past audio frames to include in the rolling window"""
