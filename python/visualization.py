@@ -181,12 +181,12 @@ volume = dsp.ExpFilter(config.MIN_VOLUME_THRESHOLD,
 # Lots of buffer overflows could mean that FPS is set too high
 buffer_overflows = 1
 
+
 def microphone_update(stream):
     global y_roll, prev_rms, prev_exp
     # Retrieve and normalize the new audio samples
     try:
         y = np.fromstring(stream.read(samples_per_frame), dtype=np.int16)
-                                       #  exception_on_overflow=False), dtype=np.int16)
     except IOError:
         y = y_roll[config.N_ROLLING_HISTORY - 1, :]
         global buffer_overflows
@@ -254,9 +254,9 @@ if __name__ == '__main__':
         GUI.curve[0][2].setData(x=range(config.N_PIXELS))
         # Add ComboBox for effect selection
         effect_list = {
-            'Scroll effect' : visualize_scroll, 
-            'Spectrum effect' : visualize_spectrum,
-            'Energy effect' : visualize_energy
+            'Scroll effect': visualize_scroll, 
+            'Spectrum effect': visualize_spectrum,
+            'Energy effect': visualize_energy
             }
         effect_combobox = pg.ComboBox(items=effect_list)
         def effect_change():
