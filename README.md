@@ -108,6 +108,8 @@ For the NodeMCU v3 and Adafruit Feather HUZZAH, the location of the RX1 pin is s
   - If needed, set `MIC_RATE` to your microphone sampling rate in Hz. Most of the time you will not need to change this.
 
 # Installation for Raspberry Pi
+If you encounter any problems running the visualization on a Raspberry Pi, please [open a new issue](https://github.com/scottlawsonbc/audio-reactive-led-strip/issues).
+
 ## Installing the Python dependencies
 Install python dependencies using apt-get
 ```
