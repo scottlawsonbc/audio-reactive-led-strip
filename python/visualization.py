@@ -138,7 +138,7 @@ _prev_spectrum = np.tile(0.01, config.N_PIXELS // 2)
 
 def visualize_spectrum(y):
     """Effect that maps the Mel filterbank frequencies onto the LED strip"""
-    global prev_spectrum
+    global _prev_spectrum
     y = np.copy(interpolate(y, config.N_PIXELS // 2))
     common_mode.update(gaussian_filter1d(y, sigma=2.0))
     diff = y - prev_spectrum
