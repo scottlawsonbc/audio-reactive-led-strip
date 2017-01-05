@@ -1,5 +1,5 @@
 # audio-reactive-led-strip
-Real-time LED strip music visualization using the ESP8266 and Python
+Real-time LED strip music visualization using Python and the ESP8266 or Raspberry Pi.
 
 ![block diagram](images/block-diagram.png)
 
@@ -12,23 +12,38 @@ Real-time LED strip music visualization using the ESP8266 and Python
 # Overview
 The repository includes everything needed to build an LED strip music visualizer (excluding hardware):
 
-- Python real-time visualization code, which includes code for:
+- Python visualization code, which includes code for:
   - Recording audio with a microphone ([microphone.py](python/microphone.py))
   - Digital signal processing ([dsp.py](python/dsp.py))
   - Constructing 1D visualizations ([visualization.py](python/visualization.py))
   - Sending pixel information to the ESP8266 over WiFi ([led.py](python/led.py))
+  - Configuration and settings ([config.py](python/config.py))
 - Arduino firmware for the ESP8266 ([ws2812_controller.ino](arduino/ws2812_controller/ws2812_controller.ino))
 
 # What do I need to make one?
-The following hardware is needed to build an LED strip music visualizer:
+## Computer + ESP8266
+To build a visualizer using a computer and ESP8266, you will need:
 - Computer with Python 2.7 or 3.5 ([Anaconda](https://www.continuum.io/downloads) is recommended on Windows)
-- Any ESP8266 module with RX1 pin exposed. ESP8266 modules can be purchased for as little as $5 to $10 USD. These modules are known to be compatible (but many others work too):
+- ESP8266 module with RX1 pin exposed. These modules can be purchased for as little as $5 USD. These modules are known to be compatible, but many others will work too:
   - NodeMCU v3
   - Adafruit HUZZAH
   - Adafruit Feather HUZZAH
-- Any ws2812b LED strip (such as Adafruit Neopixels). Many suppliers sell ws2812b LED strips for as little as $5-15 USD per meter.
+- WS2812B LED strip (such as Adafruit Neopixels). These can be purchased for as little as $5-15 USD per meter.
 
-# Installation
+Limitations when using a computer + ESP8266:
+- The communication protocol between the computer and ESP8266 currently supports a maximum of 256 LEDs.
+
+## Standalone Raspberry Pi
+You can also build a standalone visualizer using a Raspberry Pi. For this you will need: 
+- Raspberry Pi (1, 2, or 3)
+- USB audio input device. This could be a USB microphone or a sound card. You just need to find some way of giving the Raspberry Pi audio input.
+- WS2812B LED strip (such as Adafruit Neopixels)
+
+Limitations when using the Raspberry Pi:
+- Raspberry Pi is just fast enough the run the visualization, but it is too slow to run the GUI window as well. It is recommended that you disable the GUI when running the code on the Raspberry Pi.
+- The ESP8266 uses a technique called temporal dithering to improve the color depth of the LED strip. Unfortunately the Raspberry Pi lacks this capability.
+
+# Installation for Computer + ESP8266
 ## Python Dependencies
 Visualization code is compatible with Python 2.7 or 3.5. A few Python dependencies must also be installed:
 - Numpy
@@ -65,7 +80,7 @@ ESP8266 firmare is uploaded using the Arduino IDE. See [this tutorial](https://l
 
 <!-- This [ws2812b i2s library](https://github.com/JoDaNl/esp8266_ws2812_i2s) must be downloaded and installed in the Arduino libraries folder.
  -->
-# Hardware Connections
+## Hardware Connections
 The ESP8266 has hardware support for [I²S](https://en.wikipedia.org/wiki/I%C2%B2S) and this peripheral is used <!-- by the [ws2812b i2s library](https://github.com/JoDaNl/esp8266_ws2812_i2s)  -->to control the ws2812b LED strip. This signficantly improves performance compared to bit-banging the IO pin. Unfortunately, this means that the LED strip **must** be connected to the RX1 pin, which is not accessible in some ESP8266 modules (such as the ESP-01).
 
 The RX1 pin on the ESP8266 module should be connected to the data input pin of the ws2812b LED strip (often labelled DIN or D0).
@@ -163,7 +178,8 @@ In `config.py`, set the device to `'pi'` and configure the GPIO, LED and other h
 # Running the Visualization
 Once everything has been configured, run [visualization.py](python/visualization.py) to start the visualization. The visualization will automatically use your default recording device (microphone) as the audio input.
 
-A PyQtGraph GUI will open to display the output of the visualization on the computer.
+A PyQtGraph GUI will open to display the output of the visualization on the computer. There is a setting to enable/disable the GUI display in [config.py](python/config.py)
+
 ![visualization-gui](images/visualization-gui.png)
 
 If you encounter any issues or have questions about this project, feel free to [open a new issue](https://github.com/scottlawsonbc/audio-reactive-led-strip/issues).
