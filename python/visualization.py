@@ -141,7 +141,7 @@ def visualize_spectrum(y):
     global _prev_spectrum
     y = np.copy(interpolate(y, config.N_PIXELS // 2))
     common_mode.update(gaussian_filter1d(y, sigma=2.0))
-    diff = y - prev_spectrum
+    diff = y - _prev_spectrum
     _prev_spectrum = np.copy(y)
     r = gaussian_filter1d(y, sigma=0.5) - common_mode.value
     # g = gaussian_filter1d(y, sigma=0.5) - common_mode.value
