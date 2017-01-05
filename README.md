@@ -108,12 +108,6 @@ For the NodeMCU v3 and Adafruit Feather HUZZAH, the location of the RX1 pin is s
   - If needed, set `MIC_RATE` to your microphone sampling rate in Hz. Most of the time you will not need to change this.
 
 # Installation for Raspberry Pi
-## Basic setup for headless operation
-1. Enable SSH by creating 'ssh' file in the boot directory of SD card
-2. Determine the pi's IP address by viewing router DHCP client list
-3. SSH into the pi using 'ssh pi@[pi-ip-here]' without the '[]'
-4. Change the password using the 'passwd' command
-
 ## Installing the Python dependencies
 Install python dependencies using apt-get
 ```
