@@ -1,7 +1,7 @@
 from __future__ import print_function
 from __future__ import division
-from __future__ import unicode_literals
 
+import platform
 import numpy as np
 import config
 
@@ -48,18 +48,22 @@ def _update_esp8266():
     # Optionally apply gamma correctio
     p = _gamma[pixels] if config.SOFTWARE_GAMMA_CORRECTION else np.copy(pixels)
     # Send UDP packets when using ESP8266
-    m = []
+    is_python_2 = int(platform.python_version_tuple()[0]) == 2
+    m = '' if is_python_2 else []
     for i in range(config.N_PIXELS):
         # Ignore pixels if they haven't changed (saves bandwidth)
         if np.array_equal(p[:, i], _prev_pixels[:, i]):
             continue
-        # Byte
-        m.append(i)  # Index of pixel to change
-        m.append(p[0][i])  # Pixel red value
-        m.append(p[1][i])  # Pixel green value
-        m.append(p[2][i])  # Pixel blue value
+        if is_python_2:
+            m += chr(i) + chr(p[0][i]) + chr(p[1][i]) + chr(p[2][i])
+        else:
+            m.append(i)  # Index of pixel to change
+            m.append(p[0][i])  # Pixel red value
+            m.append(p[1][i])  # Pixel green value
+            m.append(p[2][i])  # Pixel blue value
+    m = m if is_python_2 else bytes(m)
+    _sock.sendto(m, (config.UDP_IP, config.UDP_PORT))
     _prev_pixels = np.copy(p)
-    _sock.sendto(bytes(m), (config.UDP_IP, config.UDP_PORT))
 
 
 def _update_pi():
@@ -112,4 +116,4 @@ if __name__ == '__main__':
     while True:
         pixels = np.roll(pixels, 1, axis=1)
         update()
-        time.sleep(0.01)
+        time.sleep(1)
