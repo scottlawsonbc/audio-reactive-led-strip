@@ -112,7 +112,7 @@ For the NodeMCU v3 and Adafruit Feather HUZZAH, the location of the RX1 pin is s
 Install python dependencies using apt-get
 ```
 sudo apt-get update
-sudo apt-get install python-numpy python-scipy python-pyaudio python-skimage
+sudo apt-get install python-numpy python-scipy python-pyaudio
 ```
 
 ## Install ws281x library
