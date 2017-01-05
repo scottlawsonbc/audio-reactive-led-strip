@@ -132,14 +132,17 @@ def visualize_energy(y):
     # Set the new pixel value
     return np.concatenate((p[:, ::-1], p), axis=1)
 
-prev_spectrum = np.tile(0.01, config.N_PIXELS // 2)
+
+_prev_spectrum = np.tile(0.01, config.N_PIXELS // 2)
+
+
 def visualize_spectrum(y):
     """Effect that maps the Mel filterbank frequencies onto the LED strip"""
     global prev_spectrum
     y = np.copy(interpolate(y, config.N_PIXELS // 2))
     common_mode.update(gaussian_filter1d(y, sigma=2.0))
     diff = y - prev_spectrum
-    prev_spectrum = np.copy(y)
+    _prev_spectrum = np.copy(y)
     r = gaussian_filter1d(y, sigma=0.5) - common_mode.value
     # g = gaussian_filter1d(y, sigma=0.5) - common_mode.value
     b = gaussian_filter1d(y, sigma=0.0) - common_mode.value
