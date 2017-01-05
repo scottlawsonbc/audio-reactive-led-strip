@@ -46,7 +46,7 @@ def _update_esp8266():
     # Truncate values and cast to integer
     pixels = np.clip(pixels, 0, 255).astype(int)
     # Optionally apply gamma correctio
-    p = _gamma[pixels] if config.GAMMA_CORRECTION else np.copy(pixels)
+    p = _gamma[pixels] if config.SOFTWARE_GAMMA_CORRECTION else np.copy(pixels)
     # Send UDP packets when using ESP8266
     m = []
     for i in range(config.N_PIXELS):
@@ -72,7 +72,7 @@ def _update_pi():
     # Truncate values and cast to integer
     pixels = np.clip(pixels, 0, 255).astype(long)
     # Optional gamma correction
-    p = _gamma[pixels] if config.GAMMA_CORRECTION else np.copy(pixels)
+    p = _gamma[pixels] if config.SOFTWARE_GAMMA_CORRECTION else np.copy(pixels)
     # Encode 24-bit LED values in 32 bit integers
     r = np.left_shift(p[0][:].astype(int), 8)
     g = np.left_shift(p[1][:].astype(int), 16)

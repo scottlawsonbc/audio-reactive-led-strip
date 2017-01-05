@@ -3,7 +3,7 @@ from __future__ import print_function
 from __future__ import division
 import os
 
-DEVICE = 'pi'
+DEVICE = 'esp8266'
 """Device used to control LED strip. Must be 'pi' or 'esp8266'"""
 
 if DEVICE == 'esp8266':
@@ -11,6 +11,8 @@ if DEVICE == 'esp8266':
     """IP address of the ESP8266. Must match IP in ws2812_controller.ino"""
     UDP_PORT = 7777
     """Port number used for socket communication between Python and ESP8266"""
+    SOFTWARE_GAMMA_CORRECTION = False
+    """Set to False because the firmware handles gamma correction + dither"""
 
 if DEVICE == 'pi':
     LED_PIN = 18
@@ -23,11 +25,13 @@ if DEVICE == 'pi':
     """Brightness of LED strip between 0 and 255"""
     LED_INVERT = True
     """Set True if using an inverting logic level converter"""
+    SOFTWARE_GAMMA_CORRECTION = True
+    """Set to True because Raspberry Pi doesn't use hardware dithering"""
 
-USE_GUI = False
+USE_GUI = True
 """Whether or not to display a PyQtGraph GUI plot of visualization"""
 
-DISPLAY_FPS = False
+DISPLAY_FPS = True
 """Whether to display the FPS when running (can reduce performance)"""
 
 N_PIXELS = 60
@@ -35,9 +39,6 @@ N_PIXELS = 60
 
 GAMMA_TABLE_PATH = os.path.join(os.path.dirname(__file__), 'gamma_table.npy')
 """Location of the gamma correction table"""
-
-GAMMA_CORRECTION = True
-"""Whether to correct LED brightness for nonlinear brightness perception"""
 
 MIC_RATE = 44100
 """Sampling frequency of the microphone in Hz"""
@@ -67,7 +68,7 @@ MIN_FREQUENCY = 200
 MAX_FREQUENCY = 12000
 """Frequencies above this value will be removed during audio processing"""
 
-N_FFT_BINS = 9
+N_FFT_BINS = 24
 """Number of frequency bins to use when transforming audio to frequency domain
 
 Fast Fourier transforms are used to transform time-domain audio data to the
@@ -77,7 +78,7 @@ frequency bins to use.
 
 A small number of bins reduces the frequency resolution of the visualization
 but improves amplitude resolution. The opposite is true when using a large
-number of bins.
+number of bins. More bins is not always better!
 
 There is no point using more bins than there are pixels on the LED strip.
 """

@@ -7,9 +7,6 @@ import config
 import microphone
 import dsp
 import led
-import image
-if config.USE_GUI:
-    import gui
 
 _time_prev = time.time() * 1000.0
 """The previous time that the frames_per_second() function was called"""
@@ -70,11 +67,13 @@ def interpolate(y, new_length):
 
 
 r_filt = dsp.ExpFilter(np.tile(0.01, config.N_PIXELS // 2),
-                       alpha_decay=0.04, alpha_rise=0.4)
+                       alpha_decay=0.2, alpha_rise=0.99)
 g_filt = dsp.ExpFilter(np.tile(0.01, config.N_PIXELS // 2),
-                       alpha_decay=0.15, alpha_rise=0.99)
+                       alpha_decay=0.05, alpha_rise=0.3)
 b_filt = dsp.ExpFilter(np.tile(0.01, config.N_PIXELS // 2),
-                       alpha_decay=0.25, alpha_rise=0.99)
+                       alpha_decay=0.1, alpha_rise=0.5)
+common_mode = dsp.ExpFilter(np.tile(0.01, config.N_PIXELS // 2),
+                       alpha_decay=0.99, alpha_rise=0.01)
 p_filt = dsp.ExpFilter(np.tile(1, (3, config.N_PIXELS // 2)),
                        alpha_decay=0.1, alpha_rise=0.99)
 p = np.tile(1.0, (3, config.N_PIXELS // 2))
@@ -85,17 +84,10 @@ gain = dsp.ExpFilter(np.tile(0.01, config.N_FFT_BINS),
 def visualize_scroll(y):
     """Effect that originates in the center and scrolls outwards"""
     global p
-    # y = np.copy(y)**1.5
-    # Scaling adjustment
-    y = np.copy(y)**(g_contrast / 50.0)
+    y = np.copy(y)**2.0
     gain.update(y)
     y /= gain.value
-    # Constrast adjustment
-    y = image.contrast(y, gain=r_contrast)
     y *= 255.0
-    # r = int(np.mean(y[:len(y) // 3]))
-    # g = int(np.mean(y[len(y) // 3: 2 * len(y) // 3]))
-    # b = int(np.mean(y[2 * len(y) // 3:]))
     r = int(max(y[:len(y) // 3]))
     g = int(max(y[len(y) // 3: 2 * len(y) // 3]))
     b = int(max(y[2 * len(y) // 3:]))
@@ -107,24 +99,14 @@ def visualize_scroll(y):
     p[0, 0] = r
     p[1, 0] = g
     p[2, 0] = b
-    # # Contrast adjustment
-    # p[0, :] = image.contrast(p[0, :] / 255.0, gain=r_contrast) * 255.0
-    # p[1, :] = image.contrast(p[1, :] / 255.0, gain=g_contrast) * 255.0
-    # p[2, :] = image.contrast(p[2, :] / 255.0, gain=b_contrast) * 255.0
     # Update the LED strip
-    led.pixels = np.concatenate((p[:, ::-1], p), axis=1)
-    led.update()
-    if config.USE_GUI:
-        # Update the GUI plots
-        GUI.curve[0][0].setData(y=np.concatenate((p[0, :][::-1], p[0, :])))
-        GUI.curve[0][1].setData(y=np.concatenate((p[1, :][::-1], p[1, :])))
-        GUI.curve[0][2].setData(y=np.concatenate((p[2, :][::-1], p[2, :])))
+    return np.concatenate((p[:, ::-1], p), axis=1)
 
 
 def visualize_energy(y):
     """Effect that expands from the center with increasing sound energy"""
     global p
-    y = np.copy(y)**2.0
+    y = np.copy(y)
     gain.update(y)
     y /= gain.value
     # Scale by the width of the LED strip
@@ -147,53 +129,39 @@ def visualize_energy(y):
     p[0, :] = gaussian_filter1d(p[0, :], sigma=4.0)
     p[1, :] = gaussian_filter1d(p[1, :], sigma=4.0)
     p[2, :] = gaussian_filter1d(p[2, :], sigma=4.0)
-    # Contrast adjustment
-    p[0, :] = image.contrast(p[0, :] / 255.0, gain=r_contrast) * 255.0
-    p[1, :] = image.contrast(p[1, :] / 255.0, gain=g_contrast) * 255.0
-    p[2, :] = image.contrast(p[2, :] / 255.0, gain=b_contrast) * 255.0
     # Set the new pixel value
-    led.pixels = np.concatenate((p[:, ::-1], p), axis=1)
-    led.update()
-    if config.USE_GUI:
-        # Update the GUI plots
-        GUI.curve[0][0].setData(y=np.concatenate((p[0, :][::-1], p[0, :])))
-        GUI.curve[0][1].setData(y=np.concatenate((p[1, :][::-1], p[1, :])))
-        GUI.curve[0][2].setData(y=np.concatenate((p[2, :][::-1], p[2, :])))
+    return np.concatenate((p[:, ::-1], p), axis=1)
 
-
+prev_spectrum = np.tile(0.01, config.N_PIXELS // 2)
 def visualize_spectrum(y):
     """Effect that maps the Mel filterbank frequencies onto the LED strip"""
+    global prev_spectrum
     y = np.copy(interpolate(y, config.N_PIXELS // 2))
-    # Blur the color channels with different strengths
-    r = gaussian_filter1d(y, sigma=1.0, order=0)
-    g = gaussian_filter1d(y, sigma=1.0, order=0)
-    b = gaussian_filter1d(y, sigma=1.0, order=0)
-    # Contrast adjustment
-    r = image.contrast(r, gain=r_contrast)
-    g = image.contrast(g, gain=g_contrast)
-    b = image.contrast(b, gain=b_contrast)
+    common_mode.update(gaussian_filter1d(y, sigma=2.0))
+    diff = y - prev_spectrum
+    prev_spectrum = np.copy(y)
+    r = gaussian_filter1d(y, sigma=0.5) - common_mode.value
+    # g = gaussian_filter1d(y, sigma=0.5) - common_mode.value
+    b = gaussian_filter1d(y, sigma=0.0) - common_mode.value
     # Update temporal filters
-    r_filt.update(r)
-    g_filt.update(g)
-    b_filt.update(b)
-    # Pixel values
-    pixel_r = np.concatenate((r_filt.value[::-1], r_filt.value)) * 255.0
-    pixel_g = np.concatenate((g_filt.value[::-1], g_filt.value)) * 255.0
-    pixel_b = np.concatenate((b_filt.value[::-1], b_filt.value)) * 255.0
-    # Update the LED strip values
-    led.pixels[0, :] = pixel_r
-    led.pixels[1, :] = pixel_g
-    led.pixels[2, :] = pixel_b
-    led.update()
-    if config.USE_GUI:
-        # Update the GUI plots
-        GUI.curve[0][0].setData(y=pixel_r)
-        GUI.curve[0][1].setData(y=pixel_g)
-        GUI.curve[0][2].setData(y=pixel_b)
+    r = r_filt.update(r)
+    # g = g_filt.update(g)
+    g = np.abs(diff)
+    b = b_filt.update(b)
+    # Mirror the color channels for symmetric output
+    pixel_r = np.concatenate((r[::-1], r))
+    pixel_g = np.concatenate((g[::-1], g))
+    pixel_b = np.concatenate((b[::-1], b))
+    output = np.array([pixel_r, pixel_g, pixel_b]) * 255.0
+    return output
 
 
+fft_plot_filter = dsp.ExpFilter(np.tile(1e-1, config.N_FFT_BINS),
+                         alpha_decay=0.5, alpha_rise=0.99)
 mel_gain = dsp.ExpFilter(np.tile(1e-1, config.N_FFT_BINS),
                          alpha_decay=0.01, alpha_rise=0.99)
+mel_smoothing = dsp.ExpFilter(np.tile(1e-1, config.N_FFT_BINS),
+                         alpha_decay=0.5, alpha_rise=0.99)
 volume = dsp.ExpFilter(config.MIN_VOLUME_THRESHOLD,
                        alpha_decay=0.02, alpha_rise=0.02)
 
@@ -231,26 +199,31 @@ def microphone_update(stream):
         YS = YS[:len(YS) // 2]
         XS = XS[:len(XS) // 2]
         # Construct a Mel filterbank from the FFT data
-        YS = np.atleast_2d(np.abs(YS)).T * dsp.mel_y.T
+        mel = np.atleast_2d(np.abs(YS)).T * dsp.mel_y.T
         # Scale data to values more suitable for visualization
-        YS = np.sum(YS, axis=0)**2.0
-        mel = YS**0.5
-        mel = gaussian_filter1d(mel, sigma=1.0)
-        # Normalize the Mel filterbank to make it volume independent
-        mel_gain.update(np.max(mel))
+        mel = np.mean(mel, axis=0)
+        mel = mel**2.0
+        # Gain normalization
+        mel_gain.update(np.max(gaussian_filter1d(mel, sigma=1.0)))
         mel = mel / mel_gain.value
-        # Visualize the filterbank output
-        visualization_effect(mel)
+        mel = mel_smoothing.update(mel)
+        # Map filterbank output onto LED strip
+        output = visualization_effect(mel)
+        led.pixels = output
+        led.update()
+
+        # Plot filterbank output
+        x = np.linspace(config.MIN_FREQUENCY, config.MAX_FREQUENCY, len(mel))
+        mel_curve.setData(x=x, y=fft_plot_filter.update(mel))
+        # Plot the color channels
+        r_curve.setData(y=led.pixels[0])
+        g_curve.setData(y=led.pixels[1])
+        b_curve.setData(y=led.pixels[2])
     if config.USE_GUI:
-        GUI.app.processEvents()
+        app.processEvents()
     if config.DISPLAY_FPS:
         print('FPS {:.0f} / {:.0f}'.format(frames_per_second(), config.FPS))
 
-# Contrast adjustment values
-# Adjusting these values will change the visualization
-r_contrast = 190
-g_contrast = 143
-b_contrast = 200
 
 # Number of audio samples to read every time frame
 samples_per_frame = int(config.MIC_RATE / config.FPS)
@@ -258,65 +231,108 @@ samples_per_frame = int(config.MIC_RATE / config.FPS)
 # Array containing the rolling audio sample window
 y_roll = np.random.rand(config.N_ROLLING_HISTORY, samples_per_frame) / 1e16
 
-visualization_effect = visualize_energy
+visualization_effect = visualize_spectrum
 """Visualization effect to display on the LED strip"""
+
 
 if __name__ == '__main__':
     if config.USE_GUI:
         import pyqtgraph as pg
         from pyqtgraph.Qt import QtGui, QtCore
-        # Create GUI plot for visualizing LED strip output
-        GUI = gui.GUI(width=800, height=400, title='Audio Visualization')
-        GUI.add_plot('Color Channels')
-        r_pen = pg.mkPen((255, 30, 30, 200), width=6)
-        g_pen = pg.mkPen((30, 255, 30, 200), width=6)
-        b_pen = pg.mkPen((30, 30, 255, 200), width=6)
-        GUI.add_curve(plot_index=0, pen=r_pen)
-        GUI.add_curve(plot_index=0, pen=g_pen)
-        GUI.add_curve(plot_index=0, pen=b_pen)
-        GUI.plot[0].setRange(xRange=(0, config.N_PIXELS), yRange=(-5, 275))
-        GUI.curve[0][0].setData(x=range(config.N_PIXELS))
-        GUI.curve[0][1].setData(x=range(config.N_PIXELS))
-        GUI.curve[0][2].setData(x=range(config.N_PIXELS))
-        # Add ComboBox for effect selection
-        effect_list = {
-            'Scroll effect': visualize_scroll,
-            'Spectrum effect': visualize_spectrum,
-            'Energy effect': visualize_energy
-        }
-        effect_combobox = pg.ComboBox(items=effect_list)
-        # ComboBox event handler
-        def effect_change():
+        # Create GUI window
+        app = QtGui.QApplication([])
+        view = pg.GraphicsView()
+        layout = pg.GraphicsLayout(border=(100,100,100))
+        view.setCentralItem(layout)
+        view.show()
+        view.setWindowTitle('Visualization')
+        view.resize(800,600)
+        # Mel filterbank plot
+        fft_plot = layout.addPlot(title='Filterbank Output', colspan=3)
+        fft_plot.setRange(yRange=[-0.1, 1.2])
+        fft_plot.disableAutoRange(axis=pg.ViewBox.YAxis)
+        x_data = np.array(range(1, config.N_FFT_BINS + 1))
+        mel_curve = pg.PlotCurveItem()
+        mel_curve.setData(x=x_data, y=x_data*0)
+        fft_plot.addItem(mel_curve)
+        # Visualization plot
+        layout.nextRow()
+        led_plot = layout.addPlot(title='Visualization Output', colspan=3)
+        led_plot.setRange(yRange=[-5, 260])
+        led_plot.disableAutoRange(axis=pg.ViewBox.YAxis)
+        # Pen for each of the color channel curves
+        r_pen = pg.mkPen((255, 30, 30, 200), width=4)
+        g_pen = pg.mkPen((30, 255, 30, 200), width=4)
+        b_pen = pg.mkPen((30, 30, 255, 200), width=4)
+        # Color channel curves
+        r_curve = pg.PlotCurveItem(pen=r_pen)
+        g_curve = pg.PlotCurveItem(pen=g_pen)
+        b_curve = pg.PlotCurveItem(pen=b_pen)
+        # Define x data
+        x_data = np.array(range(1, config.N_PIXELS + 1))
+        r_curve.setData(x=x_data, y=x_data*0)
+        g_curve.setData(x=x_data, y=x_data*0)
+        b_curve.setData(x=x_data, y=x_data*0)
+        # Add curves to plot
+        led_plot.addItem(r_curve)
+        led_plot.addItem(g_curve)
+        led_plot.addItem(b_curve)
+        # Frequency range label
+        freq_label = pg.LabelItem('')
+        # Frequency slider
+        def freq_slider_change(tick):
+            minf = freq_slider.tickValue(0)**2.0 * (config.MIC_RATE / 2.0)
+            maxf = freq_slider.tickValue(1)**2.0 * (config.MIC_RATE / 2.0)
+            t = 'Frequency range: {:.0f} - {:.0f} Hz'.format(minf, maxf)
+            freq_label.setText(t)
+            config.MIN_FREQUENCY = minf
+            config.MAX_FREQUENCY = maxf
+            dsp.create_mel_bank()
+        freq_slider = pg.TickSliderItem(orientation='bottom', allowAdd=False)
+        freq_slider.addTick((config.MIN_FREQUENCY / (config.MIC_RATE / 2.0))**0.5)
+        freq_slider.addTick((config.MAX_FREQUENCY / (config.MIC_RATE / 2.0))**0.5)
+        freq_slider.tickMoveFinished = freq_slider_change
+        freq_label.setText('Frequency range: {} - {} Hz'.format(
+            config.MIN_FREQUENCY,
+            config.MAX_FREQUENCY))
+        # Effect selection
+        active_color = '#16dbeb'
+        inactive_color = '#FFFFFF'
+        def energy_click(x):
             global visualization_effect
-            visualization_effect = effect_combobox.value()
-        effect_combobox.setValue(visualization_effect)
-        effect_combobox.currentIndexChanged.connect(effect_change)
-        GUI.layout.addWidget(effect_combobox)
-        # Contrast
-        r_slider = QtGui.QSlider(QtCore.Qt.Horizontal)
-        g_slider = QtGui.QSlider(QtCore.Qt.Horizontal)
-        b_slider = QtGui.QSlider(QtCore.Qt.Horizontal)
-        r_slider.setRange(0, 200)
-        g_slider.setRange(0, 200)
-        b_slider.setRange(0, 200)
-        # Slider event handler
-        def adjust_contrast():
-            global r_contrast, g_contrast, b_contrast
-            r_contrast = r_slider.value()
-            g_contrast = g_slider.value()
-            b_contrast = b_slider.value()
-            print(r_contrast, g_contrast, b_contrast)
-        r_slider.valueChanged.connect(adjust_contrast)
-        g_slider.valueChanged.connect(adjust_contrast)
-        b_slider.valueChanged.connect(adjust_contrast)
-        # Set initial contrast
-        r_slider.setValue(100)
-        g_slider.setValue(100)
-        b_slider.setValue(100)
-        adjust_contrast()
-        GUI.layout.addWidget(r_slider)
-        GUI.layout.addWidget(g_slider)
-        GUI.layout.addWidget(b_slider)
+            visualization_effect = visualize_energy
+            energy_label.setText('Energy', color=active_color)
+            scroll_label.setText('Scroll', color=inactive_color)
+            spectrum_label.setText('Spectrum', color=inactive_color)
+        def scroll_click(x):
+            global visualization_effect
+            visualization_effect = visualize_scroll
+            energy_label.setText('Energy', color=inactive_color)
+            scroll_label.setText('Scroll', color=active_color)
+            spectrum_label.setText('Spectrum', color=inactive_color)
+        def spectrum_click(x):
+            global visualization_effect
+            visualization_effect = visualize_spectrum
+            energy_label.setText('Energy', color=inactive_color)
+            scroll_label.setText('Scroll', color=inactive_color)
+            spectrum_label.setText('Spectrum', color=active_color)
+        # Create effect "buttons" (labels with click event)
+        energy_label = pg.LabelItem('Energy')
+        scroll_label = pg.LabelItem('Scroll')
+        spectrum_label = pg.LabelItem('Spectrum')
+        energy_label.mousePressEvent = energy_click
+        scroll_label.mousePressEvent = scroll_click
+        spectrum_label.mousePressEvent = spectrum_click
+        energy_click(0)
+        # Layout
+        layout.nextRow()
+        layout.addItem(freq_label, colspan=3)
+        layout.nextRow()
+        layout.addItem(freq_slider, colspan=3)
+        layout.nextRow()
+        layout.addItem(energy_label)
+        layout.addItem(scroll_label)
+        layout.addItem(spectrum_label)
     # Initialize LEDs
     led.update()
     # Start listening to live audio stream
