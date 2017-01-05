@@ -4,7 +4,14 @@ from __future__ import division
 import os
 
 DEVICE = 'esp8266'
-"""Device used to control LED strip. Must be 'pi' or 'esp8266'"""
+"""Device used to control LED strip. Must be 'pi' or 'esp8266'
+
+'esp8266' means that you are using an ESP8266 module to control the LED strip
+and commands will be sent to the ESP8266 over WiFi.
+
+'pi' means that you are using a Raspberry Pi as a standalone unit to process
+audio input and control the LED strip directly.
+"""
 
 if DEVICE == 'esp8266':
     UDP_IP = '192.168.137.150'
