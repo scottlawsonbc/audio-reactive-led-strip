@@ -164,8 +164,9 @@ In `config.py`, set the device to `'pi'` and configure the GPIO, LED and other h
 Once everything has been configured, run [visualization.py](python/visualization.py) to start the visualization. The visualization will automatically use your default recording device (microphone) as the audio input.
 
 A PyQtGraph GUI will open to display the output of the visualization on the computer.
+![visualization-gui](images/visualization-gui.png)
 
-If you encounter any issues or have questions about this project, feel free to open a new issue.
+If you encounter any issues or have questions about this project, feel free to [open a new issue](https://github.com/scottlawsonbc/audio-reactive-led-strip/issues).
 
 # Limitations
 The visualization code currently supports up to 256 LEDs. Support for additional LEDs will be added in the near future.
