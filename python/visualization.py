@@ -214,7 +214,7 @@ def microphone_update(stream):
         output = visualization_effect(mel)
         led.pixels = output
         led.update()
-
+    if config.USE_GUI:
         # Plot filterbank output
         x = np.linspace(config.MIN_FREQUENCY, config.MAX_FREQUENCY, len(mel))
         mel_curve.setData(x=x, y=fft_plot_filter.update(mel))
@@ -222,7 +222,6 @@ def microphone_update(stream):
         r_curve.setData(y=led.pixels[0])
         g_curve.setData(y=led.pixels[1])
         b_curve.setData(y=led.pixels[2])
-    if config.USE_GUI:
         app.processEvents()
     if config.DISPLAY_FPS:
         print('FPS {:.0f} / {:.0f}'.format(frames_per_second(), config.FPS))
