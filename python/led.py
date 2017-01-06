@@ -22,7 +22,7 @@ elif config.DEVICE == 'blinkstick':
     stick = blinkstick.find_first()
     # Create a listener that turns the leds off when the program terminates
     all_off = [0]*(config.N_PIXELS*3)
-    atexit.register((lambda: stick.set_led_data(0, all_off)))
+    atexit.register(lambda: stick.set_led_data(0, all_off))
 
 _gamma = np.load(config.GAMMA_TABLE_PATH)
 """Gamma lookup table used for nonlinear brightness correction"""
