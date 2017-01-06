@@ -18,7 +18,11 @@ elif config.DEVICE == 'pi':
     strip.begin()
 elif config.DEVICE == 'blinkstick':
     from blinkstick import blinkstick
+    import atexit
     stick = blinkstick.find_first()
+    # Create a listener that shuts of the leds when the program terminates
+    all_off = [0]*(config.N_PIXELS*3)
+    atexit.register((lambda: stick.set_led_data(0, all_off)))
 
 _gamma = np.load(config.GAMMA_TABLE_PATH)
 """Gamma lookup table used for nonlinear brightness correction"""
