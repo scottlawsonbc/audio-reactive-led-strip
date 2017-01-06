@@ -81,7 +81,7 @@ def _update_pi():
     """
     global pixels, _prev_pixels
     # Truncate values and cast to integer
-    pixels = np.clip(pixels, 0, 255).astype(long)
+    pixels = np.clip(pixels, 0, 255).astype(int)
     # Optional gamma correction
     p = _gamma[pixels] if config.SOFTWARE_GAMMA_CORRECTION else np.copy(pixels)
     # Encode 24-bit LED values in 32 bit integers
@@ -105,7 +105,7 @@ def _update_blinkstick():
     global pixels
     
     # Truncate values and cast to integer
-    pixels = np.clip(pixels, 0, 255).astype(long)
+    pixels = np.clip(pixels, 0, 255).astype(int)
     # Optional gamma correction
     p = _gamma[pixels] if config.SOFTWARE_GAMMA_CORRECTION else np.copy(pixels)
     # Read the rgb values
