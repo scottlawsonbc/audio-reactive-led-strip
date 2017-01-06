@@ -19,6 +19,7 @@ elif config.DEVICE == 'pi':
 elif config.DEVICE == 'blinkstick':
     from blinkstick import blinkstick
     import signal
+    import sys
     #Will turn all leds off when invoked.
     def signal_handler(signal, frame):
         all_off = [0]*(config.N_PIXELS*3)
