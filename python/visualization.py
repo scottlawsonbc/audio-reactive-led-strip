@@ -6,13 +6,9 @@ from scipy.ndimage.filters import gaussian_filter1d
 import config
 import microphone
 import dsp
+from dsp import a
+import features
 import led
-
-
-def a(tau):
-    """Returns the ExpFilter alpha value for the given time constant"""
-    dT = 1.0 / config.FPS
-    return 1.0 - np.exp(-dT / tau)
 
 
 def rainbow(length, speed=1.0 / 5.0):
@@ -52,6 +48,7 @@ def rainbow(length, speed=1.0 / 5.0):
     return x.T
 
 
+@dsp.ApplyExpFilter(decay=a(1), rise=a(1))
 def frames_per_second():
     """Return the estimated frames per second
 
@@ -69,13 +66,11 @@ def frames_per_second():
         Estimated frames-per-second. This value is low-pass filtered
         to reduce noise.
     """
-    global _time_prev, _fps
+    global _time_prev
     time_now = time.time() * 1000.0
     dt = time_now - _time_prev
     _time_prev = time_now
-    if dt == 0.0:
-        return _fps.value
-    return _fps.update(1000.0 / dt)
+    return 1000.0 / dt
 
 
 def interpolate(y, new_length):
@@ -103,28 +98,28 @@ def interpolate(y, new_length):
     return z
 
 
-def visualize_scroll(y):
-    """Effect that originates in the center and scrolls outwards"""
-    global scroll_pixels
-    y = np.copy(y)**2.0
-    gain.update(y)
-    y /= gain.value
-    y *= 255.0
-    r = int(max(y[:len(y) // 3]))
-    g = int(max(y[len(y) // 3: 2 * len(y) // 3]))
-    b = int(max(y[2 * len(y) // 3:]))
-    # Scrolling effect window
-    scroll_pixels = np.roll(scroll_pixels, 1, axis=1)
-    scroll_pixels *= 0.98
-    scroll_pixels = gaussian_filter1d(scroll_pixels, sigma=0.3)
-    # Create new color originating at the center
-    scroll_pixels[0, 0] = r
-    scroll_pixels[1, 0] = g
-    scroll_pixels[2, 0] = b
-    output = np.concatenate((scroll_pixels[:, ::-1], scroll_pixels))
-    return output
+# def visualize_scroll(y):
+#     """Effect that originates in the center and scrolls outwards"""
+#     global scroll_pixels
+#     y = np.copy(y)**2.0
+#     gain.update(y)
+#     y /= gain.value
+#     y *= 255.0
+#     r = int(max(y[:len(y) // 3]))
+#     g = int(max(y[len(y) // 3: 2 * len(y) // 3]))
+#     b = int(max(y[2 * len(y) // 3:]))
+#     # Scrolling effect window
+#     scroll_pixels = np.roll(scroll_pixels, 1, axis=1)
+#     scroll_pixels *= 0.98
+#     scroll_pixels = gaussian_filter1d(scroll_pixels, sigma=0.3)
+#     # Create new color originating at the center
+#     scroll_pixels[0, 0] = r
+#     scroll_pixels[1, 0] = g
+#     scroll_pixels[2, 0] = b
+#     output = np.concatenate((scroll_pixels[:, ::-1], scroll_pixels))
+#     return output
 
-
+@dsp.ApplyExpFilter(decay=a(0.05), rise=1)
 def visualize_scroll(y):
     """Effect that originates in the center and scrolls outwards"""
     global scroll_pixels
@@ -141,6 +136,9 @@ def visualize_scroll(y):
     return output
 
 
+@dsp.ApplyExpFilter(decay=a(0.05), rise=0.5)
+@dsp.ApplyExpFilter(decay=a(0.05), rise=0.5)
+@dsp.ApplyExpFilter(decay=a(0.05), rise=0.5)
 def visualize_energy(y):
     """Effect that expands from the center with increasing sound energy"""
     p = np.tile(0, (3, config.N_PIXELS // 2))
@@ -154,52 +152,61 @@ def visualize_energy(y):
     p[0, :int(r)] = 255.0
     p[1, :int(g)] = 255.0
     p[2, :int(b)] = 255.0
-    p = _energy.update(p)
     # Apply substantial blur to smooth the edges
-    p[0, :] = gaussian_filter1d(p[0, :], sigma=4.0)
-    p[1, :] = gaussian_filter1d(p[1, :], sigma=4.0)
-    p[2, :] = gaussian_filter1d(p[2, :], sigma=4.0)
+    p[0, :] = gaussian_filter1d(p[0, :], sigma=3.0)
+    p[1, :] = gaussian_filter1d(p[1, :], sigma=3.0)
+    p[2, :] = gaussian_filter1d(p[2, :], sigma=3.0)
     # Set the new pixel value
     return np.concatenate((p[:, ::-1], p), axis=1)
 
 
+#@dsp.ApplyExpFilter(decay=a(0.1), rise=1)
+def visualize_zero_crossing(y, zcr):
+    """Effect that expands from the center with increasing sound energy"""
+    color = rainbow(config.N_PIXELS) ** 10
+    zcr = zcr * 255
+    p = np.tile(zcr, config.N_PIXELS)
+    p = gaussian_filter1d(p, sigma=0.0) * color
+    return p
+
+# @dsp.ApplyExpFilter(decay=a(0.1), rise=1)
+# def visualize_zero_crossing(zcr):
+#     p = np.tile(0, (3, config.N_PIXELS // 2))
+#     zcr = zcr * float((config.N_PIXELS // 2) - 1)
+#     # Map color channels according to energy in the different freq bands
+#     r = zcr
+#     g = zcr
+#     b = zcr
+#     # Assign color to different frequency regions
+#     p[0, :int(r)] = 255.0
+#     p[1, :int(g)] = 255.0
+#     p[2, :int(b)] = 255.0
+#     # Apply substantial blur to smooth the edges
+#     p[0, :] = gaussian_filter1d(p[0, :], sigma=0.0)
+#     p[1, :] = gaussian_filter1d(p[1, :], sigma=4.0)
+#     p[2, :] = gaussian_filter1d(p[2, :], sigma=4.0)
+#     # Set the new pixel value
+#     return np.concatenate((p[:, ::-1], p), axis=1)
+
+
+@dsp.ApplyExpFilter(decay=a(0.1), rise=1)
 def visualize_spectrum(y):
     """Effect that maps the Mel filterbank frequencies onto the LED strip"""
-    _spectrum.update(np.copy(interpolate(y**1.2, config.N_PIXELS // 2)))
+    y = np.copy(interpolate(y**0.8, config.N_PIXELS // 2))
     output = rainbow(config.N_PIXELS)
-    output *= np.concatenate((_spectrum.value[::-1], _spectrum.value))
+    output *= np.concatenate((y[::-1], y))
     return output * 255.0
 
 
+"""STATIC VARIABLES"""
 _time_prev = time.time() * 1000.0
 """Previous time that the frames_per_second() function was called"""
 
-_fps = dsp.ExpFilter(val=config.FPS, decay=a(2), rise=a(2))
-"""Filter used to estimate the current FPS"""
-
-_volume = dsp.ExpFilter(1e-12, a(2), rise=a(2))
-"""Filter that tracks the average volume"""
+prev_audio_frame = np.tile(1e-10, config.MIC_RATE // config.FPS)
+"""Stores data from the previous audio frame"""
 
 scroll_pixels = np.tile(0.1, config.N_PIXELS // 2)
 """Contains the pixels used in the scrolling effect"""
-
-_spectrum = dsp.ExpFilter(np.tile(0.1, config.N_PIXELS // 2), a(0.05), a(0.01))
-"""Filter for spectrum effect"""
-
-_energy = dsp.ExpFilter(np.tile(.1, (3, config.N_PIXELS // 2)), a(0.1), a(0.1))
-"""Filter energy effect"""
-
-_mel_lp = dsp.ExpFilter(np.tile(.1, config.N_FFT_BINS), a(0.1), a(0.01))
-"""Filter used to smooth the Mel scale spectral features"""
-
-mel_agc = dsp.ExpFilter(1e-8, decay=a(3), rise=a(1e-3))
-"""Filter used for automatic gain control mel spectral features"""
-
-audio_agc = dsp.ExpFilter(1e-8, decay=a(6), rise=a(1e-3))
-"""Filter used for automatic gain control of audio input"""
-
-prev_audio_frame = np.tile(1e-10, config.MIC_RATE // config.FPS)
-"""Stores data from the previous audio frame"""
 
 visualization_effect = visualize_spectrum
 """Visualization effect to display on the LED strip"""
@@ -210,41 +217,29 @@ def microphone_update(stream):
     frame_samples = config.MIC_RATE // config.FPS
     try:
         audio_frame = np.fromstring(stream.read(frame_samples), dtype=np.int16)
+        audio_frame = audio_frame / 2.0**15
     except IOError:
         # Intermittent buffer overflows often occur when computer is too slow
         # Process the previous audio frame again (don't have much choice))
         audio_frame = np.copy(prev_audio_frame)
         print('IO error')
-    # Volume normalization
-    audio_frame = audio_frame / 2.0**15
-    vol = np.nanmean(audio_frame ** 2.0)
 
-    audio_frame /= audio_agc.update(np.max(np.abs(audio_frame)))
-    # Volume detection
-    if _volume.update(vol) < config.MIN_VOLUME_THRESHOLD:
-        led.pixels = np.tile(0, (3, config.N_PIXELS))
-        led.update()
-        if config.USE_GUI:
-            app.processEvents()
-        print('Low volume')
-        return
-
-    # Construct overlapping audio frame (50% overlap)
+    # Overlapping audio window (50% overlap)
     audio = np.concatenate((prev_audio_frame[frame_samples // 2:], audio_frame))
     prev_audio_frame = audio_frame
-    # Extract Mel-scale features from audio data
-    mel_features, f_hz = dsp.extract_features(audio)
-    mel_features = _mel_lp.update(mel_features)
-    # Apply automatic gain control
-    #mel_agc.update(np.max(gaussian_filter1d(mel_features, sigma=1.0)))
-    mel_agc.update(np.max(mel_features))
-    mel_features /= mel_agc.value
-    # Map features to a 1D visualization
-    led.pixels = visualization_effect(mel_features)
+
+    # Feature extraction
+    mel = features.mel_spectrum(audio)
+    zcr = features.zero_crossing_rate(audio)
+    led.pixels = visualization_effect(mel)
+    #led.pixels = visualize_zero_crossing(mel, zcr)
+
     led.update()
+
     # Update GUI plots
     if config.USE_GUI:
-        mel_curve.setData(x=f_hz, y=mel_features)
+        # mel_curve.setData(x=f_hz, y=mel)
+        mel_curve.setData(x=np.array(range(len(mel))), y=mel)
         r_curve.setData(y=led.pixels[0])
         g_curve.setData(y=led.pixels[1])
         b_curve.setData(y=led.pixels[2])
@@ -266,7 +261,7 @@ if __name__ == '__main__':
         view.setWindowTitle('Visualization')
         view.resize(800,600)
         # Mel filterbank plot
-        fft_plot = layout.addPlot(title='Filterbank Output', colspan=3)
+        fft_plot = layout.addPlot(title='Filter bank Output', colspan=3)
         fft_plot.setRange(yRange=[-0.1, 1.2])
         fft_plot.disableAutoRange(axis=pg.ViewBox.YAxis)
         x_data = np.array(range(1, config.N_FFT_BINS + 1))
