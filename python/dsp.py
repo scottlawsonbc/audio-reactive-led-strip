@@ -95,7 +95,7 @@ def construct_filter_bank(n_filters, n_fft, fs, fmin_hz, fmax_hz, scale='mel'):
 def extract_features(y):
     N = len(y)
     # Pre-emphasis filter to amplify high frequencies
-    y = preemphasis(y, coeff=0.7)
+    #y = preemphasis(y, coeff=0.7)
     # Apply Hamming window to reduce spectral leakage
     y *= np.hamming(N)
     # Transform to frequency domain

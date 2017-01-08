@@ -105,7 +105,7 @@ def interpolate(y, new_length):
 
 def visualize_scroll(y):
     """Effect that originates in the center and scrolls outwards"""
-    global p
+    global scroll_pixels
     y = np.copy(y)**2.0
     gain.update(y)
     y /= gain.value
@@ -114,32 +114,30 @@ def visualize_scroll(y):
     g = int(max(y[len(y) // 3: 2 * len(y) // 3]))
     b = int(max(y[2 * len(y) // 3:]))
     # Scrolling effect window
-    p = np.roll(p, 1, axis=1)
-    p *= 0.98
-    p = gaussian_filter1d(p, sigma=0.3)
+    scroll_pixels = np.roll(scroll_pixels, 1, axis=1)
+    scroll_pixels *= 0.98
+    scroll_pixels = gaussian_filter1d(scroll_pixels, sigma=0.3)
     # Create new color originating at the center
-    p[0, 0] = r
-    p[1, 0] = g
-    p[2, 0] = b
-    return np.concatenate((p[:, ::-1], p), axis=1)
-
+    scroll_pixels[0, 0] = r
+    scroll_pixels[1, 0] = g
+    scroll_pixels[2, 0] = b
+    output = np.concatenate((scroll_pixels[:, ::-1], scroll_pixels))
+    return output
 
 
 def visualize_scroll(y):
     """Effect that originates in the center and scrolls outwards"""
-    global p
+    global scroll_pixels
     # Shift LED strip
-    p = np.roll(p, 1, axis=1)
-    p *= 0.98
+    scroll_pixels = np.roll(scroll_pixels, 1)
+    scroll_pixels *= 0.98
     # Calculate brightness of origin
     brightness = np.max(y)**4.0
     # Create new color originating at the center
-    p[0, 0] = brightness
-    p[1, 0] = brightness
-    p[2, 0] = brightness
-    p = gaussian_filter1d(p, sigma=0.1, order=0)
-    output = np.concatenate((p[:, ::-1], p), axis=1)
-    output *= rainbow(config.N_PIXELS, speed=1.0 / 5.0) * 255
+    scroll_pixels[0] = brightness
+    scroll_pixels = gaussian_filter1d(scroll_pixels, sigma=0.1)
+    output = rainbow(config.N_PIXELS, speed=1.0 / 5.0) * 255
+    output *= np.concatenate((scroll_pixels[::-1], scroll_pixels))
     return output
 
 
@@ -169,30 +167,34 @@ def visualize_spectrum(y):
     """Effect that maps the Mel filterbank frequencies onto the LED strip"""
     _spectrum.update(np.copy(interpolate(y**1.2, config.N_PIXELS // 2)))
     output = rainbow(config.N_PIXELS)
-    output *= np.concatenate((_spectrum.value[::-1], _spectrum.value)) 
+    output *= np.concatenate((_spectrum.value[::-1], _spectrum.value))
     return output * 255.0
 
 
 _time_prev = time.time() * 1000.0
 """Previous time that the frames_per_second() function was called"""
+
 _fps = dsp.ExpFilter(val=config.FPS, decay=a(2), rise=a(2))
 """Filter used to estimate the current FPS"""
 
 _volume = dsp.ExpFilter(1e-12, a(2), rise=a(2))
 """Filter that tracks the average volume"""
 
+scroll_pixels = np.tile(0.1, config.N_PIXELS // 2)
+"""Contains the pixels used in the scrolling effect"""
 
 _spectrum = dsp.ExpFilter(np.tile(0.1, config.N_PIXELS // 2), a(0.05), a(0.01))
 """Filter for spectrum effect"""
+
 _energy = dsp.ExpFilter(np.tile(.1, (3, config.N_PIXELS // 2)), a(0.1), a(0.1))
 """Filter energy effect"""
-
 
 _mel_lp = dsp.ExpFilter(np.tile(.1, config.N_FFT_BINS), a(0.1), a(0.01))
 """Filter used to smooth the Mel scale spectral features"""
 
 mel_agc = dsp.ExpFilter(1e-8, decay=a(3), rise=a(1e-3))
 """Filter used for automatic gain control mel spectral features"""
+
 audio_agc = dsp.ExpFilter(1e-8, decay=a(6), rise=a(1e-3))
 """Filter used for automatic gain control of audio input"""
 
@@ -224,9 +226,8 @@ def microphone_update(stream):
         led.update()
         if config.USE_GUI:
             app.processEvents()
-        print('No volume')
+        print('Low volume')
         return
-    print(_volume.value - config.MIN_VOLUME_THRESHOLD)
 
     # Construct overlapping audio frame (50% overlap)
     audio = np.concatenate((prev_audio_frame[frame_samples // 2:], audio_frame))
