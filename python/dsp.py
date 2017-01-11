@@ -1,7 +1,51 @@
 from __future__ import print_function
 from __future__ import division
+import time
 import numpy as np
 import config
+
+
+class RealTimeExpFilter:
+    """Exponential filter that works when sampling time is noisy"""
+
+    def __init__(self, val=None, decay=0.5, rise=0.5):
+        self.decay = decay
+        self.rise = rise
+        self.value = val
+        self.t_prev = None
+
+    def update(self, value, t=None):
+        t = time.time() if t is None else t
+        # Initialize value if none was given
+        if self.value is None:
+            self.value = value
+            self.t_prev = t
+            return self.value
+        # Set a reference point in time
+        elif self.t_prev is None:
+            self.t_prev = t
+            return self.value
+
+        # Calculate elapsed since last update
+        dt = t - self.t_prev
+        self.t_prev += dt
+
+        def a(tau):
+            return 1.0 - np.exp(-dt / tau)
+
+        if isinstance(self.value, (list, np.ndarray, tuple)):
+            alpha = value - self.value
+            alpha[alpha > 0.0] = a(self.rise)
+            alpha[alpha <= 0.0] = a(self.decay)
+        else:
+            alpha = a(self.rise) if value > self.value else a(self.decay)
+
+        self.value += alpha * (value - self.value)
+
+        if isinstance(self.value, (list, np.ndarray, tuple)):
+            return np.copy(self.value)
+        else:
+            return self.value
 
 
 def a(tau):
@@ -12,6 +56,7 @@ def a(tau):
 
 class ExpFilter:
     """Simple exponential filter"""
+
     def __init__(self, val=None, decay=0.5, rise=0.5):
         assert 0.0 < decay < 1.0, 'Invalid decay smoothing factor'
         assert 0.0 < rise <= 1.0, 'Invalid rise smoothing factor'
@@ -39,10 +84,13 @@ class ExpFilter:
             return self.value
 
 
-def ApplyNormalization(decay, rise=1):
+def ApplyNormalization(decay, rise=1, realtime=False):
     """Decorator that applies peak normalization"""
     def normalization_decorator(function):
-        filt = ExpFilter(decay=decay, rise=rise)
+        if realtime:
+            filt = RealTimeExpFilter(decay=decay, rise=rise)
+        else:
+            filt = ExpFilter(decay=decay, rise=rise)
         epsilon = np.finfo(float).eps
 
         def wrapper(*args, **kwargs):
@@ -51,7 +99,7 @@ def ApplyNormalization(decay, rise=1):
             if np.isscalar(value):
                 filt.update(np.abs(value))
             else:
-                filt.update(max(np.abs(value)))
+                filt.update(np.max(np.abs(value), axis=0))
             # Prevent division by zero
             if np.isscalar(filt.value):
                 if filt.value == 0.0:
@@ -64,10 +112,14 @@ def ApplyNormalization(decay, rise=1):
     return normalization_decorator
 
 
-def ApplyExpFilter(decay, rise):
+def ApplyExpFilter(decay, rise, initial_value=None, realtime=False):
     """Decorator that applies exponential smoothing"""
     def filter_decorator(function):
-        filt = ExpFilter(decay=decay, rise=rise)
+        if realtime:
+            filt = RealTimeExpFilter(decay=decay, rise=rise)
+        else:
+            filt = ExpFilter(decay=decay, rise=rise)
+        filt.value = initial_value
 
         def wrapper(*args, **kwargs):
             filt.update(function(*args, **kwargs))
@@ -161,3 +213,38 @@ def spectral_rolloff(power_spectrum, percentile=0.85):
     # Convert the index into a frequency
     frequency = rolloffIndex * (config.MIC_RATE / 2.0) / len(power_spectrum)
     return rolloffIndex, frequency
+
+
+if __name__ == '__main__':
+    import matplotlib.pylab as plt
+    config.FPS = 100
+
+    def a(tau):
+        """Converts time constant into the corresponding ExpFilter alpha value"""
+        dT = 1.0 / config.FPS
+        return 1.0 - np.exp(-dT / tau)
+
+    N = 10.0 * config.FPS
+    t_clean = np.linspace(0, N / config.FPS, N)
+    noise = np.random.random(N) - 0.5
+    noise *= t_clean[1] - t_clean[0]
+    noise /= 100.0
+    t_noisy = t_clean + noise
+
+    x = np.sin(300. * 2. * np.pi * t_clean)
+    y = np.sin(300. * 2. * np.pi * t_noisy)
+    z = np.sin(300. * 2. * np.pi * t_noisy)
+
+    a = ExpFilter(decay=a(0.5), rise=a(0.5))
+    b = ExpFilter(decay=0.5, rise=0.5)
+    c = RealTimeExpFilter(decay=0.5, rise=0.5)
+
+    for i in range(len(y)):
+        x[i] = a.update(x[i])
+        y[i] = b.update(y[i])
+        z[i] = c.update(z[i], t=t_noisy[i])
+
+    plt.plot(t_clean, x, color='red')
+    plt.plot(t_noisy, y, color='green')
+    plt.plot(t_noisy, z, color='blue')
+    plt.show()

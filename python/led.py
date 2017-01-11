@@ -5,6 +5,16 @@ import platform
 import numpy as np
 import config
 
+
+_gamma = np.load(config.GAMMA_TABLE_PATH)
+"""Gamma lookup table used for nonlinear brightness correction"""
+
+_prev_pixels = np.tile(253, (3, config.N_PIXELS))
+"""Pixel values that were most recently displayed on the LED strip"""
+
+pixels = np.tile(1, (3, config.N_PIXELS))
+"""Pixel values for the LED strip"""
+
 # ESP8266 uses WiFi communication
 if config.DEVICE == 'esp8266':
     import socket
@@ -16,15 +26,6 @@ elif config.DEVICE == 'pi':
                                        config.LED_FREQ_HZ, config.LED_DMA,
                                        config.LED_INVERT, config.BRIGHTNESS)
     strip.begin()
-
-_gamma = np.load(config.GAMMA_TABLE_PATH)
-"""Gamma lookup table used for nonlinear brightness correction"""
-
-_prev_pixels = np.tile(253, (3, config.N_PIXELS))
-"""Pixel values that were most recently displayed on the LED strip"""
-
-pixels = np.tile(1, (3, config.N_PIXELS))
-"""Pixel values for the LED strip"""
 
 
 def _update_esp8266():
