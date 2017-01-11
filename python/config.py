@@ -1,94 +1,79 @@
-"""Settings for audio reactive LED strip"""
-from __future__ import print_function
-from __future__ import division
 import os
+import configparser
 
-DEVICE = 'esp8266'
-"""Device used to control LED strip. Must be 'pi' or 'esp8266'
-
-'esp8266' means that you are using an ESP8266 module to control the LED strip
-and commands will be sent to the ESP8266 over WiFi.
-
-'pi' means that you are using a Raspberry Pi as a standalone unit to process
-audio input and control the LED strip directly.
-"""
-
-if DEVICE == 'esp8266':
-    UDP_IP = '192.168.0.150'
-    """IP address of the ESP8266. Must match IP in ws2812_controller.ino"""
-    UDP_PORT = 7777
-    """Port number used for socket communication between Python and ESP8266"""
-    SOFTWARE_GAMMA_CORRECTION = False
-    """Set to False because the firmware handles gamma correction + dither"""
-
-if DEVICE == 'pi':
-    LED_PIN = 18
-    """GPIO pin connected to the LED strip pixels (must support PWM)"""
-    LED_FREQ_HZ = 800000
-    """LED signal frequency in Hz (usually 800kHz)"""
-    LED_DMA = 5
-    """DMA channel used for generating PWM signal (try 5)"""
-    BRIGHTNESS = 255
-    """Brightness of LED strip between 0 and 255"""
-    LED_INVERT = True
-    """Set True if using an inverting logic level converter"""
-    SOFTWARE_GAMMA_CORRECTION = True
-    """Set to True because Raspberry Pi doesn't use hardware dithering"""
-
-USE_GUI = True
-"""Whether or not to display a PyQtGraph GUI plot of visualization"""
-
-DISPLAY_FPS = False
-"""Whether to display the FPS when running (can reduce performance)"""
-
-N_PIXELS = 60
-"""Number of pixels in the LED strip (must match ESP8266 firmware)"""
-
+parser = configparser.ConfigParser()
+"""ConfigParser for reading/writing configuration file"""
+CONFIG_FILE_PATH = os.path.join(os.path.dirname(__file__), 'config.ini')
+"""Location of the configuration file"""
 GAMMA_TABLE_PATH = os.path.join(os.path.dirname(__file__), 'gamma_table.npy')
 """Location of the gamma correction table"""
 
-MIC_RATE = 44100
-"""Sampling frequency of the microphone in Hz"""
 
-FPS = 70
-"""Desired refresh rate of the visualization (frames per second)
+def set_config_from_dict(settings_dict):
+    global FPS, N_PIXELS, MIN_FREQ, MAX_FREQ, N_FFT_BINS
+    FPS = settings_dict['fps']
+    N_PIXELS = settings_dict['pixels']
+    # rise_val = settings_dict['rise']
+    # fall_val = settings_dict['fall']
+    MIN_FREQ = settings_dict['min_freq']
+    MAX_FREQ = settings_dict['max_freq']
+    N_FFT_BINS = settings_dict['fft_bins']
 
-FPS indicates the desired refresh rate, or frames-per-second, of the audio
-visualization. The actual refresh rate may be lower if the computer cannot keep
-up with desired FPS value.
 
-Higher framerates improve "responsiveness" and reduce the latency of the
-visualization but are more computationally expensive.
+def set_parser_from_config():
+    """Set the parser values using the config module's global variables"""
+    # Hardware
+    parser.set('Hardware', 'device', str(DEVICE))
+    parser.set('Hardware', 'pixels', str(N_PIXELS))
+    parser.set('Hardware', 'sample_rate', str(MIC_RATE))
+    # General
+    parser.set('General', 'fps', str(FPS))
+    parser.set('General', 'gui', str(USE_GUI))
+    # Visualization
+    parser.set('Visualization', 'freq_bins', str(N_FFT_BINS))
+    parser.set('Visualization', 'min_freq', str(MIN_FREQ))
+    parser.set('Visualization', 'max_freq', str(MAX_FREQ))
+    # ESP8266
+    parser.set('ESP8266', 'ip', str(UDP_IP))
+    parser.set('ESP8266', 'port', str(UDP_PORT))
+    parser.set('ESP8266', 'gamma', str(SOFTWARE_GAMMA_CORRECTION))
 
-Low framerates are less computationally expensive, but the visualization may
-appear "sluggish" or out of sync with the audio being played if it is too low.
 
-The FPS should not exceed the maximum refresh rate of the LED strip, which
-depends on how long the LED strip is.
-"""
-_max_led_FPS = int(((N_PIXELS * 30e-6) + 50e-6)**-1.0)
-assert FPS <= _max_led_FPS, 'FPS must be <= {}'.format(_max_led_FPS)
+def set_config_from_parser():
+    """Set the config module's global variables to the parser values"""
+    # Hardware
+    global DEVICE, N_PIXELS, MIC_RATE
+    DEVICE = parser.get('Hardware', 'device')
+    N_PIXELS = parser.getint('Hardware', 'pixels')
+    MIC_RATE = parser.getint('Hardware', 'sample_rate')
+    # General
+    global FPS, USE_GUI
+    FPS = parser.getint('General', 'fps')
+    USE_GUI = parser.getboolean('General', 'gui')
+    # Visualization
+    global N_FFT_BINS, MIN_FREQ, MAX_FREQ, MIN_VOL
+    N_FFT_BINS = parser.getint('Visualization', 'freq_bins')
+    MIN_FREQ = parser.getint('Visualization', 'min_freq')
+    MAX_FREQ = parser.getint('Visualization', 'max_freq')
+    # ESP8266
+    global UDP_IP, UDP_PORT, MIN_VOLUME_THRESHOLD, SOFTWARE_GAMMA_CORRECTION
+    UDP_IP = parser.get('ESP8266', 'ip')
+    UDP_PORT = parser.getint('ESP8266', 'port')
+    SOFTWARE_GAMMA_CORRECTION = parser.getboolean('ESP8266', 'gamma')
 
-MIN_FREQUENCY = 200
-"""Frequencies below this value will be removed during audio processing"""
 
-MAX_FREQUENCY = 12000
-"""Frequencies above this value will be removed during audio processing"""
+def read():
+    """Load parser values from the config file and update global variables"""
+    parser.read(CONFIG_FILE_PATH)
+    set_config_from_parser()
 
-N_FFT_BINS = 25
-"""Number of frequency bins to use when transforming audio to frequency domain
 
-Fast Fourier transforms are used to transform time-domain audio data to the
-frequency domain. The frequencies present in the audio signal are assigned
-to their respective frequency bins. This value indicates the number of
-frequency bins to use.
+def write():
+    """Update parser values from module's globals and save to config file"""
+    set_parser_from_config()
+    with open(CONFIG_FILE_PATH, 'w') as configfile:
+        parser.write(configfile)
 
-A small number of bins reduces the frequency resolution of the visualization
-but improves amplitude resolution. The opposite is true when using a large
-number of bins. More bins is not always better!
 
-There is no point using more bins than there are pixels on the LED strip.
-"""
-
-MIN_VOLUME_THRESHOLD = 1e-7
-"""No music visualization displayed if recorded audio volume below threshold"""
+# Load settings from file when this module is loaded
+read()
