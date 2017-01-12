@@ -16,6 +16,20 @@ elif config.DEVICE == 'pi':
                                        config.LED_FREQ_HZ, config.LED_DMA,
                                        config.LED_INVERT, config.BRIGHTNESS)
     strip.begin()
+elif config.DEVICE == 'blinkstick':
+    from blinkstick import blinkstick
+    import signal
+    import sys
+    #Will turn all leds off when invoked.
+    def signal_handler(signal, frame):
+        all_off = [0]*(config.N_PIXELS*3)
+        stick.set_led_data(0, all_off)
+        sys.exit(0)
+
+    stick = blinkstick.find_first()
+    # Create a listener that turns the leds off when the program terminates
+    signal.signal(signal.SIGTERM, signal_handler)
+    signal.signal(signal.SIGINT, signal_handler)
 
 _gamma = np.load(config.GAMMA_TABLE_PATH)
 """Gamma lookup table used for nonlinear brightness correction"""
@@ -74,7 +88,7 @@ def _update_pi():
     """
     global pixels, _prev_pixels
     # Truncate values and cast to integer
-    pixels = np.clip(pixels, 0, 255).astype(long)
+    pixels = np.clip(pixels, 0, 255).astype(int)
     # Optional gamma correction
     p = _gamma[pixels] if config.SOFTWARE_GAMMA_CORRECTION else np.copy(pixels)
     # Encode 24-bit LED values in 32 bit integers
@@ -91,6 +105,32 @@ def _update_pi():
     _prev_pixels = np.copy(p)
     strip.show()
 
+def _update_blinkstick():
+    """Writes new LED values to the Blinkstick.
+        This function updates the LED strip with new values.
+    """
+    global pixels
+    
+    # Truncate values and cast to integer
+    pixels = np.clip(pixels, 0, 255).astype(int)
+    # Optional gamma correction
+    p = _gamma[pixels] if config.SOFTWARE_GAMMA_CORRECTION else np.copy(pixels)
+    # Read the rgb values
+    r = p[0][:].astype(int)
+    g = p[1][:].astype(int)
+    b = p[2][:].astype(int)
+
+    #create array in which we will store the led states
+    newstrip = [None]*(config.N_PIXELS*3)
+
+    for i in range(config.N_PIXELS):
+        # blinkstick uses GRB format
+        newstrip[i*3] = g[i]
+        newstrip[i*3+1] = r[i]
+        newstrip[i*3+2] = b[i]
+    #send the data to the blinkstick
+    stick.set_led_data(0, newstrip)
+
 
 def update():
     """Updates the LED strip values"""
@@ -98,6 +138,8 @@ def update():
         _update_esp8266()
     elif config.DEVICE == 'pi':
         _update_pi()
+    elif config.DEVICE == 'blinkstick':
+        _update_blinkstick()
     else:
         raise ValueError('Invalid device selected')
 
