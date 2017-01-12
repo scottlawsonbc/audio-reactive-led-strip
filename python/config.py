@@ -2,11 +2,13 @@ import os
 import configparser
 
 parser = configparser.ConfigParser()
+dirname = os.path.dirname(__file__)
 """ConfigParser for reading/writing configuration file"""
-CONFIG_FILE_PATH = os.path.join(os.path.dirname(__file__), 'config.ini')
+CONFIG_FILE_PATH = os.path.join(dirname, '../config/config.ini')
 """Location of the configuration file"""
-GAMMA_TABLE_PATH = os.path.join(os.path.dirname(__file__), 'gamma_table.npy')
+GAMMA_TABLE_PATH = os.path.join(dirname, '../config/gamma_table.txt')
 """Location of the gamma correction table"""
+GUI_UI_FILE_PATH = os.path.join(dirname, 'gui.ui')
 
 
 def set_config_from_dict(settings_dict):
