@@ -4,13 +4,16 @@ from __future__ import division
 import os
 
 DEVICE = 'esp8266'
-"""Device used to control LED strip. Must be 'pi' or 'esp8266'
+"""Device used to control LED strip. Must be 'pi',  'esp8266' or 'blinkstick'
 
 'esp8266' means that you are using an ESP8266 module to control the LED strip
 and commands will be sent to the ESP8266 over WiFi.
 
 'pi' means that you are using a Raspberry Pi as a standalone unit to process
 audio input and control the LED strip directly.
+
+'blinkstick' means that a BlinkstickPro is connected to this PC which will be used
+to control the leds connected to it.
 """
 
 if DEVICE == 'esp8266':
@@ -34,6 +37,10 @@ if DEVICE == 'pi':
     """Set True if using an inverting logic level converter"""
     SOFTWARE_GAMMA_CORRECTION = True
     """Set to True because Raspberry Pi doesn't use hardware dithering"""
+
+if DEVICE == 'blinkstick':
+    SOFTWARE_GAMMA_CORRECTION = True
+    """Set to True because blinkstick doesn't use hardware dithering"""
 
 USE_GUI = True
 """Whether or not to display a PyQtGraph GUI plot of visualization"""
