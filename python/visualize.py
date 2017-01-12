@@ -10,7 +10,7 @@ scroll_pixels = np.tile(0.1, config.N_PIXELS // 2)
 """Contains the pixels used in the scrolling effect"""
 
 
-def rainbow(length, speed=1.0 / 5.0):
+def _rainbow(length, speed=1.0 / 5.0):
     """Returns a rainbow colored array with desired length
 
     Returns a rainbow colored array with shape (3, length).
@@ -47,7 +47,7 @@ def rainbow(length, speed=1.0 / 5.0):
     return x.T
 
 
-def interpolate(y, new_length):
+def _interpolate(y, new_length):
     """Intelligently resizes the array by linearly interpolating the values
 
     Parameters
@@ -90,7 +90,7 @@ def scroll(f, t, pixels_per_sec=60.0):
     brightness = np.max(f)**4.0
     # Create new color originating at the center
     scroll_pixels[0] = brightness
-    output = rainbow(config.N_PIXELS, speed=1.0 / 5.0)
+    output = _rainbow(config.N_PIXELS, speed=1.0 / 5.0)
     output *= np.concatenate((scroll_pixels[::-1], scroll_pixels))
     return output
 
@@ -121,12 +121,12 @@ lp = dsp.ExpFilter(rise=a_rise, fall=a_fall)
 @dsp.ApplyExpFilter(fall=0.15, rise=0.001, realtime=True)
 def spectrum(f, t, threshold=0.0):
     """Effect that maps the filterbank frequencies onto the LED strip"""
-    # y = np.copy(interpolate(y**0.5, config.N_PIXELS // 2))
-    f = np.copy(interpolate(f**1.5, config.N_PIXELS // 2))
+    # y = np.copy(_interpolate(y**0.5, config.N_PIXELS // 2))
+    f = np.copy(_interpolate(f**1.5, config.N_PIXELS // 2))
     f = np.concatenate((f[::-1], f))
     f = dsp.apply_filt_lr(f, lp)
     f[f <= threshold] = 0.0
-    output = rainbow(config.N_PIXELS)
+    output = _rainbow(config.N_PIXELS)
     output *= f
     return output
 
@@ -152,7 +152,7 @@ def particle(f, t, pixels_per_sec=60.0):
     velocity = particle_velocity.update(max(0, zcr - 0.5))
     print(velocity)
     particle_location += dt * pixels_per_sec * velocity*0.2
-    color = rainbow(config.N_PIXELS)
+    color = _rainbow(config.N_PIXELS)
     output = np.zeros(config.N_PIXELS)
     output[int(round(particle_location)) % config.N_PIXELS] = zcr
     return output * color
