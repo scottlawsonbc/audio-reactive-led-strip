@@ -4,7 +4,7 @@ from __future__ import print_function
 from pyqtgraph.Qt import QtCore, QtGui, uic
 import qdarkstyle
 import pyqtgraph as pg
-
+import config
 # Change the PyQtGraph defaults
 pg.setConfigOption('foreground', '#eff0f1')
 pg.setConfigOption('background', '#272822')
@@ -18,11 +18,11 @@ class MainWindow(QtGui.QMainWindow):
     """Emitted when closeEvent is emitted"""
 
     isFullscreen = False
-
+    """Current window state"""
 
     def __init__(self, settings_dict=None):
         super(MainWindow, self).__init__()
-        uic.loadUi('gui-with-plots.ui', self)
+        uic.loadUi(config.GUI_UI_FILE_PATH, self)
         self.setStyleSheet(qdarkstyle.load_stylesheet(pyside=False))
         # Apply initial settings
         if settings_dict is not None:
@@ -34,10 +34,11 @@ class MainWindow(QtGui.QMainWindow):
             self.setWindowIcon(icon)
         except IOError as e:
             print('Error setting application icon:', e)
-        # Same hotkey that closes browser tabs
+        # Hotkeys for convenience
         QtGui.QShortcut(QtGui.QKeySequence("Ctrl+W"), self, self.close)
         QtGui.QShortcut(QtGui.QKeySequence("Esc"), self, self.close)
         QtGui.QShortcut(QtGui.QKeySequence("F11"), self, self.fullscreenToggled)
+        QtGui.QShortcut(QtGui.QKeySequence("f"), self, self.fullscreenToggled)
 
     def closeEvent(self, event):
         self.closing.emit()
@@ -64,17 +65,19 @@ class MainWindow(QtGui.QMainWindow):
             'fall': self.fall.value(),
             'min_freq': self.minFreq.value(),
             'max_freq': self.maxFreq.value(),
-            'fft_bins': self.fftBins.value()
+            'fft_bins': self.fftBins.value(),
+            'show_plot': self.showPlot.isChecked()
+
         }
         self.settingsUpdated.emit(settings)
 
     def fullscreenToggled(self):
         """Toggles fullscreen mode on or off"""
+        self.isFullscreen = not self.isFullscreen
         if self.isFullscreen:
             self.showFullScreen()
         else:
             self.showNormal()
-        self.isFullscreen = not self.isFullscreen
 
 
 if __name__ == '__main__':

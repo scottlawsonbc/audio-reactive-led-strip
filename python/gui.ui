@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>1280</width>
-    <height>720</height>
+    <height>777</height>
    </rect>
   </property>
   <property name="font">
@@ -58,7 +58,20 @@
        <property name="lineWidth">
         <number>0</number>
        </property>
-       <layout class="QVBoxLayout" name="verticalLayout_8">
+       <layout class="QVBoxLayout" name="verticalLayout_9">
+        <item>
+         <spacer name="horizontalSpacer">
+          <property name="orientation">
+           <enum>Qt::Horizontal</enum>
+          </property>
+          <property name="sizeHint" stdset="0">
+           <size>
+            <width>148</width>
+            <height>20</height>
+           </size>
+          </property>
+         </spacer>
+        </item>
         <item>
          <widget class="QFrame" name="userControlsInnerFrame">
           <property name="sizePolicy">
@@ -126,7 +139,7 @@
                  </widget>
                 </item>
                 <item row="0" column="0">
-                 <widget class="QLabel" name="fpsLabel">
+                 <widget class="QLabel" name="fpsLabelSetting">
                   <property name="sizePolicy">
                    <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
                     <horstretch>0</horstretch>
@@ -221,6 +234,11 @@
              <item>
               <property name="text">
                <string>Scroll</string>
+              </property>
+             </item>
+             <item>
+              <property name="text">
+               <string>Particle</string>
               </property>
              </item>
              <item>
@@ -502,6 +520,16 @@
              </layout>
             </widget>
            </item>
+           <item>
+            <widget class="QFrame" name="frame_2">
+             <property name="frameShape">
+              <enum>QFrame::StyledPanel</enum>
+             </property>
+             <property name="frameShadow">
+              <enum>QFrame::Raised</enum>
+             </property>
+            </widget>
+           </item>
           </layout>
          </widget>
         </item>
@@ -515,41 +543,95 @@
           </property>
           <property name="sizeHint" stdset="0">
            <size>
-            <width>20</width>
-            <height>40</height>
+            <width>17</width>
+            <height>39</height>
            </size>
           </property>
          </spacer>
         </item>
         <item>
-         <layout class="QHBoxLayout" name="horizontalLayout_3">
-          <item>
-           <widget class="QPushButton" name="fullscreenButton">
-            <property name="focusPolicy">
-             <enum>Qt::NoFocus</enum>
-            </property>
-            <property name="text">
-             <string>Fullscreen</string>
-            </property>
-            <property name="checkable">
-             <bool>true</bool>
-            </property>
-           </widget>
-          </item>
-          <item>
-           <spacer name="horizontalSpacer">
-            <property name="orientation">
-             <enum>Qt::Horizontal</enum>
-            </property>
-            <property name="sizeHint" stdset="0">
-             <size>
-              <width>40</width>
-              <height>20</height>
-             </size>
-            </property>
-           </spacer>
-          </item>
-         </layout>
+         <widget class="QFrame" name="frame_3">
+          <property name="frameShape">
+           <enum>QFrame::StyledPanel</enum>
+          </property>
+          <property name="frameShadow">
+           <enum>QFrame::Raised</enum>
+          </property>
+          <layout class="QVBoxLayout" name="verticalLayout_10">
+           <item>
+            <widget class="QLabel" name="fpsLabel">
+             <property name="font">
+              <font>
+               <pointsize>10</pointsize>
+              </font>
+             </property>
+             <property name="text">
+              <string>FPS: 999</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QPushButton" name="showPlot">
+             <property name="font">
+              <font>
+               <pointsize>10</pointsize>
+              </font>
+             </property>
+             <property name="focusPolicy">
+              <enum>Qt::NoFocus</enum>
+             </property>
+             <property name="contextMenuPolicy">
+              <enum>Qt::NoContextMenu</enum>
+             </property>
+             <property name="text">
+              <string>Show Plot</string>
+             </property>
+             <property name="checkable">
+              <bool>true</bool>
+             </property>
+             <property name="checked">
+              <bool>true</bool>
+             </property>
+             <property name="autoRepeat">
+              <bool>true</bool>
+             </property>
+             <property name="autoExclusive">
+              <bool>true</bool>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QPushButton" name="fullscreenButton">
+             <property name="font">
+              <font>
+               <pointsize>10</pointsize>
+              </font>
+             </property>
+             <property name="focusPolicy">
+              <enum>Qt::TabFocus</enum>
+             </property>
+             <property name="text">
+              <string>Fullscreen</string>
+             </property>
+             <property name="checkable">
+              <bool>true</bool>
+             </property>
+             <property name="checked">
+              <bool>false</bool>
+             </property>
+             <property name="autoDefault">
+              <bool>false</bool>
+             </property>
+             <property name="default">
+              <bool>false</bool>
+             </property>
+             <property name="flat">
+              <bool>false</bool>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </widget>
         </item>
        </layout>
       </widget>
@@ -603,7 +685,7 @@
    <hints>
     <hint type="sourcelabel">
      <x>148</x>
-     <y>92</y>
+     <y>121</y>
     </hint>
     <hint type="destinationlabel">
      <x>142</x>
@@ -619,7 +701,7 @@
    <hints>
     <hint type="sourcelabel">
      <x>174</x>
-     <y>133</y>
+     <y>162</y>
     </hint>
     <hint type="destinationlabel">
      <x>238</x>
@@ -634,8 +716,8 @@
    <slot>settingsChanged()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>191</x>
-     <y>405</y>
+     <x>162</x>
+     <y>433</y>
     </hint>
     <hint type="destinationlabel">
      <x>171</x>
@@ -651,7 +733,7 @@
    <hints>
     <hint type="sourcelabel">
      <x>134</x>
-     <y>443</y>
+     <y>459</y>
     </hint>
     <hint type="destinationlabel">
      <x>239</x>
@@ -666,8 +748,8 @@
    <slot>settingsChanged()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>218</x>
-     <y>511</y>
+     <x>195</x>
+     <y>549</y>
     </hint>
     <hint type="destinationlabel">
      <x>254</x>
@@ -682,8 +764,8 @@
    <slot>settingsChanged()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>95</x>
-     <y>328</y>
+     <x>181</x>
+     <y>380</y>
     </hint>
     <hint type="destinationlabel">
      <x>335</x>
@@ -698,8 +780,8 @@
    <slot>settingsChanged()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>212</x>
-     <y>304</y>
+     <x>195</x>
+     <y>350</y>
     </hint>
     <hint type="destinationlabel">
      <x>254</x>
@@ -714,8 +796,8 @@
    <slot>settingsChanged()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>276</x>
-     <y>216</y>
+     <x>210</x>
+     <y>268</y>
     </hint>
     <hint type="destinationlabel">
      <x>329</x>
@@ -730,12 +812,28 @@
    <slot>fullscreenToggled()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>50</x>
-     <y>672</y>
+     <x>81</x>
+     <y>724</y>
     </hint>
     <hint type="destinationlabel">
      <x>91</x>
      <y>910</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>showPlot</sender>
+   <signal>toggled(bool)</signal>
+   <receiver>MainWindow</receiver>
+   <slot>settingsChanged()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>99</x>
+     <y>656</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>105</x>
+     <y>783</y>
     </hint>
    </hints>
   </connection>
