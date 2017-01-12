@@ -1,15 +1,17 @@
 from __future__ import print_function
 from __future__ import division
 import time
+import functools
 import numpy as np
 import config
 
 
 class RealTimeExpFilter:
-    """Exponential filter that works when sampling time is noisy"""
+    """Exponential filter that references time.time()
+    """
 
-    def __init__(self, val=None, decay=0.5, rise=0.5):
-        self.decay = decay
+    def __init__(self, val=None, fall=0.5, rise=0.5):
+        self.fall = fall
         self.rise = rise
         self.value = val
         self.t_prev = None
@@ -31,14 +33,14 @@ class RealTimeExpFilter:
         self.t_prev += dt
 
         def a(tau):
-            return 1.0 - np.exp(-dt / tau)
+            return 1.0 - np.exp(-dt / tau) if tau else 1.0
 
         if isinstance(self.value, (list, np.ndarray, tuple)):
             alpha = value - self.value
             alpha[alpha > 0.0] = a(self.rise)
-            alpha[alpha <= 0.0] = a(self.decay)
+            alpha[alpha <= 0.0] = a(self.fall)
         else:
-            alpha = a(self.rise) if value > self.value else a(self.decay)
+            alpha = a(self.rise) if value > self.value else a(self.fall)
 
         self.value += alpha * (value - self.value)
 
@@ -57,10 +59,10 @@ def a(tau):
 class ExpFilter:
     """Simple exponential filter"""
 
-    def __init__(self, val=None, decay=0.5, rise=0.5):
-        assert 0.0 < decay < 1.0, 'Invalid decay smoothing factor'
+    def __init__(self, val=None, fall=0.5, rise=0.5):
+        assert 0.0 < fall < 1.0, 'Invalid fall smoothing factor'
         assert 0.0 < rise <= 1.0, 'Invalid rise smoothing factor'
-        self.decay = decay
+        self.fall = fall
         self.rise = rise
         self.value = val
 
@@ -73,9 +75,9 @@ class ExpFilter:
         if isinstance(self.value, (list, np.ndarray, tuple)):
             alpha = value - self.value
             alpha[alpha > 0.0] = self.rise
-            alpha[alpha <= 0.0] = self.decay
+            alpha[alpha <= 0.0] = self.fall
         else:
-            alpha = self.rise if value > self.value else self.decay
+            alpha = self.rise if value > self.value else self.fall
 
         self.value = alpha * value + (1.0 - alpha) * self.value
         if isinstance(self.value, (list, np.ndarray, tuple)):
@@ -84,18 +86,17 @@ class ExpFilter:
             return self.value
 
 
-def ApplyNormalization(decay, rise=1, realtime=False):
+def ApplyNormalization(fall, rise, realtime=False):
     """Decorator that applies peak normalization"""
-    def normalization_decorator(function):
+    def normalization_decorator(func):
         if realtime:
-            filt = RealTimeExpFilter(decay=decay, rise=rise)
+            filt = RealTimeExpFilter(fall=fall, rise=rise)
         else:
-            filt = ExpFilter(decay=decay, rise=rise)
+            filt = ExpFilter(fall=fall, rise=rise)
         epsilon = np.finfo(float).eps
 
         def wrapper(*args, **kwargs):
-            value = function(*args, **kwargs)
-            filt.update(np.abs(value))
+            value = func(*args, **kwargs)
             if np.isscalar(value):
                 filt.update(np.abs(value))
             else:
@@ -105,27 +106,63 @@ def ApplyNormalization(decay, rise=1, realtime=False):
                 if filt.value == 0.0:
                     filt.value = epsilon
             else:
-                filt.value = np.where(filt.value == 0, epsilon, filt.value)
-            value /= filt.value
+                filt.value[filt.value == 0.0] = epsilon
+            value = value / filt.value
             return value
         return wrapper
     return normalization_decorator
 
 
-def ApplyExpFilter(decay, rise, initial_value=None, realtime=False):
+def ApplyExpFilter(fall, rise, initial_value=None, realtime=False):
     """Decorator that applies exponential smoothing"""
-    def filter_decorator(function):
+    def filter_decorator(func):
         if realtime:
-            filt = RealTimeExpFilter(decay=decay, rise=rise)
+            filt = RealTimeExpFilter(fall=fall, rise=rise)
         else:
-            filt = ExpFilter(decay=decay, rise=rise)
+            filt = ExpFilter(fall=fall, rise=rise)
         filt.value = initial_value
 
         def wrapper(*args, **kwargs):
-            filt.update(function(*args, **kwargs))
+            filt.update(func(*args, **kwargs))
             return filt.value
         return wrapper
     return filter_decorator
+
+
+def apply_filt_lr(y, filt):
+    """Applies filter to the array bidirectionally
+
+    Applies a dsp.ExpFilter to the array in both directions.
+    Applying a bidirectional filter removes the phase lag.
+
+    Parameters
+    ==========
+    y: np.array
+        Array to apply the filter to. This is not modified.
+    filt: dsp.ExpFilter
+        Filter to apply to the array
+
+    Returns
+    =======
+    out: np.array
+        Returns a new array which is the combined result of the left and
+        right applications of the dsp.ExpFilter
+    """
+    if np.isnan(y).any():
+        raise ValueError('Cannot operate on array containing NaN value(s)')
+    L = np.zeros_like(y)
+    R = np.zeros_like(y)
+    # Apply filter moving rightwards
+    filt.value = y[0]
+    for i in range(len(y)):
+        R[i] = filt.update(y[i])
+    filt.value = y[-1]
+    # Apply filter moving leftwards
+    for i in range(len(y) - 1, 0, -1):
+        L[i] = filt.update(y[i])
+    # Combine results
+    return (L**2.0 + R**2.0)**0.5
+    #return (L + R) / 2.0
 
 
 def preemphasis(signal, coeff=0.97):
@@ -219,32 +256,26 @@ if __name__ == '__main__':
     import matplotlib.pylab as plt
     config.FPS = 100
 
-    def a(tau):
-        """Converts time constant into the corresponding ExpFilter alpha value"""
-        dT = 1.0 / config.FPS
+    def a(tau, dT=1):
         return 1.0 - np.exp(-dT / tau)
 
-    N = 10.0 * config.FPS
-    t_clean = np.linspace(0, N / config.FPS, N)
-    noise = np.random.random(N) - 0.5
-    noise *= t_clean[1] - t_clean[0]
-    noise /= 100.0
-    t_noisy = t_clean + noise
+    def foo(samples, lp):
+        # lp = ExpFilter(rise=a(0.1), fall=a(3))
+        x = np.linspace(0, 10, samples)
+        y = (np.sin(3.0 * x) ** 4.0 + np.sin(2.0 * x) ** 2.0) / 2.0
+        z = apply_filt_lr(y, lp)
+        return x, y, z
+    
+    a1 = 1.0 - np.exp(-256 / (3 * 256.0))
+    a2 = 1.0 - np.exp(-256 / (3 * 1024.0))
 
-    x = np.sin(300. * 2. * np.pi * t_clean)
-    y = np.sin(300. * 2. * np.pi * t_noisy)
-    z = np.sin(300. * 2. * np.pi * t_noisy)
+    lp = ExpFilter(rise=a1, fall=a1)
+    x1, y1, z1 = foo(256, lp)
+    lp = ExpFilter(rise=a2, fall=a2)
+    x2, y2, z2 = foo(1024, lp)
 
-    a = ExpFilter(decay=a(0.5), rise=a(0.5))
-    b = ExpFilter(decay=0.5, rise=0.5)
-    c = RealTimeExpFilter(decay=0.5, rise=0.5)
-
-    for i in range(len(y)):
-        x[i] = a.update(x[i])
-        y[i] = b.update(y[i])
-        z[i] = c.update(z[i], t=t_noisy[i])
-
-    plt.plot(t_clean, x, color='red')
-    plt.plot(t_noisy, y, color='green')
-    plt.plot(t_noisy, z, color='blue')
+    plt.plot(x1, z1, label='y1', linewidth=3)
+    plt.plot(x2, z2, label='y2', linewidth=3)
+    plt.legend().draggable()
     plt.show()
+

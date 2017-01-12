@@ -6,7 +6,7 @@ import numpy as np
 import config
 
 
-_gamma = np.load(config.GAMMA_TABLE_PATH)
+_gamma = np.genfromtxt(config.GAMMA_TABLE_PATH, dtype=int, delimiter=' ')
 """Gamma lookup table used for nonlinear brightness correction"""
 
 _prev_pixels = np.tile(253, (3, config.N_PIXELS))
@@ -75,7 +75,7 @@ def _update_pi():
     """
     global pixels, _prev_pixels
     # Truncate values and cast to integer
-    pixels = np.clip(pixels, 0, 255).astype(long)
+    pixels = np.clip(pixels, 0, 255).astype(int)
     # Optional gamma correction
     p = _gamma[pixels] if config.SOFTWARE_GAMMA_CORRECTION else np.copy(pixels)
     # Encode 24-bit LED values in 32 bit integers
@@ -105,11 +105,12 @@ def update():
 
 # Execute this file to run a LED strand test
 # If everything is working, you should see a red, green, and blue pixel scroll
-# across the LED strip continously
+# across the LED strip continously 
 if __name__ == '__main__':
     import time
     # Turn all pixels off
     pixels *= 0
+    update()
     pixels[0, 0] = 255  # Set 1st pixel red
     pixels[1, 1] = 255  # Set 2nd pixel green
     pixels[2, 2] = 255  # Set 3rd pixel blue
@@ -117,4 +118,4 @@ if __name__ == '__main__':
     while True:
         pixels = np.roll(pixels, 1, axis=1)
         update()
-        time.sleep(1)
+        time.sleep(.1)

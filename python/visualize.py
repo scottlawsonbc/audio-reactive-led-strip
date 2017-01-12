@@ -2,8 +2,8 @@ from __future__ import print_function
 from __future__ import division
 import time
 import numpy as np
-from scipy.ndimage.filters import gaussian_filter1d
 import config
+import features
 import dsp
 
 scroll_pixels = np.tile(0.1, config.N_PIXELS // 2)
@@ -72,54 +72,92 @@ def interpolate(y, new_length):
     return z
 
 
-@dsp.ApplyExpFilter(decay=0.05, rise=1e-3, realtime=True)
-def scroll(y):
+scroll_time = time.time()
+
+
+@dsp.ApplyExpFilter(fall=0.01, rise=1e-4, realtime=True)
+def scroll(f, t, pixels_per_sec=60.0):
     """Effect that originates in the center and scrolls outwards"""
     global scroll_pixels
+    global scroll_time
     # Shift LED strip
-    scroll_pixels = np.roll(scroll_pixels, 1)
-    scroll_pixels *= 0.98
+    if time.time() - scroll_time > 1 / pixels_per_sec:
+        scroll_time = time.time()
+        scroll_pixels = np.roll(scroll_pixels, 1)
+        # fall constant
+        scroll_pixels *= np.exp(-2.0 / config.N_PIXELS)
     # Calculate brightness of origin
-    brightness = np.max(y)**4.0
+    brightness = np.max(f)**4.0
     # Create new color originating at the center
     scroll_pixels[0] = brightness
-    scroll_pixels = gaussian_filter1d(scroll_pixels, sigma=0.1)
-    output = rainbow(config.N_PIXELS, speed=1.0 / 5.0) * 255
+    output = rainbow(config.N_PIXELS, speed=1.0 / 5.0)
     output *= np.concatenate((scroll_pixels[::-1], scroll_pixels))
     return output
 
 
-energy_filter = dsp.ExpFilter(decay=0.2, rise=1)
+rms_energy = dsp.RealTimeExpFilter(fall=3, rise=1e-3)
 
 
-@dsp.ApplyExpFilter(decay=0.5, rise=0.5, realtime=True)
-def energy(y):
-    """Effect that expands from the center with increasing sound energy"""
-    p = np.tile(0, (3, config.N_PIXELS // 2))
-    y = y * float((config.N_PIXELS // 2) - 1)
-    for i in range(len(y)):
-        y[i] = energy_filter.update(float(y[i]))
-    # Map color channels according to energy in the different freq bands
-    scale = 0.9
-    r = np.round(np.mean(y[:len(y) // 3]**scale))
-    g = np.round(np.mean(y[len(y) // 3: 2 * len(y) // 3]**scale))
-    b = np.round(np.mean(y[2 * len(y) // 3:]**scale))
-    # Assign color to different frequency regions
-    p[0, :int(r)] = 255.0
-    p[1, :int(g)] = 255.0
-    p[2, :int(b)] = 255.0
-    # Apply substantial blur to smooth the edges
-    p[0, :] = gaussian_filter1d(p[0, :], sigma=3.0)
-    p[1, :] = gaussian_filter1d(p[1, :], sigma=3.0)
-    p[2, :] = gaussian_filter1d(p[2, :], sigma=3.0)
-    # Set the new pixel value
-    return np.concatenate((p[:, ::-1], p), axis=1)
+@dsp.ApplyExpFilter(fall=0.05, rise=0.01, realtime=True)
+def energy(f, t):
+    p = np.zeros((3, config.N_PIXELS // 2))
+    rms = np.sqrt(np.mean(np.square(f)))
+    p[:, 0] = rms / rms_energy.update(rms)
+    for i in range(1, config.N_PIXELS // 2):
+        p[:, i] = p[:, i - 1] * np.exp(-2.0 / config.N_PIXELS)**4
+    shift = config.N_PIXELS // 4
+    output = np.concatenate((p[:, ::-1], p), axis=1)
+    output[1] = np.roll(output[1], shift)
+    output[2] = np.roll(output[2], -shift)
+    return output
 
 
-@dsp.ApplyExpFilter(decay=0.05, rise=0.001, realtime=True)
-def spectrum(y):
+# Alpha values for spectrum effect low pass exponential filter
+a_rise = 1.0 - np.exp(-60.0 / (0.1 * config.N_PIXELS))
+a_fall = 1.0 - np.exp(-60.0 / (4.0 * config.N_PIXELS))
+lp = dsp.ExpFilter(rise=a_rise, fall=a_fall)
+
+
+@dsp.ApplyExpFilter(fall=0.15, rise=0.001, realtime=True)
+def spectrum(f, t, threshold=0.0):
     """Effect that maps the filterbank frequencies onto the LED strip"""
-    y = np.copy(interpolate(y**0.5, config.N_PIXELS // 2))
+    # y = np.copy(interpolate(y**0.5, config.N_PIXELS // 2))
+    f = np.copy(interpolate(f**1.5, config.N_PIXELS // 2))
+    f = np.concatenate((f[::-1], f))
+    f = dsp.apply_filt_lr(f, lp)
+    f[f <= threshold] = 0.0
     output = rainbow(config.N_PIXELS)
-    output *= np.concatenate((y[::-1], y))
-    return output * 255.0
+    output *= f
+    return output
+
+
+zcr_filter = dsp.RealTimeExpFilter(rise=0.0, fall=1e-4)
+"""Smooths the zero-crossing rate"""
+particle_time = time.time()
+particle_location = 0.0
+particle_friction_mu = 0.1
+particle_mass = 0.0
+particle_energy = 0.0
+particle_velocity = dsp.RealTimeExpFilter(rise=0.0, fall=1)
+
+
+#@dsp.ApplyNormalization(rise=0.0, fall=2.0, realtime=True)
+@dsp.ApplyExpFilter(fall=0.1, rise=0.0, realtime=True)
+def particle(f, t, pixels_per_sec=60.0):
+    global particle_time
+    global particle_location
+    dt = time.time() - particle_time
+    particle_time += dt
+    zcr = features.zero_crossing_rate(t)
+    velocity = particle_velocity.update(max(0, zcr - 0.5))
+    print(velocity)
+    particle_location += dt * pixels_per_sec * velocity*0.2
+    color = rainbow(config.N_PIXELS)
+    output = np.zeros(config.N_PIXELS)
+    output[int(round(particle_location)) % config.N_PIXELS] = zcr
+    return output * color
+
+    
+
+
+

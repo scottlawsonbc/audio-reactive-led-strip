@@ -7,20 +7,20 @@ import config
 import dsp
 
 
-@dsp.ApplyNormalization(decay=3, rise=1e-4, realtime=True)
+@dsp.ApplyNormalization(fall=3, rise=1e-4, realtime=True)
 def zero_crossing_rate(audio):
     """Returns the number of zero crossings in the array"""
     zcr = ((audio[:-1] * audio[1:]) < 0).sum() / len(audio)
     return zcr
 
 
-@dsp.ApplyNormalization(decay=1, rise=1e-4, realtime=True)
+@dsp.ApplyNormalization(fall=1, rise=1e-4, realtime=True)
 def mel_spectrum(y):
     N = len(y)
     # Pre-emphasis filter to amplify high frequencies
-    # y = dsp.preemphasis(y, coeff=0.8)
+    y = dsp.preemphasis(y, coeff=0.5)
     # Apply Hamming window to reduce spectral leakage
-    y *= np.hamming(N)
+    y = y * np.hamming(N)
     # Transform to frequency domain
     mag_spectrum = np.absolute(np.fft.rfft(y))
     pow_spectrum = (mag_spectrum**2.0) / N
