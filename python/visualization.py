@@ -178,11 +178,18 @@ def microphone_update(stream):
     # Retrieve and normalize the new audio samples
     try:
         y = np.fromstring(stream.read(samples_per_frame), dtype=np.int16)
+
     except IOError:
         y = y_roll[config.N_ROLLING_HISTORY - 1, :]
         global buffer_overflows
         print('Buffer overflows: {0}'.format(buffer_overflows))
         buffer_overflows += 1
+
+    # Seperates a stereo feed into the left and right streams,
+    # then pulls out the left channel for further processing
+    if config.USE_LOOPBACK:
+        y = np.reshape(y, (int(config.MIC_RATE / config.FPS), 2))
+        y = y[:, 0]
     # Normalize samples between 0 and 1
     y = y / 2.0**15
     # Construct a rolling window of audio samples

@@ -47,8 +47,14 @@ N_PIXELS = 60
 GAMMA_TABLE_PATH = os.path.join(os.path.dirname(__file__), 'gamma_table.npy')
 """Location of the gamma correction table"""
 
-MIC_RATE = 44100
+MIC_RATE = 48000
 """Sampling frequency of the microphone in Hz"""
+
+DEVICE_INDEX = 0
+"""The index of your source of audio"""
+
+USE_LOOPBACK = True
+"""Is your index an audio output? If so, use loopback"""
 
 FPS = 60
 """Desired refresh rate of the visualization (frames per second)
