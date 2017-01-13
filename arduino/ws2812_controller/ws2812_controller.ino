@@ -15,6 +15,8 @@
 #define NUM_LEDS 60
 // Maximum number of packets to hold in the buffer. Don't change this.
 #define BUFFER_LEN 1024
+// Toggles FPS output (1 = print FPS over serial, 0 = disable output)
+#define PRINT_FPS 1
 
 // Wifi and socket settings
 unsigned int localPort = 7777;
@@ -37,7 +39,6 @@ void setup() {
     Serial.println(WiFi.localIP());
     port.begin(localPort);
     ledstrip.init(NUM_LEDS);
-    pinMode(0, OUTPUT);
 }
 
 uint8_t N = 0;
