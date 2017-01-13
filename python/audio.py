@@ -32,15 +32,29 @@ def end_stream():
 
 
 def decode(in_data, channels, dtype):
-    """
-    Convert a byte stream into a 2D numpy array with
-    shape (chunk_size, channels)
+    """Convert byte stream into 2D np.array with shape (chunk_length, channels)
 
     Samples are interleaved, so for a stereo stream with left channel
     of [L0, L1, L2, ...] and right channel of [R0, R1, R2, ...], the output
     is ordered as [L0, R0, L1, R1, ...]
+
+    Parameters
+    ----------
+    in_data: str list
+        Audio frames read from the PyAudio stream
+    channels: int
+        number of audio channels (mono = 1, stereo = 2)
+    dtype: np.dtype
+        Audio encoding dtype. For example, use np.int16 or np.float32 to
+        indicate that audio is encoded as integer or float type.
+
+    Returns
+    -------
+    result: np.ndarray
+        Array with shape (chunk_length, channels).
+        Each row contains one audio frame with columns containing the data
+        for each respective channel.
     """
-    # TODO: handle data type as parameter, convert between pyaudio/numpy types
     result = np.fromstring(in_data, dtype=dtype)
     chunk_length = len(result) // channels
     assert chunk_length == chunk_length
@@ -49,13 +63,23 @@ def decode(in_data, channels, dtype):
 
 
 def encode(signal, dtype):
-    """
-    Convert a 2D numpy array into a byte stream for PyAudio
+    """Converts a 2D np.array into a PyAudio compatible byte stream
 
-    Signal should be a numpy array with shape (chunk_size, channels)
+    Parameters
+    ----------
+    signal: np.ndarray
+        2D numpy array with rows containing audio frames and the columns
+        containing the data for each channel.
+    dtype: np.dtype
+        Datatype to use for encoding the audio data into a byte stream.
+        Common data types are np.int16 and np.float32.
+
+    Returns
+    -------
+    out_data: str list
+        PyAudio compatible byte stream containing the audio data
     """
     interleaved = signal.flatten()
-    # TODO: handle data type as parameter, convert between pyaudio/numpy types
     out_data = interleaved.astype(dtype).tostring()
     return out_data
 
