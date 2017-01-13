@@ -78,6 +78,8 @@ If `pip` is not found try using `python -m pip install` instead.
 ## Arduino dependencies
 ESP8266 firmare is uploaded using the Arduino IDE. See [this tutorial](https://learn.sparkfun.com/tutorials/esp8266-thing-hookup-guide/installing-the-esp8266-arduino-addon) to setup the Arduino IDE for ESP8266.
 
+After installing the Arduino IDE and ESP8266 addon, use the [Arduino Library Manager](https://www.arduino.cc/en/Guide/Libraries#toc3) to install the "WebSocketServer" library.
+
 <!-- This [ws2812b i2s library](https://github.com/JoDaNl/esp8266_ws2812_i2s) must be downloaded and installed in the Arduino libraries folder.
  -->
 ## Hardware Connections
