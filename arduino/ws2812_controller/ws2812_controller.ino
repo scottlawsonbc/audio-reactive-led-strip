@@ -1,11 +1,9 @@
+/* Install any missing libraries using Arduino Library Manager */
 #include <Arduino.h>
 #include <ESP8266WiFi.h>
-
-//needed for wifimanager
 #include <DNSServer.h>
 #include <ESP8266WebServer.h>
-#include <WiFiManager.h>         //https://github.com/tzapu/WiFiManager
-
+#include <WiFiManager.h>    
 #include <WebSocketsServer.h>
 #include <Hash.h>
 #include <WiFiUdp.h>
@@ -22,19 +20,17 @@
 unsigned int localPort = 7777;
 char packetBuffer[BUFFER_LEN];
 
-// LED strip
 static WS2812 ledstrip;
 static Pixel_t pixels[NUM_LEDS];
 WiFiUDP port;
 
 void setup() {
     Serial.begin(115200);
-    Serial.println("");
     // Connect to wifi and print the IP address over serial
     WiFiManager wifiManager;
-    //reset saved settings
-    //wifiManager.resetSettings();
-    wifiManager.autoConnect("EspMusicVisualizer");
+    // Uncomment this line to reset the stored WiFi settings
+    // wifiManager.resetSettings();
+    wifiManager.autoConnect("esp8266-audio-visualizer");
     Serial.print("IP address: ");
     Serial.println(WiFi.localIP());
     port.begin(localPort);
@@ -46,7 +42,6 @@ uint8_t N = 0;
     uint16_t fpsCounter = 0;
     uint32_t secondTimer = 0;
 #endif
-
 
 void loop() {
     // Read data over socket
@@ -65,7 +60,6 @@ void loop() {
 
         #if PRINT_FPS
             fpsCounter++;
-            Serial.printf("/");
         #endif
     }
     #if PRINT_FPS
