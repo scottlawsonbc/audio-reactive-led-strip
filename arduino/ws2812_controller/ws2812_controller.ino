@@ -19,10 +19,6 @@
 // Wifi and socket settings
 unsigned int localPort = 7777;
 char packetBuffer[BUFFER_LEN];
-String lastCmd;
-
-void handleFps();
-void handleCmd();
 
 // LED strip
 static WS2812 ledstrip;
