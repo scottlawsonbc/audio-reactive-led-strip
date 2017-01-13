@@ -12,7 +12,7 @@
 #include "ws2812_i2s.h"
 
 // Set this to the number of LEDs in your LED strip
-#define NUM_LEDS 250
+#define NUM_LEDS 60
 // Maximum number of packets to hold in the buffer. Don't change this.
 #define BUFFER_LEN 1024
 
