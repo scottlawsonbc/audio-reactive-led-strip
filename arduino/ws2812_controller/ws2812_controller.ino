@@ -44,7 +44,6 @@ void setup() {
 uint8_t N = 0;
 #if PRINT_FPS
     uint16_t fpsCounter = 0;
-    uint16_t prevCount = 0;
     uint32_t secondTimer = 0;
 #endif
 
@@ -66,9 +65,6 @@ void loop() {
 
         #if PRINT_FPS
             fpsCounter++;
-            port.beginPacket(port.remoteIP(), port.remotePort());
-            port.write(prevCount);
-            port.endPacket();
             Serial.printf("/");
         #endif
     }
@@ -76,7 +72,6 @@ void loop() {
         if (millis() - secondTimer >= 1000U) {
             secondTimer = millis();
             Serial.printf("FPS: %d\n", fpsCounter);
-            prevCount = fpsCounter;
             fpsCounter = 0;
         }
     #endif
