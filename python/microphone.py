@@ -1,6 +1,7 @@
 import pyaudio
 import config
-
+import sys
+channelcount = -1
 
 def start_stream(callback):
     p = pyaudio.PyAudio()
@@ -9,7 +10,6 @@ def start_stream(callback):
         channelcount = device_info["maxInputChannels"]
     else:
         channelcount = device_info["maxOutputChannels"]
-
     stream = p.open(format=pyaudio.paInt16,
                     channels=channelcount,
                     rate=config.MIC_RATE,

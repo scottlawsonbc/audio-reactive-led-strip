@@ -188,8 +188,8 @@ def microphone_update(stream):
     # Seperates a stereo feed into the left and right streams,
     # then pulls out the left channel for further processing
     if config.USE_LOOPBACK:
-        y = np.reshape(y, (int(config.MIC_RATE / config.FPS), 2))
-        y = y[:, 0]
+        y = np.reshape(y, (int(config.MIC_RATE / config.FPS), microphone.channelcount))
+        y = np.sum(y, microphone.channelcount-1)
     # Normalize samples between 0 and 1
     y = y / 2.0**15
     # Construct a rolling window of audio samples
