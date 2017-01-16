@@ -22,9 +22,8 @@ if config.USE_GUI:
 current_effect = 'Spectrum'
 """Currently selected visualization effect"""
 
-
 past_N = 256
-past_spectrum = np.tile(0.0, (config.N_FFT_BINS*2, past_N, 3))
+past_spectrum = np.tile(0.0, (config.N_FFT_BINS * 2, past_N, 3))
 
 
 past_frames = 1
@@ -53,7 +52,7 @@ def audio_visualization(audio_frames):
     """Maps audio_frames input to an LED strip visualization"""
     power_spectrum = features.fft_power_spectrum(audio_frames)
     frequency = features.spectral_rolloff(power_spectrum)
-    # print(frequency)
+    # print(frequency
     # We apply coarse rounding so that we can memoize the filterbank
     frequency = np.ceil(frequency / 50.0) * 50.0
     config.MAX_FREQ = frequency
@@ -81,7 +80,6 @@ def update_rolling_window():
         rolling_window = np.concatenate((prev_frames[0, frame_count // 2:], frames))
         prev_frames = np.roll(prev_frames, 1, axis=0)
         prev_frames[0] = frames
-        # prev_frames = frames[frame_count // 2:]
 
 
 def roundup(val, multiple):
@@ -113,8 +111,7 @@ def update_settings():
     # Reset the rolling audio window
     prev_frames = np.tile(0.0, (past_frames, config.MIC_RATE // config.FPS))
     # past_spectrum = np.tile(0.0, (past_N, config.N_PIXELS, 3))
-    past_spectrum = np.tile(0.0, (config.N_FFT_BINS*2, past_N, 3))
-    
+    past_spectrum = np.tile(0.0, (config.N_FFT_BINS * 2, past_N, 3))
     print('Settings changed')
 
 
@@ -190,9 +187,9 @@ if __name__ == '__main__':
     effect_idx = 0
     effect_switch = False
 
-
+    # Used to limit the refresh rate of the plot
+    # This improves the audio processing framerate significantly
     last_plot_update_time = time.time()
-
 
     while True:
         # FPS
@@ -203,7 +200,6 @@ if __name__ == '__main__':
         if int(time.time()) % 15:
             if effect_switch:
                 effect_idx = np.random.random_integers(0, len(color_maps_mpl) - 1)
-                # effect_idx += 1
                 print('changed effect')
 
                 visualize.cmap = cm.get_cmap(color_maps_mpl[effect_idx % len(color_maps_mpl)])
@@ -221,7 +217,6 @@ if __name__ == '__main__':
 
         update_rolling_window()
         if rolling_window is not None:
-            #past_spectrum[:, 0] = led.pixels.T
             audio_visualization(rolling_window)
             past_spectrum = np.roll(past_spectrum, 1, axis=1)
             spec = features.auto_spectrum(rolling_window)
