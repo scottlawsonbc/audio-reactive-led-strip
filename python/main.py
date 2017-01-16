@@ -70,7 +70,7 @@ def update_rolling_window():
     if frames_available >= frame_count:
         try:
             frames = np.fromstring(audio.stream.read(frame_count), np.float32)
-        except OSError as e:
+        except Exception as e:
             if e.errno == -9981:
                 print('Audio buffer overlow. FPS too high?')
                 audio.start_stream()
