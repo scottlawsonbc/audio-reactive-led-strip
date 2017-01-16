@@ -1,3 +1,14 @@
+"""Configuration module
+
+This module is responsible for reading/writing settings to/from 
+a configuration file.
+
+To adjust settings, edit the file located in ../config/config.ini
+Do not change anything in this file.
+
+"""
+
+
 import os
 import configparser
 
