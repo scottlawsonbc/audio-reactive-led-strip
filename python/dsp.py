@@ -162,12 +162,20 @@ def apply_filt_lr(y, filt):
         L[i] = filt.update(y[i])
     # Combine results
     return (L**2.0 + R**2.0)**0.5
-    #return (L + R) / 2.0
+    # return (L + R) / 2.0
 
 
 def preemphasis(signal, coeff=0.97):
     """Applies a pre-emphasis filter to the given input signal"""
     return np.append(signal[0], signal[1:] - coeff * signal[:-1])
+
+
+def periodic_corr(x, y):
+    """Periodic correlation, implemented using the FFT.
+
+    x and y must be real sequences with the same length.
+    """
+    return np.fft.ifft(np.fft.fft(x) * np.fft.fft(y).conj()).real
 
 
 def _hz_to_mel(f):
@@ -233,23 +241,6 @@ def filter_bank(n_filters, n_fft, fs, fmin_hz, fmax_hz, scale):
     return filters, f_hz[1:-1]
 
 
-def spectral_rolloff(power_spectrum, percentile=0.85):
-    """
-    Determine the spectral rolloff, i.e. the frequency below which 85% of the spectrum's energy
-    is located
-    """
-    absSpectrum = power_spectrum
-    spectralSum = np.sum(absSpectrum)
-    rolloffSum = 0
-    rolloffIndex = 0
-    for i in range(0, len(power_spectrum)):
-        rolloffSum = rolloffSum + absSpectrum[i]
-        if rolloffSum > (percentile * spectralSum):
-            rolloffIndex = i
-            break
-    # Convert the index into a frequency
-    frequency = rolloffIndex * (config.MIC_RATE / 2.0) / len(power_spectrum)
-    return rolloffIndex, frequency
 
 
 if __name__ == '__main__':
