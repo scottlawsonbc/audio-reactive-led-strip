@@ -13,8 +13,8 @@
 #define SERIAL_OUTPUT 1
 
 // Connection settings
-const char* ssid     = "LAWSON-LINK-2.4";
-const char* password = "felixlina10"; 
+const char* ssid     = "YOUR-SSID";
+const char* password = "YOUR-PASSWORD"; 
 IPAddress ip(192, 168, 0, 150);
 IPAddress gateway(192, 168, 0, 1);
 IPAddress subnet(255, 255, 255, 0);
