@@ -23,8 +23,9 @@ def _apply_colormap(x):
     return y
 
 
-def peak(y, ds=2):
-    n = len(y) / ds
+def _downsample_peak(y, ds=2):
+    """Applies downsampling using a method that preserves peak details"""
+    n = len(y) // ds
     y1 = np.empty((n, 2))
     y2 = y[:n * ds].reshape((n, ds))
     y1[:, 0] = y2.max(axis=1)
@@ -115,7 +116,7 @@ lp = dsp.ExpFilter(rise=a_rise, fall=a_fall)
 def Spectrum(audio_frames):
     """Effect that maps the filterbank frequencies onto the LED strip"""
     f = features.perceptual_spectrum(audio_frames)
-    f = np.copy(peak(f, len(f) // (config.N_PIXELS // 2)))
+    f = np.copy(_downsample_peak(f, len(f) // (config.N_PIXELS // 2)))
     f = np.concatenate((f[::-1], f))
     output = _apply_colormap(f)
     return output
@@ -127,8 +128,7 @@ def Autocorrelation(audio_frames):
     """Effect that maps the filterbank frequencies onto the LED strip"""
     f = features.auto_spectrum(audio_frames)
     f = np.concatenate((f[::-1], f))
-    f = f*1.15
-    # f = dsp.apply_filt_lr(f, lp)
-    f = peak(f, len(f) // (config.N_PIXELS))
+    f = f**1.15
+    f = _downsample_peak(f, len(f) // (config.N_PIXELS))
     output = _apply_colormap(f)
     return output
