@@ -1,7 +1,10 @@
 import pyaudio
 import config
 import sys
-channelcount = -1
+
+
+channelcount = None
+"""Number of channels in the audio streams"""
 
 def start_stream(callback):
     p = pyaudio.PyAudio()
