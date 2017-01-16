@@ -12,7 +12,7 @@ GUI_UI_FILE_PATH = os.path.join(dirname, 'gui.ui')
 
 
 def set_config_from_dict(settings_dict):
-    global FPS, N_PIXELS, MIN_FREQ, MAX_FREQ, N_FFT_BINS
+    global FPS, N_PIXELS, MIN_FREQ, MAX_FREQ, N_FFT_BINS, CMAP
     FPS = settings_dict['fps']
     N_PIXELS = settings_dict['pixels']
     # rise_val = settings_dict['rise']
@@ -20,6 +20,7 @@ def set_config_from_dict(settings_dict):
     MIN_FREQ = settings_dict['min_freq']
     MAX_FREQ = settings_dict['max_freq']
     N_FFT_BINS = settings_dict['fft_bins']
+    CMAP = settings_dict['cmap']
 
 
 def set_parser_from_config():
@@ -35,6 +36,7 @@ def set_parser_from_config():
     parser.set('Visualization', 'freq_bins', str(N_FFT_BINS))
     parser.set('Visualization', 'min_freq', str(MIN_FREQ))
     parser.set('Visualization', 'max_freq', str(MAX_FREQ))
+    parser.set('Visualization', 'cmap', str(CMAP))
     # ESP8266
     parser.set('ESP8266', 'ip', str(UDP_IP))
     parser.set('ESP8266', 'port', str(UDP_PORT))
@@ -53,10 +55,11 @@ def set_config_from_parser():
     FPS = parser.getint('General', 'fps')
     USE_GUI = parser.getboolean('General', 'gui')
     # Visualization
-    global N_FFT_BINS, MIN_FREQ, MAX_FREQ, MIN_VOL
+    global N_FFT_BINS, MIN_FREQ, MAX_FREQ, MIN_VOL, CMAP
     N_FFT_BINS = parser.getint('Visualization', 'freq_bins')
     MIN_FREQ = parser.getint('Visualization', 'min_freq')
     MAX_FREQ = parser.getint('Visualization', 'max_freq')
+    CMAP = parser.get('Visualization', 'cmap')
     # ESP8266
     global UDP_IP, UDP_PORT, MIN_VOLUME_THRESHOLD, SOFTWARE_GAMMA_CORRECTION
     UDP_IP = parser.get('ESP8266', 'ip')

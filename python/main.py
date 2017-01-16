@@ -2,27 +2,36 @@ from __future__ import unicode_literals
 from __future__ import division
 from __future__ import print_function
 
+import inspect
 import time
 import imp
 import numpy as np
-from scipy import signal
+from matplotlib import cm
 import config
 import led
 import dsp
 import features
 import visualize
 import audio
+
 if config.USE_GUI:
     from pyqtgraph.Qt import QtGui
     import gui
 
+
 current_effect = 'Spectrum'
 """Currently selected visualization effect"""
 
-prev_frames = np.array([0.0])
+
+past_N = 256
+past_spectrum = np.tile(0.0, (config.N_FFT_BINS*2, past_N, 3))
+
+
+past_frames = 1
+prev_frames = np.tile(0.0, (past_frames, config.MIC_RATE // config.FPS))
 """Contains the previous batch of audio frames"""
 
-rolling_window = np.array([0.0])
+rolling_window = None
 """Contains rolling audio window frames"""
 
 gui_settings_dict = {}
@@ -30,15 +39,6 @@ gui_settings_dict = {}
 
 gui_settings_changed_flag = False
 """Flag for indicating that GUI settings have been changed"""
-
-
-p1c1_y = np.arange(0, 1)
-p1c2_y = np.arange(0, 1)
-p1c3_y = np.arange(0, 1)
-p2c1_y = np.arange(0, 1)
-p2c2_y = np.arange(0, 1)
-p2c3_y = np.arange(0, 1)
-"""Used for passing plot data between threads"""
 
 
 def terminate():
@@ -49,50 +49,17 @@ def terminate():
     raise SystemExit
 
 
-def init_gui_plots():
-    global p1c1, p1c2, p1c3
-    global p2c1, p2c2, p2c3
-    # Plot 1 Configuration
-    win.plot1.setRange(yRange=[-5, 260])
-    win.plot1.disableAutoRange(axis=gui.pg.ViewBox.YAxis)
-    r = gui.pg.mkPen((255, 30, 30, 200), width=4)
-    g = gui.pg.mkPen((30, 255, 30, 200), width=4)
-    b = gui.pg.mkPen((30, 30, 255, 200), width=4)
-    p1c1 = gui.pg.PlotCurveItem(pen=r)
-    p1c2 = gui.pg.PlotCurveItem(pen=g)
-    p1c3 = gui.pg.PlotCurveItem(pen=b)
-    win.plot1.addItem(p1c1)
-    win.plot1.addItem(p1c2)
-    win.plot1.addItem(p1c3)
-    # Plot 2 Configuration
-    win.plot2.setRange(yRange=[-5, 260])
-    win.plot2.disableAutoRange(axis=gui.pg.ViewBox.YAxis)
-    r = gui.pg.mkPen((255, 30, 30, 200), width=4)
-    g = gui.pg.mkPen((30, 255, 30, 200), width=4)
-    b = gui.pg.mkPen((30, 30, 255, 200), width=4)
-    p2c1 = gui.pg.PlotCurveItem(pen=r)
-    p2c2 = gui.pg.PlotCurveItem(pen=g)
-    p2c3 = gui.pg.PlotCurveItem(pen=b)
-
-    win.plot2.addItem(p2c1)
-    win.plot2.addItem(p2c2)
-    win.plot2.addItem(p2c3)
-
-
 def audio_visualization(audio_frames):
-    global p1c1_y, p1c2_y, p1c3_y
-    global p2c1_y, p2c2_y, p2c3_y
     """Maps audio_frames input to an LED strip visualization"""
-    audio_frames = audio_frames / 2.0**15
-    freq_data = features.mel_spectrum(audio_frames)
-    effect_function = getattr(visualize, current_effect.lower())
-    led_output = effect_function(freq_data, audio_frames) * 255
-    led.pixels = led_output
+    power_spectrum = features.fft_power_spectrum(audio_frames)
+    frequency = features.spectral_rolloff(power_spectrum)
+    # print(frequency)
+    # We apply coarse rounding so that we can memoize the filterbank
+    frequency = np.ceil(frequency / 50.0) * 50.0
+    config.MAX_FREQ = frequency
+    effect_function = getattr(visualize, current_effect)
+    led.pixels = effect_function(audio_frames) * 255
     led.update()
-
-    p2c1_y = led_output[0, :]
-    p2c2_y = led_output[1, :]
-    p2c3_y = led_output[2, :]
 
 
 def update_rolling_window():
@@ -102,14 +69,37 @@ def update_rolling_window():
     frames_available = audio.stream.get_read_available()
     # We only want frames that are available immediately
     if frames_available >= frame_count:
-        frames = np.fromstring(audio.stream.read(frame_count), np.float32)
-        frames = signal.detrend(frames)
-        rolling_window = np.concatenate((prev_frames, frames))
-        prev_frames = frames[frame_count // 2:]
+        try:
+            frames = np.fromstring(audio.stream.read(frame_count), np.float32)
+        except OSError as e:
+            if e.errno == -9981:
+                print('Audio buffer overlow. FPS too high?')
+                audio.start_stream()
+                return
+            else:
+                raise
+        rolling_window = np.concatenate((prev_frames[0, frame_count // 2:], frames))
+        prev_frames = np.roll(prev_frames, 1, axis=0)
+        prev_frames[0] = frames
+        # prev_frames = frames[frame_count // 2:]
+
+
+def roundup(val, multiple):
+    remainder = val % multiple
+    if remainder == 0:
+        return val
+    else:
+        return val + multiple - remainder  
 
 
 def update_settings():
+    """Called when user changes a GUI setting"""
     global current_effect
+    global prev_frames
+    global past_spectrum
+    bins = gui_settings_dict['fft_bins']
+
+    gui_settings_dict['fft_bins'] = roundup(bins, gui_settings_dict['pixels'])
     # Update settings values
     current_effect = gui_settings_dict['effect']
     config.set_config_from_dict(gui_settings_dict)
@@ -120,15 +110,11 @@ def update_settings():
     imp.reload(dsp)
     imp.reload(features)
     imp.reload(visualize)
-    if not gui_settings_dict['show_plot']:
-        for widget in win.plot1.children():
-            if isinstance(widget, gui.pg.PlotCurveItem):
-                widget.clear()
-        for widget in win.plot2.children():
-            if isinstance(widget, gui.pg.PlotCurveItem):
-                widget.clear()
-        app.processEvents()
-
+    # Reset the rolling audio window
+    prev_frames = np.tile(0.0, (past_frames, config.MIC_RATE // config.FPS))
+    # past_spectrum = np.tile(0.0, (past_N, config.N_PIXELS, 3))
+    past_spectrum = np.tile(0.0, (config.N_FFT_BINS*2, past_N, 3))
+    
     print('Settings changed')
 
 
@@ -140,56 +126,113 @@ def guiSettingsChanged(settings_dict):
     gui_settings_changed_flag = True
 
 
+color_maps_mpl = [
+    'Blues',
+    'BuGn',
+    'BuPu',
+    'GnBu',
+    'Greens',
+    'Greys',
+    'Oranges',
+    'OrRd',
+    'PuBu',
+    'PuBuGn',
+    'PuRd',
+    'Purples',
+    'RdPu',
+    'Reds',
+    'YlGn',
+    'YlGnBu',
+    'YlOrBr',
+    'YlOrRd']
+
+
 if __name__ == '__main__':
     # Create and show the GUI
     if config.USE_GUI:
-        effect_index = 0  # list(effects.keys()).index(current_effect)
         initial_settings = {
             'fps': config.FPS,
             'pixels': config.N_PIXELS,
-            'effect_index': effect_index,
+            'effect_index': 0,
+            'cmap_index': 0,
             'rise': 1,
             'fall': 1,
             'min_freq': config.MIN_FREQ,
             'max_freq': config.MAX_FREQ,
-            'fft_bins': config.N_FFT_BINS
+            'fft_bins': config.N_FFT_BINS,
+            'cmap': config.CMAP
         }
+        # Create GUI object
         app = QtGui.QApplication([])
-
         win = gui.MainWindow(initial_settings)
         win.settingsUpdated.connect(guiSettingsChanged)
         win.closing.connect(terminate)
+        # Effect list is automatically generated
+        # All 'public' functions in visualize.py are considered effects
+        effects = inspect.getmembers(visualize, inspect.isfunction)
+        effects = np.array(effects)[:, 0]
+        effects = [e for e in effects if not e.startswith('_')]
+        win.effect.addItems(effects)
+        print(effects)
+        # Populate list of colormaps
+        # maps = [m for m in cm.datad if not m.endswith("_r")]
+        maps = [m for m in cm.datad]
+        # win.colormap.addItems(maps)
+        win.colormap.addItems(color_maps_mpl)
         win.settingsChanged(0)
-        init_gui_plots()
         win.show()
-
+        win.plot1.hide()
 
     fps_filter = dsp.RealTimeExpFilter(config.FPS, rise=0.25, fall=0.25)
     t = time.time()
     audio.start_stream()
+    time.sleep(0.1)
+    effect_idx = 0
+    effect_switch = False
+
+
+    last_plot_update_time = time.time()
+
 
     while True:
+        # FPS
+        dt = time.time() - t
+        t += dt
+        fps = fps_filter.update(dt**-1.0)
+
+        if int(time.time()) % 15:
+            if effect_switch:
+                effect_idx = np.random.random_integers(0, len(color_maps_mpl) - 1)
+                # effect_idx += 1
+                print('changed effect')
+
+                visualize.cmap = cm.get_cmap(color_maps_mpl[effect_idx % len(color_maps_mpl)])
+                effect_switch = False
+        else:
+            effect_switch = True
+
         if config.USE_GUI:
-            # FPS counter
-            fps = fps_filter.update(1. / (time.time() - t))
-            t = time.time()
-            win.fpsLabel.setText('FPS: {:.0f}'.format(fps))
+            win.fpsLabel.setText('{:.0f}'.format(fps))
             if gui_settings_changed_flag:
                 gui_settings_changed_flag = False
                 audio.end_stream()
                 update_settings()
                 audio.start_stream()
+
         update_rolling_window()
-        audio_visualization(rolling_window)
+        if rolling_window is not None:
+            #past_spectrum[:, 0] = led.pixels.T
+            audio_visualization(rolling_window)
+            past_spectrum = np.roll(past_spectrum, 1, axis=1)
+            spec = features.auto_spectrum(rolling_window)
+            spec = visualize._apply_colormap(spec)
+            spec = np.concatenate((spec[:, ::-1], spec), axis=1)
+            past_spectrum[:, 0] = spec.T
 
-        if gui_settings_dict['show_plot']:
-            x = np.arange(len(p2c1_y))
-            p2c1.setData(x=x, y=p2c1_y)
-            p2c2.setData(x=x, y=p2c2_y)
-            p2c3.setData(x=x, y=p2c3_y)
+            if time.time() - last_plot_update_time > 1. / 30.:
+                win.img.setImage(past_spectrum)
+                last_plot_update_time = time.time()
 
-
-
-        time.sleep(1e-3) # For numerical stability
+        time.sleep(1e-3)
         app.processEvents()
     audio.end_stream()

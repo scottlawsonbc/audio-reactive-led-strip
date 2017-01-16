@@ -2,6 +2,7 @@ from __future__ import print_function
 from __future__ import division
 import time
 import numpy as np
+from matplotlib import cm
 import config
 import features
 import dsp
@@ -9,42 +10,26 @@ import dsp
 scroll_pixels = np.tile(0.1, config.N_PIXELS // 2)
 """Contains the pixels used in the scrolling effect"""
 
+cmap = cm.get_cmap(config.CMAP)
+"""Colormap used for applying colors to certain effects"""
 
-def _rainbow(length, speed=1.0 / 5.0):
-    """Returns a rainbow colored array with desired length
 
-    Returns a rainbow colored array with shape (3, length).
-    Each row contains the red, green, and blue color values between 0 and 1.
+def _apply_colormap(x):
+    """Applies matplotlib colormap to the given np.array"""
+    # x = x.clip(0, 1)
+    x = np.concatenate((x, np.array([0, 0.0])))
+    # Remove the padded values and only keep RGB channels
+    y = 1.0 - cmap(x)[:-2, :3].T
+    return y
 
-    Parameters
-    ----------
-    length : int
-        The length of the rainbow colored array that should be returned
 
-    speed : float
-        Value indicating the speed that the rainbow colors change.
-        If speed > 0, then successive calls to this function will return
-        arrays with different colors assigned to the indices.
-        If speed == 0, then this function will always return the same colors.
-
-    Returns
-    -------
-    x : numpy.array
-        np.ndarray with shape (3, length).
-        Columns denote the red, green, and blue color values respectively.
-        Each color is a float between 0 and 1.
-    """
-    dt = 2.0 * np.pi / length
-    t = time.time() * speed
-    def r(t): return (np.sin(t + 0.0) + 1.0) * 1.0 / 2.0
-    def g(t): return (np.sin(t + (2.0 / 3.0) * np.pi) + 1.0) * 1.0 / 2.0
-    def b(t): return (np.sin(t + (4.0 / 3.0) * np.pi) + 1.0) * 1.0 / 2.0
-    x = np.tile(0.0, (length, 3))
-    for i in range(length):
-        x[i][0] = r(i * dt + t)
-        x[i][1] = g(i * dt + t)
-        x[i][2] = b(i * dt + t)
-    return x.T
+def peak(y, ds=2):
+    n = len(y) / ds
+    y1 = np.empty((n, 2))
+    y2 = y[:n * ds].reshape((n, ds))
+    y1[:, 0] = y2.max(axis=1)
+    y1[:, 1] = y2.min(axis=1)
+    return y1[:, 0]
 
 
 def _interpolate(y, new_length):
@@ -73,10 +58,11 @@ def _interpolate(y, new_length):
 
 
 scroll_time = time.time()
+scroll_origin = dsp.RealTimeExpFilter(rise=1e-2, fall=1e-2)
 
 
 @dsp.ApplyExpFilter(fall=0.01, rise=1e-4, realtime=True)
-def scroll(f, t, pixels_per_sec=60.0):
+def Scroll(audio_frames, pixels_per_sec=60.0):
     """Effect that originates in the center and scrolls outwards"""
     global scroll_pixels
     global scroll_time
@@ -86,78 +72,63 @@ def scroll(f, t, pixels_per_sec=60.0):
         scroll_pixels = np.roll(scroll_pixels, 1)
         # fall constant
         scroll_pixels *= np.exp(-2.0 / config.N_PIXELS)
+        scroll_origin.value = 0.0
     # Calculate brightness of origin
-    brightness = np.max(f)**4.0
+    brightness = np.max(features.perceptual_spectrum(audio_frames))**4.0
     # Create new color originating at the center
-    scroll_pixels[0] = brightness
-    output = _rainbow(config.N_PIXELS, speed=1.0 / 5.0)
-    output *= np.concatenate((scroll_pixels[::-1], scroll_pixels))
+    scroll_pixels[0] = np.clip(scroll_origin.update(brightness), 0, 1)
+    # output = _rainbow(config.N_PIXELS, speed=1.0 / 5.0)
+    pixels = np.concatenate((scroll_pixels[::-1], scroll_pixels))
+    output = _apply_colormap(pixels)
     return output
 
 
-rms_energy = dsp.RealTimeExpFilter(fall=3, rise=1e-3)
-
-
-@dsp.ApplyExpFilter(fall=0.05, rise=0.01, realtime=True)
-def energy(f, t):
-    p = np.zeros((3, config.N_PIXELS // 2))
-    rms = np.sqrt(np.mean(np.square(f)))
-    p[:, 0] = rms / rms_energy.update(rms)
-    for i in range(1, config.N_PIXELS // 2):
-        p[:, i] = p[:, i - 1] * np.exp(-2.0 / config.N_PIXELS)**4
-    shift = config.N_PIXELS // 4
-    output = np.concatenate((p[:, ::-1], p), axis=1)
-    output[1] = np.roll(output[1], shift)
-    output[2] = np.roll(output[2], -shift)
+@dsp.ApplyExpFilter(fall=0.01, rise=1e-4, realtime=True)
+def AutoScroll(audio_frames, pixels_per_sec=60.0):
+    """Effect that originates in the center and scrolls outwards"""
+    global scroll_pixels
+    global scroll_time
+    # Shift LED strip
+    if time.time() - scroll_time > 1 / pixels_per_sec:
+        scroll_time = time.time()
+        scroll_pixels = np.roll(scroll_pixels, 1)
+        # fall constant
+        scroll_pixels *= np.exp(-2.0 / config.N_PIXELS)
+        scroll_origin.value = 0
+    # Calculate brightness of origin
+    brightness = np.max(features.auto_spectrum(audio_frames))**4.0
+    # Create new color originating at the center
+    scroll_pixels[0] = scroll_origin.update(brightness)
+    # output = _rainbow(config.N_PIXELS, speed=1.0 / 5.0)
+    pixels = np.concatenate((scroll_pixels[::-1], scroll_pixels))
+    output = _apply_colormap(pixels)
     return output
 
 
 # Alpha values for spectrum effect low pass exponential filter
 a_rise = 1.0 - np.exp(-60.0 / (0.1 * config.N_PIXELS))
-a_fall = 1.0 - np.exp(-60.0 / (4.0 * config.N_PIXELS))
+a_fall = 1.0 - np.exp(-60.0 / (1.0 * config.N_PIXELS))
 lp = dsp.ExpFilter(rise=a_rise, fall=a_fall)
 
 
 @dsp.ApplyExpFilter(fall=0.15, rise=0.001, realtime=True)
-def spectrum(f, t, threshold=0.0):
+def Spectrum(audio_frames):
     """Effect that maps the filterbank frequencies onto the LED strip"""
-    # y = np.copy(_interpolate(y**0.5, config.N_PIXELS // 2))
-    f = np.copy(_interpolate(f**1.5, config.N_PIXELS // 2))
+    f = features.perceptual_spectrum(audio_frames)
+    f = np.copy(peak(f, len(f) // (config.N_PIXELS // 2)))
     f = np.concatenate((f[::-1], f))
-    f = dsp.apply_filt_lr(f, lp)
-    f[f <= threshold] = 0.0
-    output = _rainbow(config.N_PIXELS)
-    output *= f
+    output = _apply_colormap(f)
     return output
 
 
-zcr_filter = dsp.RealTimeExpFilter(rise=0.0, fall=1e-4)
-"""Smooths the zero-crossing rate"""
-particle_time = time.time()
-particle_location = 0.0
-particle_friction_mu = 0.1
-particle_mass = 0.0
-particle_energy = 0.0
-particle_velocity = dsp.RealTimeExpFilter(rise=0.0, fall=1)
-
-
-#@dsp.ApplyNormalization(rise=0.0, fall=2.0, realtime=True)
-@dsp.ApplyExpFilter(fall=0.1, rise=0.0, realtime=True)
-def particle(f, t, pixels_per_sec=60.0):
-    global particle_time
-    global particle_location
-    dt = time.time() - particle_time
-    particle_time += dt
-    zcr = features.zero_crossing_rate(t)
-    velocity = particle_velocity.update(max(0, zcr - 0.5))
-    print(velocity)
-    particle_location += dt * pixels_per_sec * velocity*0.2
-    color = _rainbow(config.N_PIXELS)
-    output = np.zeros(config.N_PIXELS)
-    output[int(round(particle_location)) % config.N_PIXELS] = zcr
-    return output * color
-
-    
-
-
-
+# @dsp.ApplyExpFilter(fall=0.15, rise=0.001, realtime=True)
+@dsp.ApplyExpFilter(fall=0.07, rise=0.001, realtime=True)
+def Autocorrelation(audio_frames):
+    """Effect that maps the filterbank frequencies onto the LED strip"""
+    f = features.auto_spectrum(audio_frames)
+    f = np.concatenate((f[::-1], f))
+    f = f*1.15
+    # f = dsp.apply_filt_lr(f, lp)
+    f = peak(f, len(f) // (config.N_PIXELS))
+    output = _apply_colormap(f)
+    return output
