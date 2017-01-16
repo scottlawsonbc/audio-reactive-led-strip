@@ -30,16 +30,19 @@ elif config.DEVICE == 'blinkstick':
     from blinkstick import blinkstick
     import signal
     import sys
-    #Will turn all leds off when invoked.
+
+    # Will turn all leds off when invoked.
     def signal_handler(signal, frame):
-        all_off = [0]*(config.N_PIXELS*3)
+        all_off = [0] * (config.N_PIXELS * 3)
         stick.set_led_data(0, all_off)
         sys.exit(0)
-
     stick = blinkstick.find_first()
     # Create a listener that turns the leds off when the program terminates
     signal.signal(signal.SIGTERM, signal_handler)
     signal.signal(signal.SIGINT, signal_handler)
+elif config.DEVICE == 'fadecandy':
+    import opc
+    client = opc.Client('localhost:7890')
 
 
 def _update_esp8266():
@@ -81,6 +84,13 @@ def _update_esp8266():
     _prev_pixels = np.copy(p)
 
 
+def _update_fadecandy():
+    global _prev_pixels
+    _prev_pixels = np.copy(pixels)
+    p = np.clip(pixels.T, 0, 255).astype(int).tolist()
+    client.put_pixels(p)
+
+
 def _update_pi():
     """Writes new LED values to the Raspberry Pi's LED strip
 
@@ -106,12 +116,13 @@ def _update_pi():
     _prev_pixels = np.copy(p)
     strip.show()
 
+
 def _update_blinkstick():
     """Writes new LED values to the Blinkstick.
         This function updates the LED strip with new values.
     """
     global pixels
-    
+
     # Truncate values and cast to integer
     pixels = np.clip(pixels, 0, 255).astype(int)
     # Optional gamma correction
@@ -121,15 +132,15 @@ def _update_blinkstick():
     g = p[1][:].astype(int)
     b = p[2][:].astype(int)
 
-    #create array in which we will store the led states
-    newstrip = [None]*(config.N_PIXELS*3)
+    # Create array in which we will store the led states
+    newstrip = [None] * (config.N_PIXELS * 3)
 
     for i in range(config.N_PIXELS):
-        # blinkstick uses GRB format
-        newstrip[i*3] = g[i]
-        newstrip[i*3+1] = r[i]
-        newstrip[i*3+2] = b[i]
-    #send the data to the blinkstick
+        # Blinkstick uses GRB format
+        newstrip[i * 3] = g[i]
+        newstrip[i * 3 + 1] = r[i]
+        newstrip[i * 3 + 2] = b[i]
+    # Send the data to the blinkstick
     stick.set_led_data(0, newstrip)
 
 
@@ -141,13 +152,15 @@ def update():
         _update_pi()
     elif config.DEVICE == 'blinkstick':
         _update_blinkstick()
+    elif config.DEVICE == 'fadecandy':
+        _update_fadecandy()
     else:
         raise ValueError('Invalid device selected')
 
 
 # Execute this file to run a LED strand test
 # If everything is working, you should see a red, green, and blue pixel scroll
-# across the LED strip continously 
+# across the LED strip continously
 if __name__ == '__main__':
     import time
     # Turn all pixels off
@@ -160,4 +173,4 @@ if __name__ == '__main__':
     while True:
         pixels = np.roll(pixels, 1, axis=1)
         update()
-        time.sleep(.1)
+        time.sleep(1)
