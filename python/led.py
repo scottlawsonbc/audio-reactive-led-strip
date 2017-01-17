@@ -9,10 +9,10 @@ import config
 _gamma = np.genfromtxt(config.GAMMA_TABLE_PATH, dtype=int, delimiter=' ')
 """Gamma lookup table used for nonlinear brightness correction"""
 
-_prev_pixels = np.tile(253, (3, config.N_PIXELS))
+_prev_pixels = np.ones((3, config.N_PIXELS))
 """Pixel values that were most recently displayed on the LED strip"""
 
-pixels = np.tile(1, (3, config.N_PIXELS))
+pixels = np.zeros((3, config.N_PIXELS))
 """Pixel values for the LED strip"""
 
 # ESP8266 uses WiFi communication
@@ -46,42 +46,45 @@ elif config.DEVICE == 'fadecandy':
 
 
 def _update_esp8266():
-    """Sends UDP packets to ESP8266 to update LED strip values
+#     """Sends UDP packets to ESP8266 to update LED strip values
 
-    The ESP8266 will receive and decode the packets to determine what values
-    to display on the LED strip. The communication protocol supports LED strips
-    with a maximum of 256 LEDs.
+#     The ESP8266 will receive and decode the packets to determine what values
+#     to display on the LED strip. The communication protocol supports LED strips
+#     with a maximum of 256 LEDs.
 
-    The packet encoding scheme is:
-        |i|r|g|b|
-    where
-        i (0 to 255): Index of LED to change (zero-based)
-        r (0 to 255): Red value of LED
-        g (0 to 255): Green value of LED
-        b (0 to 255): Blue value of LED
-    """
-    global pixels, _prev_pixels
-    # Truncate values and cast to integer
-    pixels = np.clip(pixels, 0, 255).astype(int)
-    # Optionally apply gamma correctio
-    p = _gamma[pixels] if config.SOFTWARE_GAMMA_CORRECTION else np.copy(pixels)
-    # Send UDP packets when using ESP8266
-    is_python_2 = int(platform.python_version_tuple()[0]) == 2
-    m = '' if is_python_2 else []
-    for i in range(config.N_PIXELS):
-        # Ignore pixels if they haven't changed (saves bandwidth)
-        if np.array_equal(p[:, i], _prev_pixels[:, i]):
-            continue
-        if is_python_2:
-            m += chr(i) + chr(p[0][i]) + chr(p[1][i]) + chr(p[2][i])
-        else:
-            m.append(i)  # Index of pixel to change
-            m.append(p[0][i])  # Pixel red value
-            m.append(p[1][i])  # Pixel green value
-            m.append(p[2][i])  # Pixel blue value
-    m = m if is_python_2 else bytes(m)
-    _sock.sendto(m, (config.UDP_IP, config.UDP_PORT))
-    _prev_pixels = np.copy(p)
+#     The packet encoding scheme is:
+#         |i|r|g|b|
+#     where
+#         i (0 to 255): Index of LED to change (zero-based)
+#         r (0 to 255): Red value of LED
+#         g (0 to 255): Green value of LED
+#         b (0 to 255): Blue value of LED
+#     """
+#     global pixels, _prev_pixels
+#     # Truncate values and cast to integer
+#     pixels = np.clip(pixels, 0, 255).astype(int)
+#     # Optionally apply gamma correctio
+#     p = _gamma[pixels] if config.SOFTWARE_GAMMA_CORRECTION else np.copy(pixels)
+#     # Send UDP packets when using ESP8266
+#     is_python_2 = int(platform.python_version_tuple()[0]) == 2
+#     m = '' if is_python_2 else []
+#     for i in range(config.N_PIXELS):
+#         # Ignore pixels if they haven't changed (saves bandwidth)
+#         if np.array_equal(p[:, i], _prev_pixels[:, i]):
+#             continue
+#         if is_python_2:
+#             m += chr(i) + chr(p[0][i]) + chr(p[1][i]) + chr(p[2][i])
+#         else:
+#             m.append(i)  # Index of pixel to change
+#             m.append(p[0][i])  # Pixel red value
+#             m.append(p[1][i])  # Pixel green value
+#             m.append(p[2][i])  # Pixel blue value
+#     m = m if is_python_2 else bytes(m)
+#     _sock.sendto(m, (config.UDP_IP, config.UDP_PORT))
+#     _prev_pixels = np.copy(p)
+        global pixels
+        message = pixels.T.clip(0, 255).astype(np.uint8).ravel().tostring()
+        _sock.sendto(message, (config.UDP_IP, config.UDP_PORT))
 
 
 def _update_fadecandy():
