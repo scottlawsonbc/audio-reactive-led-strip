@@ -186,4 +186,4 @@ If you encounter any issues or have questions about this project, feel free to [
 The visualization code currently supports up to 256 LEDs. Support for additional LEDs will be added in the near future.
 
 # License
-All code in this project is released under the MIT License.
+This project was developed by Scott Lawson and is released under the MIT License.
