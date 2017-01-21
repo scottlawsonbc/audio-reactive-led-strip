@@ -222,7 +222,8 @@ def microphone_update(stream):
             r_curve.setData(y=led.pixels[0])
             g_curve.setData(y=led.pixels[1])
             b_curve.setData(y=led.pixels[2])
-            app.processEvents()
+    if config.USE_GUI:
+        app.processEvents()
     if config.DISPLAY_FPS:
         print('FPS {:.0f} / {:.0f}'.format(frames_per_second(), config.FPS))
 
