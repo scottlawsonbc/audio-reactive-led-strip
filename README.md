@@ -164,6 +164,17 @@ defaults.ctl.card 1
 defaults.pcm.card 1
 ```
 
+On a PC, the program will default to using the defualt microphone. If your chipset supports it, you can setup Stereo Mix to easily visualize audio playing on your computer.
+
+![show-stereomix](images/stereo-show.png)
+
+Go to recording devices under Windows Sound settings, and select "Show Disabled Devices".
+
+![enable-stereomix](images/stereo-enable.png)
+
+Enable the one labelled Stereo Mix. (You may have to restart visualization.py afterwards)
+
+If it does not appear, your chipset may not support and you will have to use thirdparty software. [Voicemeeter](http://vb-audio.pagesperso-orange.fr/Voicemeeter/) is one option.
 ## Test the LED strip
 1. cd rpi_ws281x/python/examples
 2. sudo nano strandtest.py
