@@ -173,6 +173,36 @@ defaults.pcm.card 1
 ## Configure the visualization code
 In `config.py`, set the device to `'pi'` and configure the GPIO, LED and other hardware settings.
 
+
+# Audio Input
+The visualization program streams audio from the default audio input device (set by the operating system). Windows users can change the audio input device by [following these instructions](http://blogs.creighton.edu/bluecast/tips-and-tricks/set-the-default-microphone-and-adjust-the-input-volume-in-windows-7/).
+
+Examples of typical audio sources:
+* Audio cable connected to the audio input jack (requires USB sound card on Raspberry Pi)
+* Webcam microphone, headset, studio recording microphone, etc
+
+## Virtual Audio Source
+You can use a "virtual audio device" to transfer audio playback from one application to another. This means that you can play music on your computer and connect the playback directly into the visualization program.
+
+![audio-input-sources](images/audio-source.png)
+
+### Windows
+On Windows, you can use "Stereo Mix" to copy the audio output stream into the audio input. Stereo Mix is only support on certain audio chipsets. If your chipset does not support Stereo Mix, you can use a third-party application such as [Voicemeeter](http://vb-audio.pagesperso-orange.fr/Voicemeeter/).
+
+![show-stereomix](images/stereo-show.png)
+
+Go to recording devices under Windows Sound settings (Control Panel -> Sound). In the right-click menu, select "Show Disabled Devices".
+
+![enable-stereomix](images/stereo-enable.png)
+
+Enable Stereo Mix and set it as the default device. Your audio playback should now be used as the audio input source for the visualization program. If your audio chipset does not support Stereo Mix then it will not appear in the list.
+
+### Linux
+Linux users can use [Jack Audio](http://jackaudio.org/) to create a virtual audio device.
+
+### OSX
+On OSX, [Loopback](https://www.rogueamoeba.com/loopback/) can be use to create a virtual audio device.
+
 # Running the Visualization
 Once everything has been configured, run [visualization.py](python/visualization.py) to start the visualization. The visualization will automatically use your default recording device (microphone) as the audio input.
 
