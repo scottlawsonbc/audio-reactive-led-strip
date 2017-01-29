@@ -167,7 +167,7 @@ mel_smoothing = dsp.ExpFilter(np.tile(1e-1, config.N_FFT_BINS),
                          alpha_decay=0.5, alpha_rise=0.99)
 volume = dsp.ExpFilter(config.MIN_VOLUME_THRESHOLD,
                        alpha_decay=0.02, alpha_rise=0.02)
-
+fft_window = np.hamming(int(config.MIC_RATE / config.FPS) * config.N_ROLLING_HISTORY)
 # Keeps track of the number of buffer overflows
 # Lots of buffer overflows could mean that FPS is set too high
 buffer_overflows = 1
@@ -186,7 +186,7 @@ def microphone_update(stream):
     # Normalize samples between 0 and 1
     y = y / 2.0**15
     # Construct a rolling window of audio samples
-    y_roll = np.roll(y_roll, -1, axis=0)
+    y_roll[:-1] = y_roll[1:]
     y_roll[-1, :] = np.copy(y)
     y_data = np.concatenate(y_roll, axis=0)
     volume.update(np.nanmean(y_data ** 2))
@@ -197,10 +197,12 @@ def microphone_update(stream):
         led.update()
     else:
         # Transform audio input into the frequency domain
-        XS, YS = dsp.fft(y_data, window=np.hamming)
-        # Remove half of the FFT data because of symmetry
-        YS = YS[:len(YS) // 2]
-        XS = XS[:len(XS) // 2]
+        N = len(y_data)
+        N_zeros = 2**int(np.ceil(np.log2(N))) - N
+        # Pad with zeros until the next power of two
+        y_data *= fft_window
+        y_padded = np.pad(y_data, (0, N_zeros), mode='constant')
+        YS = np.abs(np.fft.rfft(y_padded)[:N // 2])
         # Construct a Mel filterbank from the FFT data
         mel = np.atleast_2d(np.abs(YS)).T * dsp.mel_y.T
         # Scale data to values more suitable for visualization
