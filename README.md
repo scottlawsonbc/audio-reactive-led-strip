@@ -213,7 +213,8 @@ A PyQtGraph GUI will open to display the output of the visualization on the comp
 If you encounter any issues or have questions about this project, feel free to [open a new issue](https://github.com/scottlawsonbc/audio-reactive-led-strip/issues).
 
 # Limitations
-The visualization code currently supports up to 256 LEDs. Support for additional LEDs will be added in the near future.
+* ESP8266 supports a maximum of 256 LEDs. This limitation will be removed in a future update. The Raspberry Pi can use more than 256 LEDs.
+* Even numbers of pixels must be used. For example, if you have 71 pixels then use the next lowest even number, 70. Odd pixel quantities will be supported in a future update.
 
 # License
 This project was developed by Scott Lawson and is released under the MIT License.
