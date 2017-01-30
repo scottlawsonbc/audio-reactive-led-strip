@@ -62,8 +62,6 @@ def _update_esp8266():
     pixels = np.clip(pixels, 0, 255).astype(int)
     # Optionally apply gamma correc tio
     p = _gamma[pixels] if config.SOFTWARE_GAMMA_CORRECTION else np.copy(pixels)
-    # Send UDP packets when using ESP8266
-    m = '' if _is_python_2 else []
     MAX_PIXELS_PER_PACKET = 126
     # Pixel indices
     idx = range(pixels.shape[1])
@@ -71,6 +69,7 @@ def _update_esp8266():
     n_packets = len(idx) // MAX_PIXELS_PER_PACKET + 1
     idx = np.array_split(idx, n_packets)
     for packet_indices in idx:
+        m = '' if _is_python_2 else []
         for i in packet_indices:
             if _is_python_2:
                 m += chr(i) + chr(p[0][i]) + chr(p[1][i]) + chr(p[2][i])
