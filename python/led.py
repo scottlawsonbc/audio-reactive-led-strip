@@ -40,6 +40,7 @@ _prev_pixels = np.tile(253, (3, config.N_PIXELS))
 pixels = np.tile(1, (3, config.N_PIXELS))
 """Pixel values for the LED strip"""
 
+_is_python_2 = int(platform.python_version_tuple()[0]) == 2
 
 def _update_esp8266():
     """Sends UDP packets to ESP8266 to update LED strip values
@@ -59,24 +60,27 @@ def _update_esp8266():
     global pixels, _prev_pixels
     # Truncate values and cast to integer
     pixels = np.clip(pixels, 0, 255).astype(int)
-    # Optionally apply gamma correctio
+    # Optionally apply gamma correc tio
     p = _gamma[pixels] if config.SOFTWARE_GAMMA_CORRECTION else np.copy(pixels)
     # Send UDP packets when using ESP8266
-    is_python_2 = int(platform.python_version_tuple()[0]) == 2
-    m = '' if is_python_2 else []
-    for i in range(config.N_PIXELS):
-        # Ignore pixels if they haven't changed (saves bandwidth)
-        if np.array_equal(p[:, i], _prev_pixels[:, i]):
-            continue
-        if is_python_2:
-            m += chr(i) + chr(p[0][i]) + chr(p[1][i]) + chr(p[2][i])
-        else:
-            m.append(i)  # Index of pixel to change
-            m.append(p[0][i])  # Pixel red value
-            m.append(p[1][i])  # Pixel green value
-            m.append(p[2][i])  # Pixel blue value
-    m = m if is_python_2 else bytes(m)
-    _sock.sendto(m, (config.UDP_IP, config.UDP_PORT))
+    m = '' if _is_python_2 else []
+    MAX_PIXELS_PER_PACKET = 126
+    # Pixel indices
+    idx = range(pixels.shape[1])
+    idx = [i for i in idx if not np.array_equal(p[:, i], _prev_pixels[:, i])]
+    n_packets = len(idx) // MAX_PIXELS_PER_PACKET + 1
+    idx = np.array_split(idx, n_packets)
+    for packet_indices in idx:
+        for i in packet_indices:
+            if _is_python_2:
+                m += chr(i) + chr(p[0][i]) + chr(p[1][i]) + chr(p[2][i])
+            else:
+                m.append(i)  # Index of pixel to change
+                m.append(p[0][i])  # Pixel red value
+                m.append(p[1][i])  # Pixel green value
+                m.append(p[2][i])  # Pixel blue value
+        m = m if _is_python_2 else bytes(m)
+        _sock.sendto(m, (config.UDP_IP, config.UDP_PORT))
     _prev_pixels = np.copy(p)
 
 
@@ -158,4 +162,4 @@ if __name__ == '__main__':
     while True:
         pixels = np.roll(pixels, 1, axis=1)
         update()
-        time.sleep(1)
+        time.sleep(.1)
