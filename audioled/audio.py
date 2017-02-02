@@ -66,8 +66,7 @@ def stream_audio(chunk_rate=60, ignore_overflows=True, device_index=None):
                     else:
                         stream, fs = _open_input_stream(device_index)
                         chunk = stream.read(chunk_length)
-            chunk = np.fromstring(chunk, np.float32)
-            chunk = chunk.astype(np.float64)
+            chunk = np.fromstring(chunk, np.float32).astype(np.float)
             yield chunk
     return audio_chunks(), samplerate
 
@@ -82,3 +81,4 @@ def print_audio_devices():
         print('\tSample rate:', info['defaultSampleRate'])
         print('\tMax input channels:', info['maxInputChannels'])
         print('\tMax output channels:', info['maxOutputChannels'])
+    p.terminate()
