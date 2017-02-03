@@ -9,8 +9,8 @@ import audioled.dsp as dsp
 
 
 def spectrum(pixels, fs, fmax=6000, n_overlaps=8, chunk_rate=60):
-    fft_bins = 128
-    max_filter = np.ones(16)
+    fft_bins = 64
+    max_filter = np.ones(8)
     min_feature_win = np.hamming(4)
     norm_dist = np.linspace(0, 1, pixels // 2)
     fft_dist = np.linspace(0, 1, fft_bins)
