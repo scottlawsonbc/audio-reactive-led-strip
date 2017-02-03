@@ -3,7 +3,7 @@
 #include <WebSocketsServer.h>
 #include <Hash.h>
 #include <WiFiUdp.h>
-#include "ws2812_i2s.h"
+#include <NeoPixelBus.h>    // https://github.com/Makuna/NeoPixelBus
 
 // Set to the number of LEDs in your LED strip
 #define NUM_LEDS 60
@@ -11,10 +11,11 @@
 #define BUFFER_LEN 1024
 // Toggles FPS output (1 = print FPS over serial, 0 = disable output)
 #define SERIAL_OUTPUT 1
+#define LED_TYPE WS2812B
 
 // Connection settings
 const char* ssid     = "YOUR-SSID";
-const char* password = "YOUR-PASSWORD"; 
+const char* password = "YOUR-PASSWORD";
 IPAddress ip(192, 168, 0, 150);
 IPAddress gateway(192, 168, 0, 1);
 IPAddress subnet(255, 255, 255, 0);
@@ -25,8 +26,8 @@ unsigned int localPort = 7777;
 char packetBuffer[BUFFER_LEN];
 
 // LED strip
-static WS2812 ledstrip;
-static Pixel_t pixels[NUM_LEDS];
+NeoPixelBus<NeoGrbFeature, Neo800KbpsMethod> strip(NUM_LEDS);
+RgbColor pixel;
 WiFiUDP port;
 
 
@@ -46,13 +47,19 @@ void setup() {
     Serial.print("IP address: ");
     Serial.println(WiFi.localIP());
     port.begin(localPort);
-    ledstrip.init(NUM_LEDS);
+    strip.Begin();
+    strip.Show();
 }
 
 uint16_t N = 0;
+#if SERIAL_OUTPUT
+    uint32_t fpsCounter = 0;
+    uint32_t secondTimer = 0;
+    uint32_t frames = 0;
+#endif
 
 void loop() {
-    
+
     uint16_t packetSize = port.parsePacket();
 
     // Prevent a crash and buffer overflow
@@ -62,8 +69,8 @@ void loop() {
     }
 
     if (packetSize) {
-        uint16_t len = port.read(packetBuffer, BUFFER_LEN);    
-        
+        uint16_t len = port.read(packetBuffer, BUFFER_LEN);
+
         // Check for a magic packet discovery broadcast
         if (!strcmp(packetBuffer, magicPacket)) {
             char reply[50];
@@ -79,13 +86,26 @@ void loop() {
                 return;
             }
             packetBuffer[len] = 0;
-            pixels[N].R = (uint8_t)packetBuffer[i+0];
-            pixels[N].G = (uint8_t)packetBuffer[i+1];
-            pixels[N].B = (uint8_t)packetBuffer[i+2];
+            pixel.R = (uint8_t)packetBuffer[i+0];
+            pixel.G = (uint8_t)packetBuffer[i+1];
+            pixel.B = (uint8_t)packetBuffer[i+2];
+            strip.SetPixelColor(N, pixel);
             N += 1;
         }
+        strip.Show();
+        #if SERIAL_OUTPUT
+        frames++;
+        #endif
     }
-    ledstrip.show(pixels);
+    #if SERIAL_OUTPUT
+    fpsCounter++;
+    if (millis() - secondTimer >= 1000U) {
+        secondTimer = millis();
+        Serial.printf("FPS: %d\tREAL: %d\n", fpsCounter, frames);
+        fpsCounter = 0;
+        frames = 0;
+    }
+    #endif
 }
 
 // Sends a UDP reply packet to the sender
