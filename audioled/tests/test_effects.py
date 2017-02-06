@@ -8,6 +8,7 @@ import numpy as np
 import audioled.effects as effects
 
 
+class TestSpectrumEffect(unittest.TestCase):
 
     def _spectrum_output(self, N=60, fs=44100, chunk_rate=60, duration=1):
         chunks = chunk_rate * duration
