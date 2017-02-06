@@ -189,7 +189,8 @@ def warped_psd(y, bins, fs, frange, scale):
 def preprocess(audio, fs, fmax, n_overlaps):
     audio, fs = downsample(audio, fs=fs, fmax=fmax)
     audio = rollwin(audio, n_overlaps)
-    audio = (x * np.hanning(len(x)) for x in audio)
+    hanning_window = np.hanning(len(next(audio)))
+    audio = (x * hanning_window for x in audio)
     audio = (x for x in audio if np.sqrt(np.mean(np.square(x))) > 1e-5)
     audio = pad_zeros(audio)
     return audio, fs
