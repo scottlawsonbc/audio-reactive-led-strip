@@ -9,6 +9,31 @@ import audioled.dsp as dsp
 
 
 def spectrum(pixels, fs, fmax=6000, n_overlaps=8, chunk_rate=60):
+    """Effect that superimposes the melody and bass lines
+
+    Parameters
+    ----------
+    pixels: int
+        Number of pixels in the LED strip.
+    fs: int
+        Audio sampling frequency in Hz.
+    fmax: int, optional
+        High frequency cutoff point in Hz. Frequencies higher than this
+        value are discarded.
+    n_overlaps: int, optional
+        The number of past audio chunks to use when calculating the
+        fast Fourier transform. Large values cause the visualization to react
+        to longer term changes in the audio.
+    chunk_rate: int, optional
+        The number of audio chunks per second. This is analogous to frames
+        per second.
+
+    Returns
+    -------
+    effect:
+        Generator that accepts an audio stream and yields pixel values of
+        shape (3, pixels)
+    """
     fft_bins = 64
     max_filter = np.ones(8)
     min_feature_win = np.hamming(4)
