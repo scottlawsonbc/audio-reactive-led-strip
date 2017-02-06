@@ -33,6 +33,13 @@ class LEDController:
 
     To add support for another hardware device, simply inherit this class
     and implement the show() method.
+
+    Example usage:
+        import numpy as np
+        N_pixels = 60
+        pixels = np.random.random(size=(3, N_pixels))
+        device = LEDController()
+        device.show(pixels)
     """
 
     def __init__(self):
