@@ -57,15 +57,12 @@ def stream_audio(chunk_rate=60, ignore_overflows=True, device_index=None):
                 chunk = stream.read(chunk_length)
             except OSError as e:
                 if e.errno == pyaudio.paInputOverflowed:
-                    msg = 'The audio input buffer has overflowed. '
-                    msg = 'An occasional overflow is normal. '
-                    msg += 'Try lowering the FPS if this happens often.'
-                    print(msg)
-                    if not ignore_overflows:
-                        raise e
-                    else:
+                    print('Audio buffer full')
+                    if ignore_overflows:
                         stream, fs = _open_input_stream(device_index)
-                        chunk = stream.read(chunk_length)
+                        continue
+                    else:
+                        raise e
             chunk = np.fromstring(chunk, np.float32).astype(np.float)
             yield chunk
     return audio_chunks(), samplerate
