@@ -172,7 +172,7 @@ defaults.pcm.card 1
 
 ## Configure the visualization code
 In `config.py`, set the device to `'pi'` and configure the GPIO, LED and other hardware settings.
-
+If you are using an inverting logic level converter, set `LED_INVERT = True` in `config.py`. Set `LED_INVERT = False` if you are not using an inverting logic level converter (i.e. connecting LED strip directly to GPIO pin).
 
 # Audio Input
 The visualization program streams audio from the default audio input device (set by the operating system). Windows users can change the audio input device by [following these instructions](http://blogs.creighton.edu/bluecast/tips-and-tricks/set-the-default-microphone-and-adjust-the-input-volume-in-windows-7/).
