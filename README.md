@@ -29,6 +29,8 @@ To build a visualizer using a computer and ESP8266, you will need:
   - Adafruit HUZZAH
   - Adafruit Feather HUZZAH
 - WS2812B LED strip (such as Adafruit Neopixels). These can be purchased for as little as $5-15 USD per meter.
+- 5V power supply
+- 3.3V-5V level shifter (optional, must be non-inverting)
 
 Limitations when using a computer + ESP8266:
 - The communication protocol between the computer and ESP8266 currently supports a maximum of 256 LEDs.
@@ -38,6 +40,8 @@ You can also build a standalone visualizer using a Raspberry Pi. For this you wi
 - Raspberry Pi (1, 2, or 3)
 - USB audio input device. This could be a USB microphone or a sound card. You just need to find some way of giving the Raspberry Pi audio input.
 - WS2812B LED strip (such as Adafruit Neopixels)
+- 5V power supply
+- 3.3V-5V level shifter (optional)
 
 Limitations when using the Raspberry Pi:
 - Raspberry Pi is just fast enough the run the visualization, but it is too slow to run the GUI window as well. It is recommended that you disable the GUI when running the code on the Raspberry Pi.
@@ -83,6 +87,7 @@ After installing the Arduino IDE and ESP8266 addon, use the [Arduino Library Man
 <!-- This [ws2812b i2s library](https://github.com/JoDaNl/esp8266_ws2812_i2s) must be downloaded and installed in the Arduino libraries folder.
  -->
 ## Hardware Connections
+### ESP8266
 The ESP8266 has hardware support for [I²S](https://en.wikipedia.org/wiki/I%C2%B2S) and this peripheral is used <!-- by the [ws2812b i2s library](https://github.com/JoDaNl/esp8266_ws2812_i2s)  -->to control the ws2812b LED strip. This signficantly improves performance compared to bit-banging the IO pin. Unfortunately, this means that the LED strip **must** be connected to the RX1 pin, which is not accessible in some ESP8266 modules (such as the ESP-01).
 
 The RX1 pin on the ESP8266 module should be connected to the data input pin of the ws2812b LED strip (often labelled DIN or D0).
@@ -91,6 +96,19 @@ For the NodeMCU v3 and Adafruit Feather HUZZAH, the location of the RX1 pin is s
 
 ![nodemcu-pinout](images/NodeMCUv3-small.png)
 ![feather-huzzah-pinout](images/FeatherHuzzah-small.png)
+
+### Raspberry Pi
+Since the Raspberry Pi is a 3.3V device, the best practice is to use a logic level converter to shift the 3.3V logic to 5V logic (WS2812 LEDs use 5V logic). There is a good overview on the [best practices here](https://learn.adafruit.com/adafruit-neopixel-uberguide/best-practices).
+
+Although a logic level converter is the best practice, sometimes it will still work if you simply connect the LED strip directly to the Raspberry Pi.
+
+You cannot power the LED strip using the Raspberry Pi GPIO pins, you need to have an external 5V power supply.
+
+The connections are:
+
+* Connect GND on the power supply to GND on the LED strip and GND on the Raspberry Pi (they MUST share a common GND connection)
+* Connect +5V on the power supply to +5V on the LED strip
+* Connect a PWM GPIO pin on the Raspberry Pi to the data pin on the LED strip. If using the Raspberry Pi 2 or 3, then try Pin 18.
 
 # Setup and Configuration
 1. Install Python and Python dependencies
