@@ -243,6 +243,38 @@ class RaspberryPi(LEDController):
         self.strip.show()
 
 
+class DotStar(LEDController):
+
+    def __init__(self, pixels, brightness=31):
+        """Creates an APA102-based output device
+
+        Parameters
+        ----------
+        pixels: int
+            Number of LED strip pixels
+        brightness: int, optional
+            Global brightness
+        """
+        try:
+            import apa102
+        except ImportError as e:
+            url = 'https://github.com/tinue/APA102_Pi'
+            print('Could not import the apa102 library')
+            print('For installation instructions, see {}'.format(url))
+            raise e
+        self.strip = apa102.APA102(numLEDs=pixels, globalBrightness=brightness) # Initialize the strip
+        led_data = np.array(self.strip.leds, dtype=np.uint8)
+        # memoryview preserving the first 8 bits of LED frames (w/ global brightness)
+        self.strip.leds = led_data.data
+        # 2D view of led_data
+        self.led_data = led_data.reshape((pixels, 4)) # or (-1, 4)
+
+    def show(self, pixels):
+        bgr = [2,1,0]
+        self.led_data[0:,1:4] = pixels[bgr].T.clip(0,255)
+        self.strip.show()
+
+
 # # Execute this file to run a LED strand test
 # # If everything is working, you should see a red, green, and blue pixel scroll
 # # across the LED strip continously
