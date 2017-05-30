@@ -5,6 +5,11 @@ ehthumbs.db
 # Folder config file
 Desktop.ini
 
+# Package build output
+audioled.egg-info/
+build/
+dist/
+
 # Recycle Bin used on file shares
 $RECYCLE.BIN/
 
