@@ -22,6 +22,9 @@ $RECYCLE.BIN/
 # Windows shortcuts
 *.lnk
 
+# vscode files
+.vscode
+
 # =========================
 # Operating System Files
 # =========================
