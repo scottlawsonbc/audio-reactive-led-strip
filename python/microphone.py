@@ -16,7 +16,7 @@ def start_stream(callback):
     prev_ovf_time = time.time()
     while True:
         try:
-            y = np.fromstring(stream.read(frames_per_buffer), dtype=np.int16)
+            y = np.fromstring(stream.read(frames_per_buffer, exception_on_overflow=False), dtype=np.int16)
             y = y.astype(np.float32)
             callback(y)
         except IOError:
