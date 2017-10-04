@@ -3,10 +3,33 @@ from __future__ import division
 import time
 import numpy as np
 from scipy.ndimage.filters import gaussian_filter1d
+import argparse
 import config
 import microphone
 import dsp
 import led
+
+
+def str_to_bool(v):
+    if v.lower() in ('yes', 'true', 't', 'y', '1'):
+        return True
+    elif v.lower() in ('no', 'false', 'f', 'n', '0'):
+        return False
+    else:
+        raise argparse.ArgumentTypeError('Boolean value expected.')
+parser = argparse.ArgumentParser()
+parser.add_argument("-p", "--pixels", help="Number of pixels in LED strip", type=int)
+parser.add_argument("-b", "--fftbins", help="Number of FFT bins", type=int)
+parser.add_argument("-g", "--gui", help="Bool determining whether to display GUI", type=str_to_bool, nargs='?', const=True)
+args = parser.parse_args()
+if args.pixels:
+    config.N_PIXELS = args.pixels
+if args.fftbins:
+    config.N_FFT_BINS = args.fftbins
+if not args.gui:
+    config.USE_GUI = args.gui
+
+
 
 _time_prev = time.time() * 1000.0
 """The previous time that the frames_per_second() function was called"""
