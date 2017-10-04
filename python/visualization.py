@@ -18,17 +18,22 @@ def str_to_bool(v):
     else:
         raise argparse.ArgumentTypeError('Boolean value expected.')
 parser = argparse.ArgumentParser()
+parser.add_argument("-d", "--device", help="Device type (esp8266, pi, or blinkstick)", type=str)
 parser.add_argument("-p", "--pixels", help="Number of pixels in LED strip", type=int)
-parser.add_argument("-b", "--fftbins", help="Number of FFT bins", type=int)
-parser.add_argument("-g", "--gui", help="Bool determining whether to display GUI", type=str_to_bool, nargs='?', const=True)
+parser.add_argument("-b", "--fftbins", help="Number of FFT bins (see config.py)", type=int)
+parser.add_argument("-g", "--gui", help="Bool display GUI", type=str_to_bool, nargs='?', const=True)
+parser.add_argument("-f", "--fpsdisp", help="Bool display FPS counter?", type=str_to_bool, nargs='?', const=True)
 args = parser.parse_args()
+if args.device:
+    config.DEVICE = args.device
 if args.pixels:
     config.N_PIXELS = args.pixels
 if args.fftbins:
     config.N_FFT_BINS = args.fftbins
-if not args.gui:
+if args.gui is not None:
     config.USE_GUI = args.gui
-
+if args.fpsdisp is not None:
+    config.DISPLAY_FPS = args.gui
 
 
 _time_prev = time.time() * 1000.0
@@ -231,7 +236,12 @@ def microphone_update(audio_samples):
         N_zeros = 2**int(np.ceil(np.log2(N))) - N
         # Pad with zeros until the next power of two
         y_data *= fft_window
-        y_padded = np.pad(y_data, (0, N_zeros), mode='constant')
+
+
+        #y_padded = np.pad(y_data, (0, N_zeros), mode='constant')
+        y_padded = np.concatenate((y_data,N_zeros*[0]))
+
+
         YS = np.abs(np.fft.rfft(y_padded)[:N // 2])
         # Construct a Mel filterbank from the FFT data
         mel = np.atleast_2d(YS).T * dsp.mel_y.T
