@@ -23,6 +23,7 @@ parser.add_argument("-p", "--pixels", help="Number of pixels in LED strip", type
 parser.add_argument("-b", "--fftbins", help="Number of FFT bins (see config.py)", type=int)
 parser.add_argument("-g", "--gui", help="Bool display GUI", type=str_to_bool, nargs='?', const=True)
 parser.add_argument("-f", "--fpsdisp", help="Bool display FPS counter?", type=str_to_bool, nargs='?', const=True)
+parser.add_argument("-t", "--disptype", help="0 - Spectrum, 1 - Energy, 2 - Scroll", type=int)
 args = parser.parse_args()
 if args.device:
     config.DEVICE = args.device
@@ -34,6 +35,10 @@ if args.gui is not None:
     config.USE_GUI = args.gui
 if args.fpsdisp is not None:
     config.DISPLAY_FPS = args.gui
+
+disp_type = 0
+if args.disptype:
+    disp_type = args.disptype
 
 
 _time_prev = time.time() * 1000.0
@@ -281,7 +286,13 @@ samples_per_frame = int(config.MIC_RATE / config.FPS)
 # Array containing the rolling audio sample window
 y_roll = np.random.rand(config.N_ROLLING_HISTORY, samples_per_frame) / 1e16
 
-visualization_effect = visualize_spectrum
+
+if disp_type is 0:
+    visualization_effect = visualize_spectrum
+elif disp_type is 1:
+    visualization_effect = visualize_energy
+else:
+    visualization_effect = visualize_scroll
 """Visualization effect to display on the LED strip"""
 
 
