@@ -20,6 +20,7 @@ def start_stream(callback):
             y = y.astype(np.float32)
             callback(y)
         except IOError:
+            continue
             overflows += 1
             if time.time() > prev_ovf_time + 1:
                 prev_ovf_time = time.time()
