@@ -106,7 +106,7 @@ class Visualizer():
 
     def _wavelength_set_color_mode(self, mode):
         # chunks of colour gradients
-        self.rgb_overlay = np.zeros((3,242))
+        self.rgb_overlay = np.zeros((3,config.N_PIXELS))
         # used to construct rgb overlay. [0-255,255...] whole length of strip
         _gradient_whole = [int(i*255/(config.N_PIXELS//2)) for i in range(config.N_PIXELS//2)] +\
                           [255 for i in range(config.N_PIXELS//2)]
