@@ -1,31 +1,36 @@
 from __future__ import print_function
 from __future__ import division
+from scipy.ndimage.filters import gaussian_filter1d
+from collections import deque
 import time
 import sys
 import numpy as np
-from scipy.ndimage.filters import gaussian_filter1d
-from collections import deque
-from qrangeslider import QRangeSlider
-from qfloatslider import QFloatSlider
 import config
 import microphone
 import dsp
 import led
 if config.USE_GUI:
+    from qrangeslider import QRangeSlider
+    from qfloatslider import QFloatSlider
     import pyqtgraph as pg
     from PyQt5.QtCore import *
     from PyQt5.QtWidgets import *
 
 class Visualizer():
     def __init__(self):
+        # Dictionary linking names of effects to their respective functions
         self.effects = {"Scroll":self.visualize_scroll,
                         "Energy":self.visualize_energy,
                         "Spectrum":self.visualize_spectrum,
                         #"Power":self.visualize_power,
                         "Wavelength":self.visualize_wavelength,
                         "Beat":self.visualize_beat,
-                        "Wave":self.visualize_wave,}
+                        "Wave":self.visualize_wave,
+                        "Single":self.visualize_single,
+                        "Fade":self.visualize_fade,
+                        "Gradient":self.visualize_gradient}
                         #"Auto":self.visualize_auto}
+        # Collection of different colour in RGB format
         self.colors = {"Red":(255,0,0),
                        "Orange":(255,40,0),
                        "Yellow":(255,255,0),
@@ -33,11 +38,20 @@ class Visualizer():
                        "Blue":(0,0,255),
                        "Light blue":(1,247,161),
                        "Purple":(80,5,252),
-                       "Pink":(255,0,178)}
-        self.wavelength_color_modes = {"Spectral":"rgb",
-                                       "Dancefloor":"rpb",
-                                       "Brilliance":"ywb",
-                                       "Jungle":"ryg"}
+                       "Pink":(255,0,178),
+                       "White":(255,255,255)}
+        # List of all the visualisation effects that aren't audio reactive.
+        # These will still display when no music is playing.
+        self.non_reactive_effects = ["Single", "Gradient", "Fade"]
+        # List of names of multicolour gradients, used in various effects
+        self.multicolor_mode_names = ["Spectral",
+                                      "Dancefloor",
+                                      "Brilliance",
+                                      "Jungle",
+                                      "Sky",
+                                      "Acid",
+                                      "Ocean"]
+        # The currently selected effect
         self.current_effect = "Wavelength"
         # Setup for frequency detection algorithm
         self.freq_channel_history = 40
@@ -61,80 +75,149 @@ class Visualizer():
                                      "low":0.5,
                                      "mid":0.3,
                                      "high":0.05}
-        # Configurable options for effects go in here.
+        # Configurable options for effects go in this dictionary.
         # Usage: self.effect_opts[effect][option]
         self.effect_opts = {"Energy":{"blur": 1,                     # Amount of blur to apply
                                       "scale":0.9},                  # Width of effect on strip
                             "Wave":{"color_wave": "Red",             # Colour of moving bit
+                                    "color_flash": "White",          # Colour of flashy bit
                                     "wipe_len":5,                    # Initial length of colour bit after beat
+                                    "decay": 0.7,                    # How quickly the flash fades away 
                                     "wipe_speed":2},                 # Number of pixels added to colour bit every frame
-                            "Wavelength":{"roll": False,             # Cycle colour overlay across strip
-                                          "color_mode": "Spectral",  # Colour mode of overlay (rgb, rpb, ywb, ryg)
-                                          "mirror": False}           # Reflect output down centre of strip?
+                            "Wavelength":{"roll_speed": 0,           # How fast (if at all) to cycle colour overlay across strip
+                                          "color_mode": "Spectral",  # Colour mode of overlay
+                                          "mirror": False,           # Reflect output down centre of strip
+                                          "reverse_grad": False,     # Flip (LR) gradient
+                                          "reverse_roll": False,     # Reverse movement of gradient
+                                          "blur": 3.0},              # Amount of blur to apply
+                            "Scroll":{"decay": 0.95,                 # How quickly the colour fades away as it moves
+                                      "blur": 0.2},                  # Amount of blur to apply
+                            "Power":{"blur": 3.0},                   # Amount of blur to apply
+                            "Single":{"color": "Red"},               # Static color to show
+                            "Beat":{"color": "Red",                  # Colour of beat flash
+                                    "decay": 0.7},                   # How quickly the flash fades away
+                            "Gradient":{"color_mode":"Spectral",     # Colour gradient to display
+                                        "roll_speed": 0,             # How fast (if at all) to cycle colour overlay across strip
+                                        "mirror": False,             # Mirror gradient down central axis
+                                        "reverse": False},           # Reverse movement of gradient
+                            "Fade":{"color_mode":"Spectral",         # Colour gradient to fade through
+                                    "roll_speed": 1,                 # How fast (if at all) to fade through colours
+                                    "reverse": False}                # Reverse "direction" of fade (r->g->b or r<-g<-b)
                             }
         # Configurations for dynamic ui generation. Effect options can be changed by widgets created at runtime,
-        # meaning that you don't need to worry about the user interface - it's all done for you.
+        # meaning that you don't need to worry about the user interface - it's all done for you. All you need to
+        # do is add items to this dict below.
+        #
+        # First line of code below explained (as an example):
+        #   "Energy" is the visualization we're doing options for
+        #   "blur" is the key in the options dict (self.effect_opts["Energy"]["blur"])
+        #   "Blur" is the string we show on the GUI next to the slider
+        #   "float_slider" is the GUI element we want to use
+        #   (0.1,4.0,0.1) is a tuple containing all the details for setting up the slider (see above)
+        #
         # Each effect key points to a list. Each list contains lists giving config for each option.
-        # Syntax: effect:[variable, label_text, ui_element, opts]
+        # Syntax: effect:[key, label_text, ui_element, opts]
         #   effect     - the effect which you want to change options for. MUST have a key in self.effect_opts
-        #   variable   - the key of thing you want to be changed. MUST be in self.effect_opts[effect], otherwise it won't work.
+        #   key        - the key of thing you want to be changed. MUST be in self.effect_opts[effect], otherwise it won't work.
         #   label      - the text displayed on the ui
         #   ui_element - how you want the variable to be changed
         #   opts       - options for the ui element. Must be a tuple.
         # UI Elements + opts:
-        #   slider, (min, max, interval, default)          (for integer values in a given range)
-        #   float_slider, (min, max, interval, default)    (for floating point values in a given range)
-        #   checkbox, (default)                            (for True/False values)
-        #   dropdown, (dict, default)                      (dict example see self.colors above)
-        #   
-        self.dynamic_effects_config = {"Energy":[["blur", "Blur", "float_slider", (0.1,4.0,0.1,1.0)],
-                                                 ["scale", "Scale", "float_slider", (0.4,1.0,0.05,0.9)]],
-                                       "Wave":[["color_wave", "Wave Color", "dropdown", self.colors],
-                                               ["wipe_len", "Wave Start Length", "slider", (0,config.N_PIXELS//4,1,5)],
-                                               ["wipe_speed", "Wave Speed", "slider", (1,10,1,2)]],
-                                       "Wavelength":[["roll", "Roll Colors", "checkbox", False],
-                                                     ["color_mode", "Color Mode", "dropdown", self.wavelength_color_modes]]
+        #   slider, (min, max, interval)                   (for integer values in a given range)
+        #   float_slider, (min, max, interval)             (for floating point values in a given range)
+        #   checkbox, ()                                   (for True/False values)
+        #   dropdown, (dict or list)                       (dict/list, example see below. Keys will be displayed in the dropdown if dict, otherwise just list items)
+        #
+        # Hope this clears things up a bit for you! GUI has never been easier..? The reason for doing this is
+        # 1 - To make it easy to add options to your effects for the user
+        # 2 - To give a consistent GUI for the user. If every options page was set out differently it would all be a mess
+        self.dynamic_effects_config = {"Energy":[["blur", "Blur", "float_slider", (0.1,4.0,0.1)],
+                                                 ["scale", "Scale", "float_slider", (0.4,1.0,0.05)]],
+                                       "Wave":[["color_flash", "Flash Color", "dropdown", self.colors],
+                                               ["color_wave", "Wave Color", "dropdown", self.colors],
+                                               ["wipe_len", "Wave Start Length", "slider", (0,config.N_PIXELS//4,1)],
+                                               ["wipe_speed", "Wave Speed", "slider", (1,10,1)],
+                                               ["decay", "Flash Decay", "float_slider", (0.1,1.0,0.05)]],
+                                       "Wavelength":[["color_mode", "Color Mode", "dropdown", self.multicolor_mode_names],
+                                                     ["roll_speed", "Roll Speed", "slider", (0,8,1)],
+                                                     ["blur", "Blur", "float_slider", (0.1,4.0,0.1)],
+                                                     ["mirror", "Mirror", "checkbox"],
+                                                     ["reverse_grad", "Reverse Gradient", "checkbox"],
+                                                     ["reverse_roll", "Reverse Roll", "checkbox"]],
+                                       "Scroll":[["blur", "Blur", "float_slider", (0.05,4.0,0.05)],
+                                                 ["decay", "Decay", "float_slider", (0.95,1.0,0.005)]],
+                                       "Power":[["blur", "Blur", "float_slider", (0.1,4.0,0.1)]],
+                                       "Single":[["color", "Color", "dropdown", self.colors]],
+                                       "Beat":[["color", "Color", "dropdown", self.colors],
+                                               ["decay", "Flash Decay", "float_slider", (0.3,0.98,0.005)]],
+                                       "Gradient":[["color_mode", "Color Mode", "dropdown", self.multicolor_mode_names],
+                                                   ["roll_speed", "Roll Speed", "slider", (0,8,1)],
+                                                   ["mirror", "Mirror", "checkbox"],
+                                                   ["reverse", "Reverse", "checkbox"]],
+                                       "Fade":[["color_mode", "Color Mode", "dropdown", self.multicolor_mode_names],
+                                               ["roll_speed", "Fade Speed", "slider", (0,8,1)],
+                                               ["reverse", "Reverse", "checkbox"]]
                                        }
-                                                
-                                      
         
         # Setup for "Wave" (don't change these)
         self.wave_wipe_count = 0
-        # Setup for "Wavelength" (don't change these)
-        self._wavelength_set_color_mode(self.effect_opts["Wavelength"]["color_mode"])
-
-
-    def _wavelength_set_color_mode(self, mode):
+        # Setup for multicolour modes (don't mess with this either unless you want to add in your own multicolour modes)
+        # If there's a multicolour mode you would like to see, let me know on GitHub! 
+        self.multicolor_modes = {}
         # chunks of colour gradients
-        self.rgb_overlay = np.zeros((3,config.N_PIXELS))
+        _blank_overlay = np.zeros((3,config.N_PIXELS))
         # used to construct rgb overlay. [0-255,255...] whole length of strip
         _gradient_whole = [int(i*255/(config.N_PIXELS//2)) for i in range(config.N_PIXELS//2)] +\
                           [255 for i in range(config.N_PIXELS//2)]
+        # also used to make bits and pieces. [0-255], 1/2 length of strip
+        _alt_gradient_half = [int(i*255/(config.N_PIXELS//2)) for i in range(config.N_PIXELS//2)]
         # used to construct rgb overlay. [0-255,255...] 1/2 length of strip
         _gradient_half = _gradient_whole[::2]
-        if self.wavelength_color_modes[self.effect_opts["Wavelength"]["color_mode"]] == "rgb":
-            self.rgb_overlay[0, :config.N_PIXELS//2] = _gradient_half[::-1]
-            self.rgb_overlay[1, :] = _gradient_half + _gradient_half[::-1]
-            self.rgb_overlay[2, :] = np.flipud(self.rgb_overlay[0])
-        elif self.wavelength_color_modes[self.effect_opts["Wavelength"]["color_mode"]] == "rpb":
-            self.rgb_overlay[0, :] = _gradient_whole[::-1]
-            self.rgb_overlay[2, :] = _gradient_whole
-        elif self.wavelength_color_modes[self.effect_opts["Wavelength"]["color_mode"]] == "ywb":
-            self.rgb_overlay[0, :] = _gradient_whole[::-1]
-            self.rgb_overlay[1, :] = 255
-            self.rgb_overlay[2, :] = _gradient_whole
-        elif self.wavelength_color_modes[self.effect_opts["Wavelength"]["color_mode"]] == "ryg":
-            self.rgb_overlay[0, :] = _gradient_whole[::-1]
-            self.rgb_overlay[1, :] = _gradient_whole
-        else:
-            raise ValueError("Colour mode '{}' not known. Leave an issue on github if you want it added!".format(mode))
-        self.effect_opts["Wavelength"]["color_mode"] = mode            
-        
+        # Spectral colour mode
+        self.multicolor_modes["Spectral"] = np.zeros((3,config.N_PIXELS))
+        self.multicolor_modes["Spectral"][0, :config.N_PIXELS//2] = _gradient_half[::-1]
+        self.multicolor_modes["Spectral"][1, :] = _gradient_half + _gradient_half[::-1]
+        self.multicolor_modes["Spectral"][2, :] = np.flipud(self.multicolor_modes["Spectral"][0])
+        # Dancefloor colour mode
+        self.multicolor_modes["Dancefloor"] = np.zeros((3,config.N_PIXELS))
+        self.multicolor_modes["Dancefloor"][0, :] = _gradient_whole[::-1]
+        self.multicolor_modes["Dancefloor"][2, :] = _gradient_whole
+        # Brilliance colour mode
+        self.multicolor_modes["Brilliance"] = np.zeros((3,config.N_PIXELS))
+        self.multicolor_modes["Brilliance"][0, :] = _gradient_whole[::-1]
+        self.multicolor_modes["Brilliance"][1, :] = 255
+        self.multicolor_modes["Brilliance"][2, :] = _gradient_whole
+        # Jungle colour mode
+        self.multicolor_modes["Jungle"] = np.zeros((3,config.N_PIXELS))
+        self.multicolor_modes["Jungle"][0, :] = _gradient_whole[::-1]
+        self.multicolor_modes["Jungle"][1, :] = _gradient_whole
+        # Sky colour mode
+        self.multicolor_modes["Sky"] = np.zeros((3,config.N_PIXELS))
+        self.multicolor_modes["Sky"][0, :config.N_PIXELS//2] = _alt_gradient_half[::-1]
+        self.multicolor_modes["Sky"][1, config.N_PIXELS//2:] = _alt_gradient_half
+        self.multicolor_modes["Sky"][2, :] = 255
+        # Acid colour mode
+        self.multicolor_modes["Acid"] = np.zeros((3,config.N_PIXELS))
+        self.multicolor_modes["Acid"][0, :config.N_PIXELS//2] = _alt_gradient_half[::-1]
+        self.multicolor_modes["Acid"][1, :] = 255
+        self.multicolor_modes["Acid"][2, config.N_PIXELS//2:] = _alt_gradient_half
+        # Ocean colour mode
+        self.multicolor_modes["Ocean"] = np.zeros((3,config.N_PIXELS))
+        self.multicolor_modes["Ocean"][1, :] = _gradient_whole
+        self.multicolor_modes["Ocean"][2, :] = _gradient_whole[::-1]
+        for i in self.multicolor_modes:
+            self.multicolor_modes[i] = np.concatenate((self.multicolor_modes[i][:, ::-1],
+                                                       self.multicolor_modes[i]), axis=1)
 
-    def get_vis(self, y):
+    def get_vis(self, y, audio_input):
         self.update_freq_channels(y)
         self.detect_freqs()
-        self.prev_output = np.copy(self.effects[self.current_effect](y))
+        if audio_input:
+            self.prev_output = np.copy(self.effects[self.current_effect](y))
+        elif self.current_effect in self.non_reactive_effects:
+            self.prev_output = np.copy(self.effects[self.current_effect](y))
+        else:
+            self.prev_output = np.multiply(self.prev_output, 0.95)
         return self.prev_output
 
     def _split_equal(self, value, parts):
@@ -164,17 +247,7 @@ class Visualizer():
                 self.current_freq_detects[i] = True
                 #print(i)
             else:
-                self.current_freq_detects[i] = False
-        #if self.current_freq_detects["beat"]:
-        #    print(time.time(),"Beat")
-                #pass
-                #print(differences[0], channel_avgs[0])
-            
-        #print("{1: <{0}}{2: <{0}}{4: <{0}}{4}".format(7, self.current_freq_detects["beat"],
-        #                                                 self.current_freq_detects["low"],
-        #                                                 self.current_freq_detects["mid"],
-        #                                                 self.current_freq_detects["high"]))
-                
+                self.current_freq_detects[i] = False                
 
     def visualize_scroll(self, y):
         """Effect that originates in the center and scrolls outwards"""
@@ -188,8 +261,8 @@ class Visualizer():
         b = int(np.max(y[2 * len(y) // 3:]))
         # Scrolling effect window
         p[:, 1:] = p[:, :-1]
-        p *= 0.98
-        p = gaussian_filter1d(p, sigma=0.2)
+        p *= self.effect_opts["Scroll"]["decay"]
+        p = gaussian_filter1d(p, sigma=self.effect_opts["Scroll"]["blur"])
         # Create new color originating at the center
         p[0, 0] = r
         p[1, 0] = g
@@ -234,24 +307,30 @@ class Visualizer():
         self.prev_spectrum = np.copy(y)
         # Color channel mappings
         r = r_filt.update(y - common_mode.value)
-        g = np.abs(diff)
+        #g = np.abs(diff)
         b = b_filt.update(np.copy(y))
-        if self.effect_opts["Wavelength"]["mirror"]:
-            r = r.extend(r[::-1])
-            r = r.extend(r[::-1])
-        else:
-            # stretch (double) r so it covers the entire spectrum
-            r = np.array([j for i in zip(r,r) for j in i])
-            b = np.array([j for i in zip(b,b) for j in i])
-        output = [self.rgb_overlay[0]*r,self.rgb_overlay[1]*r,self.rgb_overlay[2]*r]
+        r = np.array([j for i in zip(r,r) for j in i])
+        #b = np.array([j for i in zip(b,b) for j in i])
+        output = np.array([self.multicolor_modes[self.effect_opts["Wavelength"]["color_mode"]][0][
+                                    (config.N_PIXELS if not self.effect_opts["Wavelength"]["reverse_grad"] else 0):
+                                    (None if not self.effect_opts["Wavelength"]["reverse_grad"] else config.N_PIXELS):]*r,
+                           self.multicolor_modes[self.effect_opts["Wavelength"]["color_mode"]][1][
+                                    (config.N_PIXELS if not self.effect_opts["Wavelength"]["reverse_grad"] else 0):
+                                    (None if not self.effect_opts["Wavelength"]["reverse_grad"] else config.N_PIXELS):]*r,
+                           self.multicolor_modes[self.effect_opts["Wavelength"]["color_mode"]][2][
+                                    (config.N_PIXELS if not self.effect_opts["Wavelength"]["reverse_grad"] else 0):
+                                    (None if not self.effect_opts["Wavelength"]["reverse_grad"] else config.N_PIXELS):]*r])
         self.prev_spectrum = y
-        if self.effect_opts["Wavelength"]["roll"]:
-            self.rgb_overlay = np.roll(self.rgb_overlay,1,axis=1)
-        output[0] = gaussian_filter1d(output[0], sigma=4.0)
-        output[1] = gaussian_filter1d(output[1], sigma=4.0)
-        output[2] = gaussian_filter1d(output[2], sigma=4.0)
+        self.multicolor_modes[self.effect_opts["Wavelength"]["color_mode"]] = np.roll(
+                    self.multicolor_modes[self.effect_opts["Wavelength"]["color_mode"]],
+                    self.effect_opts["Wavelength"]["roll_speed"]*(-1 if self.effect_opts["Wavelength"]["reverse_roll"] else 1),
+                    axis=1)
+        output[0] = gaussian_filter1d(output[0], sigma=self.effect_opts["Wavelength"]["blur"])
+        output[1] = gaussian_filter1d(output[1], sigma=self.effect_opts["Wavelength"]["blur"])
+        output[2] = gaussian_filter1d(output[2], sigma=self.effect_opts["Wavelength"]["blur"])
+        if self.effect_opts["Wavelength"]["mirror"]:
+            output = np.concatenate((output[:, ::-2], output[:, ::2]), axis=1)
         return output
-        #return np.concatenate((p[:, ::-1], p), axis=1)
 
     def visualize_power(self, y):
         """Effect that pulses different reqions of the strip increasing sound energy"""
@@ -265,20 +344,20 @@ class Visualizer():
         r = r_filt.update(y - common_mode.value)
         g = np.abs(diff)
         b = b_filt.update(np.copy(y))
-        # I have no idea what any of this does but it looks cool
+        # I have no idea what any of this does but it looks kinda cool
         r = [int(i*255) for i in r[::3]]
         g = [int(i*255) for i in g[::3]]
         b = [int(i*255) for i in b[::3]]
         _p[0, 0:len(r)] = r
         _p[1, len(r):len(r)+len(g)] = g
-        _p[2, len(r)+len(g):config.N_PIXELS] = b[:39]
+        _p[2, len(r)+len(g):config.N_PIXELS] = b[:39] # this needs to be fixed 
         p_filt.update(_p)
         # Clip it into range
         _p = np.clip(p, 0, 255).astype(int)
         # Apply substantial blur to smooth the edges
-        _p[0, :] = gaussian_filter1d(_p[0, :], sigma=3.0)
-        _p[1, :] = gaussian_filter1d(_p[1, :], sigma=3.0)
-        _p[2, :] = gaussian_filter1d(_p[2, :], sigma=3.0)
+        _p[0, :] = gaussian_filter1d(_p[0, :], sigma=self.effect_opts["Power"]["blur"])
+        _p[1, :] = gaussian_filter1d(_p[1, :], sigma=self.effect_opts["Power"]["blur"])
+        _p[2, :] = gaussian_filter1d(_p[2, :], sigma=self.effect_opts["Power"]["blur"])
         self.prev_spectrum = y
         return np.concatenate((_p[:, ::-1], _p), axis=1)
     
@@ -310,13 +389,16 @@ class Visualizer():
     def visualize_wave(self, y):
         """Effect that flashes to the beat with scrolling coloured bits"""
         if self.current_freq_detects["beat"]:
-            output = np.array([[255 for i in range(config.N_PIXELS)] for i in range(3)])
+            output = np.zeros((3,config.N_PIXELS))
+            output[0][:]=self.colors[self.effect_opts["Wave"]["color_flash"]][0]
+            output[1][:]=self.colors[self.effect_opts["Wave"]["color_flash"]][1]
+            output[2][:]=self.colors[self.effect_opts["Wave"]["color_flash"]][2]
             self.wave_wipe_count = self.effect_opts["Wave"]["wipe_len"]
         else:
             output = np.copy(self.prev_output)
             #for i in range(len(self.prev_output)):
             #    output[i] = np.hsplit(self.prev_output[i],2)[0]
-            output = np.multiply(self.prev_output,0.7)
+            output = np.multiply(self.prev_output,self.effect_opts["Wave"]["decay"])
             for i in range(self.wave_wipe_count):
                 output[0][i]=self.colors[self.effect_opts["Wave"]["color_wave"]][0]
                 output[0][-i]=self.colors[self.effect_opts["Wave"]["color_wave"]][0]
@@ -333,13 +415,44 @@ class Visualizer():
     def visualize_beat(self, y):
         """Effect that flashes to the beat"""
         if self.current_freq_detects["beat"]:
-            output = np.array([[255 for i in range(config.N_PIXELS)] for i in range(3)])
+            output = np.zeros((3,config.N_PIXELS))
+            output[0][:]=self.colors[self.effect_opts["Beat"]["color"]][0]
+            output[1][:]=self.colors[self.effect_opts["Beat"]["color"]][1]
+            output[2][:]=self.colors[self.effect_opts["Beat"]["color"]][2]
         else:
             output = np.copy(self.prev_output)
-            output = np.multiply(self.prev_output,0.7)
+            output = np.multiply(self.prev_output,self.effect_opts["Beat"]["decay"])
         return output
 
+    def visualize_single(self, y):
+        output = np.zeros((3,config.N_PIXELS))
+        output[0][:]=self.colors[self.effect_opts["Single"]["color"]][0]
+        output[1][:]=self.colors[self.effect_opts["Single"]["color"]][1]
+        output[2][:]=self.colors[self.effect_opts["Single"]["color"]][2]
+        return output
 
+    def visualize_gradient(self, y):
+        output = np.array([self.multicolor_modes[self.effect_opts["Gradient"]["color_mode"]][0][:config.N_PIXELS],
+                           self.multicolor_modes[self.effect_opts["Gradient"]["color_mode"]][1][:config.N_PIXELS],
+                           self.multicolor_modes[self.effect_opts["Gradient"]["color_mode"]][2][:config.N_PIXELS]])
+        self.multicolor_modes[self.effect_opts["Gradient"]["color_mode"]] = np.roll(
+                           self.multicolor_modes[self.effect_opts["Gradient"]["color_mode"]],
+                           self.effect_opts["Gradient"]["roll_speed"]*(-1 if self.effect_opts["Gradient"]["reverse"] else 1),
+                           axis=1)
+        if self.effect_opts["Gradient"]["mirror"]:
+            output = np.concatenate((output[:, ::-2], output[:, ::2]), axis=1)
+        return output
+
+    def visualize_fade(self, y):
+        output = [[self.multicolor_modes[self.effect_opts["Fade"]["color_mode"]][0][0] for i in range(config.N_PIXELS)],
+                  [self.multicolor_modes[self.effect_opts["Fade"]["color_mode"]][1][0] for i in range(config.N_PIXELS)],
+                  [self.multicolor_modes[self.effect_opts["Fade"]["color_mode"]][2][0] for i in range(config.N_PIXELS)]]
+        self.multicolor_modes[self.effect_opts["Fade"]["color_mode"]] = np.roll(
+                           self.multicolor_modes[self.effect_opts["Fade"]["color_mode"]],
+                           self.effect_opts["Fade"]["roll_speed"]*(-1 if self.effect_opts["Fade"]["reverse"] else 1),
+                           axis=1)
+        return output
+        
 class GUI(QWidget):
     def __init__(self):
         super().__init__()
@@ -395,29 +508,44 @@ class GUI(QWidget):
         led_plot.addItem(self.b_curve)
 
         # ================================================= Set up button layout
-        label_active = QLabel("Active Effect")
-        button_grid = QGridLayout()
+        label_reactive = QLabel("Audio Reactive Effects")
+        label_non_reactive = QLabel("Non Reactive Effects")
+        reactive_button_grid = QGridLayout()
+        non_reactive_button_grid = QGridLayout()        
         buttons = {}
         connecting_funcs = {}
         grid_width = 4
         i = 0
         j = 0
-        # Dynamically layout buttons and connect them to the visualisation effects
+        k = 0
+        l = 0
+        # Dynamically layout reactive_buttons and connect them to the visualisation effects
         def connect_generator(effect):
             def func():
                 visualizer.current_effect = effect
+                buttons[effect].setDown(True)
             func.__name__ = effect
             return func
         # Where the magic happens
         for effect in visualizer.effects:
-            connecting_funcs[effect] = connect_generator(effect)
-            buttons[effect] = QPushButton(effect)
-            buttons[effect].clicked.connect(connecting_funcs[effect])
-            button_grid.addWidget(buttons[effect], j, i)
-            i += 1
-            if i % grid_width == 0:
-                i = 0
-                j += 1
+            if not effect in visualizer.non_reactive_effects:
+                connecting_funcs[effect] = connect_generator(effect)
+                buttons[effect] = QPushButton(effect)
+                buttons[effect].clicked.connect(connecting_funcs[effect])
+                reactive_button_grid.addWidget(buttons[effect], j, i)
+                i += 1
+                if i % grid_width == 0:
+                    i = 0
+                    j += 1
+            else:
+                connecting_funcs[effect] = connect_generator(effect)
+                buttons[effect] = QPushButton(effect)
+                buttons[effect].clicked.connect(connecting_funcs[effect])
+                non_reactive_button_grid.addWidget(buttons[effect], l, k)
+                k += 1
+                if k % grid_width == 0:
+                    k = 0
+                    l += 1
                 
         # ============================================== Set up frequency slider
         # Frequency range label
@@ -491,7 +619,6 @@ class GUI(QWidget):
             def gen_combobox_valuechanger(effect, key):
                 def func():
                     visualizer.effect_opts[effect][key] = self.grid_layout_widgets[effect][key].currentText()
-                    visualizer._wavelength_set_color_mode(visualizer.effect_opts[effect][key])
                 return func
             def gen_checkbox_valuechanger(effect, key):
                 def func():
@@ -501,40 +628,37 @@ class GUI(QWidget):
             if effect in visualizer.dynamic_effects_config:
                 i = 0
                 connecting_funcs[effect] = {}
-                for key, label, ui_element, opts in visualizer.dynamic_effects_config[effect][:]:
+                for key, label, ui_element, *opts in visualizer.dynamic_effects_config[effect]:
+                    if opts: # neatest way  ^^^^^ i could think of to unpack and handle an unknown number of opts (if any)
+                        opts = opts[0]
                     if ui_element == "slider":
                         connecting_funcs[effect][key] = gen_slider_valuechanger(effect, key)
                         self.grid_layout_widgets[effect][key] = QSlider(Qt.Horizontal)
                         self.grid_layout_widgets[effect][key].setMinimum(opts[0])
                         self.grid_layout_widgets[effect][key].setMaximum(opts[1])
-                        self.grid_layout_widgets[effect][key].setValue(opts[2])
+                        self.grid_layout_widgets[effect][key].setValue(visualizer.effect_opts[effect][key])
                         self.grid_layout_widgets[effect][key].valueChanged.connect(
                                 connecting_funcs[effect][key])
-                        grid_layouts[effect].addWidget(QLabel(label),i,0)
-                        grid_layouts[effect].addWidget(self.grid_layout_widgets[effect][key],i,1)
                     elif ui_element == "float_slider":
                         connecting_funcs[effect][key] = gen_float_slider_valuechanger(effect, key)
-                        self.grid_layout_widgets[effect][key] = QFloatSlider(*opts)
+                        self.grid_layout_widgets[effect][key] = QFloatSlider(*opts, visualizer.effect_opts[effect][key])
+                        self.grid_layout_widgets[effect][key].setValue(visualizer.effect_opts[effect][key])
                         self.grid_layout_widgets[effect][key].valueChanged.connect(
                                 connecting_funcs[effect][key])
-                        grid_layouts[effect].addWidget(QLabel(label),i,0)
-                        grid_layouts[effect].addWidget(self.grid_layout_widgets[effect][key],i,1)
                     elif ui_element == "dropdown":
                         connecting_funcs[effect][key] = gen_combobox_valuechanger(effect, key)
                         self.grid_layout_widgets[effect][key] = QComboBox()
-                        self.grid_layout_widgets[effect][key].addItems(opts.keys())
+                        self.grid_layout_widgets[effect][key].addItems(opts)
                         self.grid_layout_widgets[effect][key].currentIndexChanged.connect(
                                 connecting_funcs[effect][key])
-                        grid_layouts[effect].addWidget(QLabel(label),i,0)
-                        grid_layouts[effect].addWidget(self.grid_layout_widgets[effect][key],i,1)
                     elif ui_element == "checkbox":
                         connecting_funcs[effect][key] = gen_checkbox_valuechanger(effect, key)
                         self.grid_layout_widgets[effect][key] = QCheckBox()
-                        #self.grid_layout_widgets[effect][key].addItems(opts.keys())
+                        self.grid_layout_widgets[effect][key].setCheckState(visualizer.effect_opts[effect][key])
                         self.grid_layout_widgets[effect][key].stateChanged.connect(
                                 connecting_funcs[effect][key])
-                        grid_layouts[effect].addWidget(QLabel(label),i,0)
-                        grid_layouts[effect].addWidget(self.grid_layout_widgets[effect][key],i,1)
+                    grid_layouts[effect].addWidget(QLabel(label),i,0)
+                    grid_layouts[effect].addWidget(self.grid_layout_widgets[effect][key],i,1)
                     i += 1    
                 #visualizer.effect_settings[effect]
             else:
@@ -546,8 +670,10 @@ class GUI(QWidget):
         self.setLayout(wrapper)
         wrapper.addLayout(labels_layout)
         wrapper.addWidget(graph_view)
-        wrapper.addWidget(label_active)
-        wrapper.addLayout(button_grid)
+        wrapper.addWidget(label_reactive)
+        wrapper.addLayout(reactive_button_grid)
+        wrapper.addWidget(label_non_reactive)
+        wrapper.addLayout(non_reactive_button_grid)
         wrapper.addWidget(label_slider)
         wrapper.addWidget(freq_slider)
         wrapper.addWidget(label_options)
@@ -633,41 +759,36 @@ def microphone_update(audio_samples):
     y_data = np.concatenate(y_roll, axis=0).astype(np.float32)
     
     vol = np.max(np.abs(y_data))
-    if vol < config.MIN_VOLUME_THRESHOLD:
-        if config.USE_GUI:
+
+    # Transform audio input into the frequency domain
+    N = len(y_data)
+    N_zeros = 2**int(np.ceil(np.log2(N))) - N
+    # Pad with zeros until the next power of two
+    y_data *= fft_window
+    y_padded = np.pad(y_data, (0, N_zeros), mode='constant')
+    YS = np.abs(np.fft.rfft(y_padded)[:N // 2])
+    # Construct a Mel filterbank from the FFT data
+    mel = np.atleast_2d(YS).T * dsp.mel_y.T
+    # Scale data to values more suitable for visualization
+    # mel = np.sum(mel, axis=0)
+    mel = np.sum(mel, axis=0)
+    mel = mel**2.0
+    # Gain normalization
+    mel_gain.update(np.max(gaussian_filter1d(mel, sigma=1.0)))
+    mel /= mel_gain.value
+    mel = mel_smoothing.update(mel)
+    # Map filterbank output onto LED strip
+    led.pixels = visualizer.get_vis(mel, audio_input = True if vol > config.MIN_VOLUME_THRESHOLD else False)
+    led.update()
+    if config.USE_GUI:
+        x = np.linspace(config.MIN_FREQUENCY, config.MAX_FREQUENCY, len(mel))
+        if vol < config.MIN_VOLUME_THRESHOLD:
             gui.label_error.setText("No audio input. Volume below threshold.")
+            gui.mel_curve.setData(x=x, y=[0 for i in range(config.N_FFT_BINS)])
         else:
-            print("No audio input. Volume below threshold. Volume: {}".format(vol))
-        visualizer.prev_output = np.multiply(visualizer.prev_output,0.95)
-        led.pixels = visualizer.prev_output
-        led.update()
-    else:
-        # Transform audio input into the frequency domain
-        N = len(y_data)
-        N_zeros = 2**int(np.ceil(np.log2(N))) - N
-        # Pad with zeros until the next power of two
-        y_data *= fft_window
-        y_padded = np.pad(y_data, (0, N_zeros), mode='constant')
-        YS = np.abs(np.fft.rfft(y_padded)[:N // 2])
-        # Construct a Mel filterbank from the FFT data
-        mel = np.atleast_2d(YS).T * dsp.mel_y.T
-        # Scale data to values more suitable for visualization
-        # mel = np.sum(mel, axis=0)
-        mel = np.sum(mel, axis=0)
-        mel = mel**2.0
-        # Gain normalization
-        mel_gain.update(np.max(gaussian_filter1d(mel, sigma=1.0)))
-        mel /= mel_gain.value
-        mel = mel_smoothing.update(mel)
-        # Map filterbank output onto LED strip
-        led.pixels = visualizer.get_vis(mel)
-        led.update()
-        if config.USE_GUI:
             # Plot filterbank output
-            x = np.linspace(config.MIN_FREQUENCY, config.MAX_FREQUENCY, len(mel))
             gui.mel_curve.setData(x=x, y=fft_plot_filter.update(mel))
             gui.label_error.setText("")
-    if config.USE_GUI:
         fps = frames_per_second()
         if time.time() - 0.5 > prev_fps_update:
             prev_fps_update = time.time()
@@ -678,6 +799,8 @@ def microphone_update(audio_samples):
         gui.b_curve.setData(y=led.pixels[2])
         # Update fps counter
         gui.label_fps.setText('{:.0f} / {:.0f} FPS'.format(fps, config.FPS))
+    elif vol < config.MIN_VOLUME_THRESHOLD:
+        print("No audio input. Volume below threshold. Volume: {}".format(vol))
     if config.DISPLAY_FPS:
         print('FPS {:.0f} / {:.0f}'.format(fps, config.FPS))
         
