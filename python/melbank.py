@@ -31,6 +31,7 @@ Functions
 """
 
 from numpy import abs, append, arange, insert, linspace, log10, round, zeros
+from math import log
 
 
 def hertz_to_mel(freq):
@@ -44,7 +45,8 @@ def hertz_to_mel(freq):
     mel : scalar or ndarray
         Mel-frequency value or ndarray in Mel
     """
-    return 2595.0 * log10(1 + (freq / 700.0))
+    #return 2595.0 * log10(1 + (freq / 700.0))
+    return 3340.0 * log(1 + (freq / 250.0), 9)
 
 
 def mel_to_hertz(mel):
@@ -58,7 +60,8 @@ def mel_to_hertz(mel):
     freq : scalar or ndarray
         Frequency value or array in Hz.
     """
-    return 700.0 * (10**(mel / 2595.0)) - 700.0
+    #return 700.0 * (10**(mel / 2595.0)) - 700.0
+    return 250.0 * (9**(mel / 3340.0)) - 250.0
 
 
 def melfrequencies_mel_filterbank(num_bands, freq_min, freq_max, num_fft_bands):

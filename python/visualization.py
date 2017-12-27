@@ -26,6 +26,7 @@ class Visualizer():
                         "Wavelength":self.visualize_wavelength,
                         "Beat":self.visualize_beat,
                         "Wave":self.visualize_wave,
+                        "Bars":self.visualize_bars,
                         "Single":self.visualize_single,
                         "Fade":self.visualize_fade,
                         "Gradient":self.visualize_gradient}
@@ -88,7 +89,7 @@ class Visualizer():
                                           "color_mode": "Spectral",  # Colour mode of overlay
                                           "mirror": False,           # Reflect output down centre of strip
                                           "reverse_grad": False,     # Flip (LR) gradient
-                                          "reverse_roll": False,     # Reverse movement of gradient
+                                          "reverse_roll": False,     # Reverse movement of gradient roll
                                           "blur": 3.0},              # Amount of blur to apply
                             "Scroll":{"decay": 0.95,                 # How quickly the colour fades away as it moves
                                       "blur": 0.2},                  # Amount of blur to apply
@@ -96,8 +97,14 @@ class Visualizer():
                             "Single":{"color": "Red"},               # Static color to show
                             "Beat":{"color": "Red",                  # Colour of beat flash
                                     "decay": 0.7},                   # How quickly the flash fades away
+                            "Bars":{"resolution":4,                  # Number of "bars"
+                                    "color_mode":"Spectral",         # Multicolour mode to use
+                                    "roll_speed":0,                  # How fast (if at all) to cycle colour colours across strip
+                                    "mirror": False,                 # Mirror down centre of strip
+                                    #"reverse_grad": False,           # Flip (LR) gradient 
+                                    "reverse_roll": False},          # Reverse movement of gradient roll
                             "Gradient":{"color_mode":"Spectral",     # Colour gradient to display
-                                        "roll_speed": 0,             # How fast (if at all) to cycle colour overlay across strip
+                                        "roll_speed": 0,             # How fast (if at all) to cycle colour colours across strip
                                         "mirror": False,             # Mirror gradient down central axis
                                         "reverse": False},           # Reverse movement of gradient
                             "Fade":{"color_mode":"Spectral",         # Colour gradient to fade through
@@ -150,6 +157,11 @@ class Visualizer():
                                        "Single":[["color", "Color", "dropdown", self.colors]],
                                        "Beat":[["color", "Color", "dropdown", self.colors],
                                                ["decay", "Flash Decay", "float_slider", (0.3,0.98,0.005)]],
+                                       "Bars":[["color_mode", "Color Mode", "dropdown", self.multicolor_mode_names],
+                                               ["resolution", "Resolution", "slider", (1, config.N_FFT_BINS, 1)],
+                                               ["roll_speed", "Roll Speed", "slider", (0,8,1)],
+                                               ["mirror", "Mirror", "checkbox"],
+                                               ["reverse_roll", "Reverse Roll", "checkbox"]],
                                        "Gradient":[["color_mode", "Color Mode", "dropdown", self.multicolor_mode_names],
                                                    ["roll_speed", "Roll Speed", "slider", (0,8,1)],
                                                    ["mirror", "Mirror", "checkbox"],
@@ -175,32 +187,32 @@ class Visualizer():
         _gradient_half = _gradient_whole[::2]
         # Spectral colour mode
         self.multicolor_modes["Spectral"] = np.zeros((3,config.N_PIXELS))
-        self.multicolor_modes["Spectral"][0, :config.N_PIXELS//2] = _gradient_half[::-1]
+        self.multicolor_modes["Spectral"][2, :config.N_PIXELS//2] = _gradient_half[::-1]
         self.multicolor_modes["Spectral"][1, :] = _gradient_half + _gradient_half[::-1]
-        self.multicolor_modes["Spectral"][2, :] = np.flipud(self.multicolor_modes["Spectral"][0])
+        self.multicolor_modes["Spectral"][0, :] = np.flipud(self.multicolor_modes["Spectral"][2])
         # Dancefloor colour mode
         self.multicolor_modes["Dancefloor"] = np.zeros((3,config.N_PIXELS))
-        self.multicolor_modes["Dancefloor"][0, :] = _gradient_whole[::-1]
-        self.multicolor_modes["Dancefloor"][2, :] = _gradient_whole
+        self.multicolor_modes["Dancefloor"][2, :] = _gradient_whole[::-1]
+        self.multicolor_modes["Dancefloor"][0, :] = _gradient_whole
         # Brilliance colour mode
         self.multicolor_modes["Brilliance"] = np.zeros((3,config.N_PIXELS))
-        self.multicolor_modes["Brilliance"][0, :] = _gradient_whole[::-1]
+        self.multicolor_modes["Brilliance"][2, :] = _gradient_whole[::-1]
         self.multicolor_modes["Brilliance"][1, :] = 255
-        self.multicolor_modes["Brilliance"][2, :] = _gradient_whole
+        self.multicolor_modes["Brilliance"][0, :] = _gradient_whole
         # Jungle colour mode
         self.multicolor_modes["Jungle"] = np.zeros((3,config.N_PIXELS))
-        self.multicolor_modes["Jungle"][0, :] = _gradient_whole[::-1]
-        self.multicolor_modes["Jungle"][1, :] = _gradient_whole
+        self.multicolor_modes["Jungle"][1, :] = _gradient_whole[::-1]
+        self.multicolor_modes["Jungle"][0, :] = _gradient_whole
         # Sky colour mode
         self.multicolor_modes["Sky"] = np.zeros((3,config.N_PIXELS))
-        self.multicolor_modes["Sky"][0, :config.N_PIXELS//2] = _alt_gradient_half[::-1]
-        self.multicolor_modes["Sky"][1, config.N_PIXELS//2:] = _alt_gradient_half
+        self.multicolor_modes["Sky"][1, :config.N_PIXELS//2] = _alt_gradient_half[::-1]
+        self.multicolor_modes["Sky"][0, config.N_PIXELS//2:] = _alt_gradient_half
         self.multicolor_modes["Sky"][2, :] = 255
         # Acid colour mode
         self.multicolor_modes["Acid"] = np.zeros((3,config.N_PIXELS))
-        self.multicolor_modes["Acid"][0, :config.N_PIXELS//2] = _alt_gradient_half[::-1]
+        self.multicolor_modes["Acid"][2, :config.N_PIXELS//2] = _alt_gradient_half[::-1]
         self.multicolor_modes["Acid"][1, :] = 255
-        self.multicolor_modes["Acid"][2, config.N_PIXELS//2:] = _alt_gradient_half
+        self.multicolor_modes["Acid"][0, config.N_PIXELS//2:] = _alt_gradient_half
         # Ocean colour mode
         self.multicolor_modes["Ocean"] = np.zeros((3,config.N_PIXELS))
         self.multicolor_modes["Ocean"][1, :] = _gradient_whole
@@ -310,17 +322,16 @@ class Visualizer():
         #g = np.abs(diff)
         b = b_filt.update(np.copy(y))
         r = np.array([j for i in zip(r,r) for j in i])
-        #b = np.array([j for i in zip(b,b) for j in i])
         output = np.array([self.multicolor_modes[self.effect_opts["Wavelength"]["color_mode"]][0][
-                                    (config.N_PIXELS if not self.effect_opts["Wavelength"]["reverse_grad"] else 0):
-                                    (None if not self.effect_opts["Wavelength"]["reverse_grad"] else config.N_PIXELS):]*r,
+                                    (config.N_PIXELS if self.effect_opts["Wavelength"]["reverse_grad"] else 0):
+                                    (None if self.effect_opts["Wavelength"]["reverse_grad"] else config.N_PIXELS):]*r,
                            self.multicolor_modes[self.effect_opts["Wavelength"]["color_mode"]][1][
-                                    (config.N_PIXELS if not self.effect_opts["Wavelength"]["reverse_grad"] else 0):
-                                    (None if not self.effect_opts["Wavelength"]["reverse_grad"] else config.N_PIXELS):]*r,
+                                    (config.N_PIXELS if self.effect_opts["Wavelength"]["reverse_grad"] else 0):
+                                    (None if self.effect_opts["Wavelength"]["reverse_grad"] else config.N_PIXELS):]*r,
                            self.multicolor_modes[self.effect_opts["Wavelength"]["color_mode"]][2][
-                                    (config.N_PIXELS if not self.effect_opts["Wavelength"]["reverse_grad"] else 0):
-                                    (None if not self.effect_opts["Wavelength"]["reverse_grad"] else config.N_PIXELS):]*r])
-        self.prev_spectrum = y
+                                    (config.N_PIXELS if self.effect_opts["Wavelength"]["reverse_grad"] else 0):
+                                    (None if self.effect_opts["Wavelength"]["reverse_grad"] else config.N_PIXELS):]*r])
+        #self.prev_spectrum = y
         self.multicolor_modes[self.effect_opts["Wavelength"]["color_mode"]] = np.roll(
                     self.multicolor_modes[self.effect_opts["Wavelength"]["color_mode"]],
                     self.effect_opts["Wavelength"]["roll_speed"]*(-1 if self.effect_opts["Wavelength"]["reverse_roll"] else 1),
@@ -424,7 +435,44 @@ class Visualizer():
             output = np.multiply(self.prev_output,self.effect_opts["Beat"]["decay"])
         return output
 
+    def visualize_bars(self, y):
+        # Bit of fiddling with the y values
+        y = np.copy(interpolate(y, config.N_PIXELS // 2))
+        common_mode.update(y)
+        self.prev_spectrum = np.copy(y)
+        # Color channel mappings
+        r = r_filt.update(y - common_mode.value)
+        r = np.array([j for i in zip(r,r) for j in i])
+        # Split y into [resulution] chunks and calculate the average of each
+        max_values = np.array([max(i) for i in np.array_split(r, self.effect_opts["Bars"]["resolution"])])
+        max_values = np.clip(max_values, 0, 1)
+        color_sets = []
+        for i in range(self.effect_opts["Bars"]["resolution"]):
+            # [r,g,b] values from a multicolour gradient array at [resulution] equally spaced intervals
+            color_sets.append([self.multicolor_modes[self.effect_opts["Bars"]["color_mode"]]\
+                              [j][i*(config.N_PIXELS//self.effect_opts["Bars"]["resolution"])] for j in range(3)])
+        output = np.zeros((3,config.N_PIXELS))
+        chunks = np.array_split(output[0], self.effect_opts["Bars"]["resolution"])
+        n = 0
+        # Assign blocks with heights corresponding to max_values and colours from color_sets
+        for i in range(len(chunks)):
+            m = len(chunks[i])
+            for j in range(3):
+                output[j][n:n+m] = color_sets[i][j]*max_values[i]
+            n += m
+        self.multicolor_modes[self.effect_opts["Bars"]["color_mode"]] = np.roll(
+                    self.multicolor_modes[self.effect_opts["Bars"]["color_mode"]],
+                    self.effect_opts["Bars"]["roll_speed"]*(-1 if self.effect_opts["Bars"]["reverse_roll"] else 1),
+                    axis=1)
+        if self.effect_opts["Bars"]["mirror"]:
+            output = np.concatenate((output[:, ::-2], output[:, ::2]), axis=1)
+        return output
+
+        
+        
+
     def visualize_single(self, y):
+        "Displays a single colour, non audio reactive"
         output = np.zeros((3,config.N_PIXELS))
         output[0][:]=self.colors[self.effect_opts["Single"]["color"]][0]
         output[1][:]=self.colors[self.effect_opts["Single"]["color"]][1]
@@ -432,6 +480,7 @@ class Visualizer():
         return output
 
     def visualize_gradient(self, y):
+        "Displays a multicolour gradient, non audio reactive"
         output = np.array([self.multicolor_modes[self.effect_opts["Gradient"]["color_mode"]][0][:config.N_PIXELS],
                            self.multicolor_modes[self.effect_opts["Gradient"]["color_mode"]][1][:config.N_PIXELS],
                            self.multicolor_modes[self.effect_opts["Gradient"]["color_mode"]][2][:config.N_PIXELS]])
@@ -444,6 +493,7 @@ class Visualizer():
         return output
 
     def visualize_fade(self, y):
+        "Fades through a multicolour gradient, non audio reactive"
         output = [[self.multicolor_modes[self.effect_opts["Fade"]["color_mode"]][0][0] for i in range(config.N_PIXELS)],
                   [self.multicolor_modes[self.effect_opts["Fade"]["color_mode"]][1][0] for i in range(config.N_PIXELS)],
                   [self.multicolor_modes[self.effect_opts["Fade"]["color_mode"]][2][0] for i in range(config.N_PIXELS)]]
@@ -757,9 +807,7 @@ def microphone_update(audio_samples):
     y_roll[:-1] = y_roll[1:]
     y_roll[-1, :] = np.copy(y)
     y_data = np.concatenate(y_roll, axis=0).astype(np.float32)
-    
     vol = np.max(np.abs(y_data))
-
     # Transform audio input into the frequency domain
     N = len(y_data)
     N_zeros = 2**int(np.ceil(np.log2(N))) - N
@@ -770,9 +818,8 @@ def microphone_update(audio_samples):
     # Construct a Mel filterbank from the FFT data
     mel = np.atleast_2d(YS).T * dsp.mel_y.T
     # Scale data to values more suitable for visualization
-    # mel = np.sum(mel, axis=0)
     mel = np.sum(mel, axis=0)
-    mel = mel**2.0
+    mel = mel**0.8
     # Gain normalization
     mel_gain.update(np.max(gaussian_filter1d(mel, sigma=1.0)))
     mel /= mel_gain.value
