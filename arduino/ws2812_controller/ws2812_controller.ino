@@ -16,8 +16,8 @@
 const uint8_t PixelPin = 3;  // make sure to set this to the correct pin, ignored for Esp8266(set to 3 by default for DMA)
 
 // Wifi and socket settings
-const char* ssid     = "ASUS_VIVOBOOK";
-const char* password = "T!PT)Psecret";
+const char* ssid     = "YOUR_WIFI_SSID";
+const char* password = "YOUR_WIFI_PASSWORD";
 unsigned int localPort = 7778;
 byte packetBuffer[BUFFER_LEN];
 RgbColor ledDataBuffer[NUM_LEDS];
