@@ -68,8 +68,8 @@ class Visualizer():
                                   "low":0,
                                   "mid":0,
                                   "high":0}
-        self.detection_ranges = {"beat":(0,1),
-                                 "low":(1,int(config.N_FFT_BINS*0.2)),
+        self.detection_ranges = {"beat":(0,3),
+                                 "low":(3,int(config.N_FFT_BINS*0.2)),
                                  "mid":(int(config.N_FFT_BINS*0.4),int(config.N_FFT_BINS*0.6)),
                                  "high":(int(config.N_FFT_BINS*0.7),int(config.N_FFT_BINS))}
         self.min_detect_amplitude = {"beat":0.7,
