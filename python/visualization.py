@@ -84,12 +84,18 @@ class Visualizer():
         # Configurable options for effects go in this dictionary.
         # Usage: self.effect_opts[effect][option]
         self.effect_opts = {"Energy":{"blur": 1,                     # Amount of blur to apply
-                                      "scale":0.9},                  # Width of effect on strip
+                                      "scale":0.9,                   # Width of effect on strip
+                                      "r_multiplier": 1.0,           # How much red
+                                      "g_multiplier": 1.0,           # How much green
+                                      "b_multiplier": 1.0},          # How much blue
                             "Wave":{"color_wave": "Red",             # Colour of moving bit
                                     "color_flash": "White",          # Colour of flashy bit
                                     "wipe_len":5,                    # Initial length of colour bit after beat
                                     "decay": 0.7,                    # How quickly the flash fades away 
                                     "wipe_speed":2},                 # Number of pixels added to colour bit every frame
+                            "Spectrum":{"r_multiplier": 1.0,         # How much red
+                                        "g_multiplier": 1.0,         # How much green
+                                        "b_multiplier": 1.0},        # How much blue
                             "Wavelength":{"roll_speed": 0,           # How fast (if at all) to cycle colour overlay across strip
                                           "color_mode": "Spectral",  # Colour gradient to display
                                           "mirror": False,           # Reflect output down centre of strip
@@ -97,7 +103,10 @@ class Visualizer():
                                           "reverse_roll": False,     # Reverse movement of gradient roll
                                           "blur": 3.0,               # Amount of blur to apply
                                           "flip_lr":False},          # Flip output left-right
-                            "Scroll":{"decay": 0.95,                 # How quickly the colour fades away as it moves
+                            "Scroll":{"decay": 0.995,                # How quickly the colour fades away as it moves
+                                      "r_multiplier": 1.0,           # How much red
+                                      "g_multiplier": 1.0,           # How much green
+                                      "b_multiplier": 1.0,           # How much blue
                                       "blur": 0.2},                  # Amount of blur to apply
                             "Power":{"color_mode": "Spectral",       # Colour gradient to display
                                      "s_count": config.N_PIXELS//6,  # Initial number of sparks
@@ -150,12 +159,18 @@ class Visualizer():
         # 1 - To make it easy to add options to your effects for the user
         # 2 - To give a consistent GUI for the user. If every options page was set out differently it would all be a mess
         self.dynamic_effects_config = {"Energy":[["blur", "Blur", "float_slider", (0.1,4.0,0.1)],
-                                                 ["scale", "Scale", "float_slider", (0.4,1.0,0.05)]],
+                                                 ["scale", "Scale", "float_slider", (0.4,1.0,0.05)],
+                                                 ["r_multiplier", "Red", "float_slider", (0.05,1.0,0.05)],
+                                                 ["g_multiplier", "Green", "float_slider", (0.05,1.0,0.05)],
+                                                 ["b_multiplier", "Blue", "float_slider", (0.05,1.0,0.05)]],
                                        "Wave":[["color_flash", "Flash Color", "dropdown", self.colors],
                                                ["color_wave", "Wave Color", "dropdown", self.colors],
                                                ["wipe_len", "Wave Start Length", "slider", (0,config.N_PIXELS//4,1)],
                                                ["wipe_speed", "Wave Speed", "slider", (1,10,1)],
                                                ["decay", "Flash Decay", "float_slider", (0.1,1.0,0.05)]],
+                                       "Spectrum":[["r_multiplier", "Red", "float_slider", (0.05,1.0,0.05)],
+                                                   ["g_multiplier", "Green", "float_slider", (0.05,1.0,0.05)],
+                                                   ["b_multiplier", "Blue", "float_slider", (0.05,1.0,0.05)]],
                                        "Wavelength":[["color_mode", "Color Mode", "dropdown", self.multicolor_mode_names],
                                                      ["roll_speed", "Roll Speed", "slider", (0,8,1)],
                                                      ["blur", "Blur", "float_slider", (0.1,4.0,0.1)],
@@ -164,7 +179,10 @@ class Visualizer():
                                                      ["reverse_roll", "Reverse Roll", "checkbox"],
                                                      ["flip_lr", "Flip LR", "checkbox"]],
                                        "Scroll":[["blur", "Blur", "float_slider", (0.05,4.0,0.05)],
-                                                 ["decay", "Decay", "float_slider", (0.95,1.0,0.005)]],
+                                                 ["decay", "Decay", "float_slider", (0.97,1.0,0.0005)],
+                                                 ["r_multiplier", "Red", "float_slider", (0.05,1.0,0.05)],
+                                                 ["g_multiplier", "Green", "float_slider", (0.05,1.0,0.05)],
+                                                 ["b_multiplier", "Blue", "float_slider", (0.05,1.0,0.05)]],
                                        "Power":[["color_mode", "Color Mode", "dropdown", self.multicolor_mode_names],
                                                 ["s_color", "Spark Color ", "dropdown", self.colors],
                                                 ["s_count", "Spark Amount", "slider", (0,config.N_PIXELS//6,1)],
@@ -291,13 +309,14 @@ class Visualizer():
     def visualize_scroll(self, y):
         """Effect that originates in the center and scrolls outwards"""
         global p
-        y = y**2.0
+        #print(max(y), min(y))
+        y = y**4.0
         gain.update(y)
         y /= gain.value
         y *= 255.0
-        r = int(np.max(y[:len(y) // 3]))
-        g = int(np.max(y[len(y) // 3: 2 * len(y) // 3]))
-        b = int(np.max(y[2 * len(y) // 3:]))
+        r = int(np.max(y[:len(y) // 3])*self.effect_opts["Scroll"]["r_multiplier"])
+        g = int(np.max(y[len(y) // 3: 2 * len(y) // 3])*self.effect_opts["Scroll"]["g_multiplier"])
+        b = int(np.max(y[2 * len(y) // 3:])*self.effect_opts["Scroll"]["b_multiplier"])
         # Scrolling effect window
         p[:, 1:] = p[:, :-1]
         p *= self.effect_opts["Scroll"]["decay"]
@@ -320,9 +339,9 @@ class Visualizer():
         # Scale by the width of the LED strip
         y *= float((config.N_PIXELS * scale) - 1)
         # Map color channels according to energy in the different freq bands
-        r = int(np.mean(y[:len(y) // 3]**scale))
-        g = int(np.mean(y[len(y) // 3: 2 * len(y) // 3]**scale))
-        b = int(np.mean(y[2 * len(y) // 3:]**scale))
+        r = int(np.mean(y[:len(y) // 3]**scale)*self.effect_opts["Energy"]["r_multiplier"])
+        g = int(np.mean(y[len(y) // 3: 2 * len(y) // 3]**scale)*self.effect_opts["Energy"]["g_multiplier"])
+        b = int(np.mean(y[2 * len(y) // 3:]**scale)*self.effect_opts["Energy"]["b_multiplier"])
         # Assign color to different frequency regions
         p[0, :r] = 255.0
         p[0, r:] = 0.0
@@ -385,6 +404,9 @@ class Visualizer():
         r = r_filt.update(y - common_mode.value)
         g = np.abs(diff)
         b = b_filt.update(np.copy(y))
+        r *= self.effect_opts["Spectrum"]["r_multiplier"]
+        g *= self.effect_opts["Spectrum"]["g_multiplier"]
+        b *= self.effect_opts["Spectrum"]["b_multiplier"]
         # Mirror the color channels for symmetric output
         r = np.concatenate((r[::-1], r))
         g = np.concatenate((g[::-1], g))
