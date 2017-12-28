@@ -9,6 +9,7 @@ import config
 import microphone
 import dsp
 import led
+import random
 if config.USE_GUI:
     from qrangeslider import QRangeSlider
     from qfloatslider import QFloatSlider
@@ -22,7 +23,7 @@ class Visualizer():
         self.effects = {"Scroll":self.visualize_scroll,
                         "Energy":self.visualize_energy,
                         "Spectrum":self.visualize_spectrum,
-                        #"Power":self.visualize_power,
+                        "Power":self.visualize_power,
                         "Wavelength":self.visualize_wavelength,
                         "Beat":self.visualize_beat,
                         "Wave":self.visualize_wave,
@@ -68,14 +69,18 @@ class Visualizer():
                                   "low":0,
                                   "mid":0,
                                   "high":0}
-        self.detection_ranges = {"beat":(0,3),
-                                 "low":(3,int(config.N_FFT_BINS*0.2)),
-                                 "mid":(int(config.N_FFT_BINS*0.4),int(config.N_FFT_BINS*0.6)),
-                                 "high":(int(config.N_FFT_BINS*0.7),int(config.N_FFT_BINS))}
+        self.detection_ranges = {"beat":(0,int(config.N_FFT_BINS*0.13)),
+                                 "low":(int(config.N_FFT_BINS*0.15),int(config.N_FFT_BINS*0.4)),
+                                 "mid":(int(config.N_FFT_BINS*0.4),int(config.N_FFT_BINS*0.7)),
+                                 "high":(int(config.N_FFT_BINS*0.8),int(config.N_FFT_BINS))}
         self.min_detect_amplitude = {"beat":0.7,
                                      "low":0.5,
                                      "mid":0.3,
-                                     "high":0.05}
+                                     "high":0.3}
+        self.min_percent_diff = {"beat":100,
+                                 "low":100,
+                                 "mid":50,
+                                 "high":30}
         # Configurable options for effects go in this dictionary.
         # Usage: self.effect_opts[effect][option]
         self.effect_opts = {"Energy":{"blur": 1,                     # Amount of blur to apply
@@ -86,14 +91,19 @@ class Visualizer():
                                     "decay": 0.7,                    # How quickly the flash fades away 
                                     "wipe_speed":2},                 # Number of pixels added to colour bit every frame
                             "Wavelength":{"roll_speed": 0,           # How fast (if at all) to cycle colour overlay across strip
-                                          "color_mode": "Spectral",  # Colour mode of overlay
+                                          "color_mode": "Spectral",  # Colour gradient to display
                                           "mirror": False,           # Reflect output down centre of strip
                                           "reverse_grad": False,     # Flip (LR) gradient
                                           "reverse_roll": False,     # Reverse movement of gradient roll
-                                          "blur": 3.0},              # Amount of blur to apply
+                                          "blur": 3.0,               # Amount of blur to apply
+                                          "flip_lr":False},          # Flip output left-right
                             "Scroll":{"decay": 0.95,                 # How quickly the colour fades away as it moves
                                       "blur": 0.2},                  # Amount of blur to apply
-                            "Power":{"blur": 3.0},                   # Amount of blur to apply
+                            "Power":{"color_mode": "Spectral",       # Colour gradient to display
+                                     "s_count": config.N_PIXELS//6,  # Initial number of sparks
+                                     "s_color": "White",             # Color of sparks
+                                     "mirror": False,                # Mirror output down central axis
+                                     "flip_lr":False},               # Flip output left-right
                             "Single":{"color": "Red"},               # Static color to show
                             "Beat":{"color": "Red",                  # Colour of beat flash
                                     "decay": 0.7},                   # How quickly the flash fades away
@@ -102,7 +112,8 @@ class Visualizer():
                                     "roll_speed":0,                  # How fast (if at all) to cycle colour colours across strip
                                     "mirror": False,                 # Mirror down centre of strip
                                     #"reverse_grad": False,           # Flip (LR) gradient 
-                                    "reverse_roll": False},          # Reverse movement of gradient roll
+                                    "reverse_roll": False,           # Reverse movement of gradient roll
+                                    "flip_lr":False},                # Flip output left-right
                             "Gradient":{"color_mode":"Spectral",     # Colour gradient to display
                                         "roll_speed": 0,             # How fast (if at all) to cycle colour colours across strip
                                         "mirror": False,             # Mirror gradient down central axis
@@ -150,16 +161,22 @@ class Visualizer():
                                                      ["blur", "Blur", "float_slider", (0.1,4.0,0.1)],
                                                      ["mirror", "Mirror", "checkbox"],
                                                      ["reverse_grad", "Reverse Gradient", "checkbox"],
-                                                     ["reverse_roll", "Reverse Roll", "checkbox"]],
+                                                     ["reverse_roll", "Reverse Roll", "checkbox"],
+                                                     ["flip_lr", "Flip LR", "checkbox"]],
                                        "Scroll":[["blur", "Blur", "float_slider", (0.05,4.0,0.05)],
                                                  ["decay", "Decay", "float_slider", (0.95,1.0,0.005)]],
-                                       "Power":[["blur", "Blur", "float_slider", (0.1,4.0,0.1)]],
+                                       "Power":[["color_mode", "Color Mode", "dropdown", self.multicolor_mode_names],
+                                                ["s_color", "Spark Color ", "dropdown", self.colors],
+                                                ["s_count", "Spark Amount", "slider", (0,config.N_PIXELS//6,1)],
+                                                ["mirror", "Mirror", "checkbox"],
+                                                ["flip_lr", "Flip LR", "checkbox"]],
                                        "Single":[["color", "Color", "dropdown", self.colors]],
                                        "Beat":[["color", "Color", "dropdown", self.colors],
                                                ["decay", "Flash Decay", "float_slider", (0.3,0.98,0.005)]],
                                        "Bars":[["color_mode", "Color Mode", "dropdown", self.multicolor_mode_names],
                                                ["resolution", "Resolution", "slider", (1, config.N_FFT_BINS, 1)],
                                                ["roll_speed", "Roll Speed", "slider", (0,8,1)],
+                                               ["flip_lr", "Flip LR", "checkbox"],
                                                ["mirror", "Mirror", "checkbox"],
                                                ["reverse_roll", "Reverse Roll", "checkbox"]],
                                        "Gradient":[["color_mode", "Color Mode", "dropdown", self.multicolor_mode_names],
@@ -170,9 +187,13 @@ class Visualizer():
                                                ["roll_speed", "Fade Speed", "slider", (0,8,1)],
                                                ["reverse", "Reverse", "checkbox"]]
                                        }
-        
+        # Setup for latency timer
+        self.latency_deque = deque(maxlen=10)
         # Setup for "Wave" (don't change these)
         self.wave_wipe_count = 0
+        # Setup for "Power" (don't change these)
+        self.power_indexes = []
+        self.power_brightness = 0
         # Setup for multicolour modes (don't mess with this either unless you want to add in your own multicolour modes)
         # If there's a multicolour mode you would like to see, let me know on GitHub! 
         self.multicolor_modes = {}
@@ -224,12 +245,17 @@ class Visualizer():
     def get_vis(self, y, audio_input):
         self.update_freq_channels(y)
         self.detect_freqs()
+        time1 = time.time()
         if audio_input:
             self.prev_output = np.copy(self.effects[self.current_effect](y))
         elif self.current_effect in self.non_reactive_effects:
             self.prev_output = np.copy(self.effects[self.current_effect](y))
         else:
             self.prev_output = np.multiply(self.prev_output, 0.95)
+        time2 = time.time()
+        self.latency_deque.append(1000*(time2-time1))
+        if config.USE_GUI:
+            gui.label_latency.setText("{} ms Processing Latency   ".format(int(sum(self.latency_deque)/len(self.latency_deque))))
         return self.prev_output
 
     def _split_equal(self, value, parts):
@@ -251,10 +277,11 @@ class Visualizer():
             channel_avgs.append(sum(self.freq_channels[i])/len(self.freq_channels[i]))
             differences.append(((self.freq_channels[i][0]-channel_avgs[i])*100)//channel_avgs[i])
         for i in ["beat", "low", "mid", "high"]:
-            if any(differences[j] >= 100 and self.freq_channels[j][0] >= self.min_detect_amplitude[i]\
-                        for j in range(*self.detection_ranges[i]))\
-                    and (time.time() - self.prev_freq_detects[i] > 0.15)\
-                    and len(self.freq_channels[0]) == self.freq_channel_history:
+            if any(differences[j] >= self.min_percent_diff[i]\
+                   and self.freq_channels[j][0] >= self.min_detect_amplitude[i]\
+                            for j in range(*self.detection_ranges[i]))\
+                        and (time.time() - self.prev_freq_detects[i] > 0.1)\
+                        and len(self.freq_channels[0]) == self.freq_channel_history:
                 self.prev_freq_detects[i] = time.time()
                 self.current_freq_detects[i] = True
                 #print(i)
@@ -339,38 +366,11 @@ class Visualizer():
         output[0] = gaussian_filter1d(output[0], sigma=self.effect_opts["Wavelength"]["blur"])
         output[1] = gaussian_filter1d(output[1], sigma=self.effect_opts["Wavelength"]["blur"])
         output[2] = gaussian_filter1d(output[2], sigma=self.effect_opts["Wavelength"]["blur"])
+        if self.effect_opts["Wavelength"]["flip_lr"]:
+            output = np.fliplr(output)
         if self.effect_opts["Wavelength"]["mirror"]:
             output = np.concatenate((output[:, ::-2], output[:, ::2]), axis=1)
         return output
-
-    def visualize_power(self, y):
-        """Effect that pulses different reqions of the strip increasing sound energy"""
-        global p
-        _p = np.copy(p)
-        y = np.copy(interpolate(y, config.N_PIXELS // 2))
-        common_mode.update(y)
-        diff = y - self.prev_spectrum
-        self.prev_spectrum = np.copy(y)
-        # Color channel mappings
-        r = r_filt.update(y - common_mode.value)
-        g = np.abs(diff)
-        b = b_filt.update(np.copy(y))
-        # I have no idea what any of this does but it looks kinda cool
-        r = [int(i*255) for i in r[::3]]
-        g = [int(i*255) for i in g[::3]]
-        b = [int(i*255) for i in b[::3]]
-        _p[0, 0:len(r)] = r
-        _p[1, len(r):len(r)+len(g)] = g
-        _p[2, len(r)+len(g):config.N_PIXELS] = b[:39] # this needs to be fixed 
-        p_filt.update(_p)
-        # Clip it into range
-        _p = np.clip(p, 0, 255).astype(int)
-        # Apply substantial blur to smooth the edges
-        _p[0, :] = gaussian_filter1d(_p[0, :], sigma=self.effect_opts["Power"]["blur"])
-        _p[1, :] = gaussian_filter1d(_p[1, :], sigma=self.effect_opts["Power"]["blur"])
-        _p[2, :] = gaussian_filter1d(_p[2, :], sigma=self.effect_opts["Power"]["blur"])
-        self.prev_spectrum = y
-        return np.concatenate((_p[:, ::-1], _p), axis=1)
     
     def visualize_spectrum(self, y):
         """Effect that maps the Mel filterbank frequencies onto the LED strip"""
@@ -464,13 +464,54 @@ class Visualizer():
                     self.multicolor_modes[self.effect_opts["Bars"]["color_mode"]],
                     self.effect_opts["Bars"]["roll_speed"]*(-1 if self.effect_opts["Bars"]["reverse_roll"] else 1),
                     axis=1)
+        if self.effect_opts["Bars"]["flip_lr"]:
+            output = np.fliplr(output)
         if self.effect_opts["Bars"]["mirror"]:
             output = np.concatenate((output[:, ::-2], output[:, ::2]), axis=1)
         return output
 
+    def visualize_power(self, y):
+        #self.effect_opts["Power"]["color_mode"]
+        # Bit of fiddling with the y values
+        y = np.copy(interpolate(y, config.N_PIXELS // 2))
+        common_mode.update(y)
+        self.prev_spectrum = np.copy(y)
+        # Color channel mappings
+        r = r_filt.update(y - common_mode.value)
+        r = np.array([j for i in zip(r,r) for j in i])
+        output = np.array([self.multicolor_modes[self.effect_opts["Power"]["color_mode"]][0, :config.N_PIXELS]*r,
+                           self.multicolor_modes[self.effect_opts["Power"]["color_mode"]][1, :config.N_PIXELS]*r,
+                           self.multicolor_modes[self.effect_opts["Power"]["color_mode"]][2, :config.N_PIXELS]*r])
+        # if there's a high (eg clap):
+        if self.current_freq_detects["high"]:
+            self.power_brightness = 1.0
+            # Generate random indexes
+            self.power_indexes = random.sample(range(config.N_PIXELS), self.effect_opts["Power"]["s_count"])
+            #print("ye")
+        # Assign colour to the random indexes
+        for index in self.power_indexes:
+            output[0, index] = int(self.colors[self.effect_opts["Power"]["s_color"]][0]*self.power_brightness)
+            output[1, index] = int(self.colors[self.effect_opts["Power"]["s_color"]][1]*self.power_brightness)
+            output[2, index] = int(self.colors[self.effect_opts["Power"]["s_color"]][2]*self.power_brightness)
+        # Remove some of the indexes for next time
+        self.power_indexes = [i for i in self.power_indexes if i not in random.sample(self.power_indexes, len(self.power_indexes)//4)]
+        if len(self.power_indexes) <= 4:
+            self.power_indexes = []
+        # Fade the colour of the sparks out a bit for next time
+        if self.power_brightness > 0:
+            self.power_brightness -= 0.05
+        # Calculate length of bass bar based on max bass frequency volume and length of strip
+        strip_len = int((config.N_PIXELS//3)*max(y[:int(config.N_FFT_BINS*0.2)]))
+        # Add the bass bars into the output. Colour proportional to length
+        output[0][:strip_len] = self.multicolor_modes[self.effect_opts["Power"]["color_mode"]][0][strip_len]
+        output[1][:strip_len] = self.multicolor_modes[self.effect_opts["Power"]["color_mode"]][1][strip_len]
+        output[2][:strip_len] = self.multicolor_modes[self.effect_opts["Power"]["color_mode"]][2][strip_len]
+        if self.effect_opts["Power"]["flip_lr"]:
+            output = np.fliplr(output)
+        if self.effect_opts["Power"]["mirror"]:
+            output = np.concatenate((output[:, ::-2], output[:, ::2]), axis=1)
+        return output
         
-        
-
     def visualize_single(self, y):
         "Displays a single colour, non audio reactive"
         output = np.zeros((3,config.N_PIXELS))
@@ -517,9 +558,12 @@ class GUI(QWidget):
         labels_layout = QHBoxLayout()
         self.label_error = QLabel("")
         self.label_fps = QLabel("")
+        self.label_latency = QLabel("")
         self.label_fps.setAlignment(Qt.AlignRight | Qt.AlignVCenter)
+        self.label_latency.setAlignment(Qt.AlignRight | Qt.AlignVCenter)
         labels_layout.addWidget(self.label_error)
         labels_layout.addStretch()
+        labels_layout.addWidget(self.label_latency)
         labels_layout.addWidget(self.label_fps)
         
         # ================================================== Set up graph layout
@@ -819,7 +863,7 @@ def microphone_update(audio_samples):
     mel = np.atleast_2d(YS).T * dsp.mel_y.T
     # Scale data to values more suitable for visualization
     mel = np.sum(mel, axis=0)
-    mel = mel**0.8
+    mel = mel**0.7
     # Gain normalization
     mel_gain.update(np.max(gaussian_filter1d(mel, sigma=1.0)))
     mel /= mel_gain.value
