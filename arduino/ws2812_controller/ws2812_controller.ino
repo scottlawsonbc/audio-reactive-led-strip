@@ -1,6 +1,5 @@
 #include <Arduino.h>
 #include <ESP8266WiFi.h>
-#include <WebSocketsServer.h>
 #include <Hash.h>
 #include <WiFiUdp.h>
 #include "ws2812_i2s.h"
