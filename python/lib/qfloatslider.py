@@ -15,7 +15,7 @@ class QFloatSlider(QtWidgets.QSlider):
     """ 
     def __init__(self, min_value, max_value, step, default):
         super().__init__(QtCore.Qt.Horizontal)
-        self.precision = 0.001
+        self.precision = 0.0001
         self.min_value = min_value
         self.max_value = max_value
         self.step = step
@@ -30,7 +30,10 @@ class QFloatSlider(QtWidgets.QSlider):
         super().setSingleStep(1)
         super().setValue(self._float_to_int(self.default))
         super().valueChanged.connect(self._value_handler)
-        self.slider_value = 2.0
+        #self.slider_value = 2.0
+
+    def setValue(self, value):
+        super().setValue(self._float_to_int(value))
         
     # This is mostly disgusting python i hate floating points >:(        
     def _float_divmod(self,a,b):
