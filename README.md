@@ -1,5 +1,3 @@
-# Systematic LEDs
-
 ## Introduction
 
 All in one lighting solution for your computer. Mood lighting? Club effects?
@@ -8,7 +6,10 @@ Lighting your room or office should be a simple procedure, with flexibilty to tr
 
 For a small fee, you can set this up yourself. Follow the simple steps outlines below to tune your space to a mood that fits you.
 
-## Code Samples
+## Where is it?
+
+[Please head towards this repo for all information and updates](https://github.com/not-matt/Systematic-LEDs)
+
 
 
 
