@@ -8,10 +8,9 @@ For a small fee, you can set this up yourself. Follow the simple steps outlines 
 
 ## Where is it?
 
+This is the old fork. It stays here for until compatability issues are resolved.
+
 [Please head towards this repo for all information and updates](https://github.com/not-matt/Systematic-LEDs)
-
-
-
 
 ## Installation
 
