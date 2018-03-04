@@ -20,7 +20,7 @@ settings = {                                                      # All settings
                      'MAX_FREQUENCY': 18000,                      # Frequencies above this value will be removed during audio processing
                      'MAX_BRIGHTNESS': 250,                       # Frequencies above this value will be removed during audio processing
                      'N_ROLLING_HISTORY': 4,                      # Number of past audio frames to include in the rolling window
-                     'MIN_VOLUME_THRESHOLD': 0.01                 # No music visualization displayed if recorded audio volume below threshold
+                     'MIN_VOLUME_THRESHOLD': 0.001                # No music visualization displayed if recorded audio volume below threshold
                     #'LOGARITHMIC_SCALING': True,                 # Scale frequencies logarithmically to match perceived pitch of human ear
                      },
 
@@ -32,7 +32,7 @@ settings = {                                                      # All settings
 
     # All devices and their respective settings. Indexed by name, call each one what you want.
     "devices":{"Desk Strip":{
-                      "configuration":{"TYPE": "esp8266",                           # Device type (see below for all supported boards)
+                      "configuration":{"TYPE": "ESP8266",                           # Device type (see below for all supported boards)
                                          # Required configuration for device. See below for all required keys per device
                                        "AUTO_DETECT": True,                         # Set this true if you're using windows hotspot to connect (see below for more info)
                                        "MAC_ADDR": "2c-3a-e8-2f-2c-9f",             # MAC address of the ESP8266. Only used if AUTO_DETECT is True
@@ -42,7 +42,7 @@ settings = {                                                      # All settings
                                          # Other configuration 
                                        "N_PIXELS": 58,                             # Number of pixels in the LED strip (must match ESP8266 firmware)
                                        "N_FFT_BINS": 24,                            # Number of frequency bins to use when transforming audio to frequency domain
-                                       "current_effect": "Single"                   # Currently selected effect for this board, used as default when program launches
+                                       "current_effect": "Energy"                   # Currently selected effect for this board, used as default when program launches
                                       },
     
                       # Configurable options for this board's effects go in this dictionary.
@@ -67,7 +67,10 @@ settings = {                                                      # All settings
                                                    "reverse_roll": False,           # Reverse movement of gradient roll
                                                    "blur": 3.0,                     # Amount of blur to apply
                                                    "flip_lr":False},                # Flip output left-right
-                                     "Scroll":    {"decay": 0.995,                  # How quickly the colour fades away as it moves
+                                     "Scroll":    {"lows_color": "Red",             # Colour of low frequencies
+                                                   "mids_color": "Green",             # Colour of mid frequencies
+                                                   "high_color": "Blue",             # Colour of high frequencies
+                                                   "decay": 0.995,                  # How quickly the colour fades away as it moves
                                                    "speed": 1,                      # Speed of scroll
                                                    "r_multiplier": 1.0,             # How much red
                                                    "g_multiplier": 1.0,             # How much green
@@ -101,7 +104,7 @@ settings = {                                                      # All settings
                                      }
                                   },
                "Main Strip":{
-                     "configuration":{"TYPE": "esp8266",                           # Device type (see below for all supported boards)
+                     "configuration":{"TYPE": "ESP8266",                           # Device type (see below for all supported boards)
                                         # Required configuration for device. See below for all required keys per device
                                       "AUTO_DETECT": True,                         # Set this true if you're using windows hotspot to connect (see below for more info)
                                       "MAC_ADDR": "5c-cf-7f-f0-8c-f3",             # MAC address of the ESP8266. Only used if AUTO_DETECT is True
@@ -136,7 +139,10 @@ settings = {                                                      # All settings
                                                   "reverse_roll": False,           # Reverse movement of gradient roll
                                                   "blur": 3.0,                     # Amount of blur to apply
                                                   "flip_lr":False},                # Flip output left-right
-                                    "Scroll":    {"decay": 0.995,                  # How quickly the colour fades away as it moves
+                                    "Scroll":    {"lows_color": "Red",             # Colour of low frequencies
+                                                  "mids_color": "Green",             # Colour of mid frequencies
+                                                  "high_color": "Blue",             # Colour of high frequencies
+                                                  "decay": 0.995,                  # How quickly the colour fades away as it moves
                                                   "speed": 1,                      # Speed of scroll
                                                   "r_multiplier": 1.0,             # How much red
                                                   "g_multiplier": 1.0,             # How much green
@@ -190,10 +196,55 @@ settings = {                                                      # All settings
                  "Sunset"    : ["Red", "Orange", "Yellow"],
                  "Ocean"     : ["Green", "Light blue", "Blue"],
                  "Jungle"    : ["Green", "Red", "Orange"],
-                 "Sunny"     : ["Yellow", "Light blue", "Orange", "Blue"]
+                 "Sunny"     : ["Yellow", "Light blue", "Orange", "Blue"],
+                 "Fruity"    : ["Orange", "Blue"],
+                 "Peach"     : ["Orange", "Pink"],
+                 "Rust"      : ["Orange", "Red"]
                  }
 
 }
+
+
+device_req_config = {"Stripless"   : None, # duh
+                     "BlinkStick"  : None,
+                     "DotStar"     : None,
+                     "ESP8266"     : {"AUTO_DETECT": ["Auto Detect",
+                                                      "Automatically detect device on network using MAC address",
+                                                      "checkbox",
+                                                      True],
+                                      "MAC_ADDR"   : ["Mac Address",
+                                                      "Hardware address of device, used for auto-detection",
+                                                      "textbox",
+                                                      "aa-bb-cc-dd-ee-ff"],
+                                      "UDP_IP"     : ["IP Address",
+                                                      "IP address of device, used if auto-detection isn't active",
+                                                      "textbox",
+                                                      "xxx.xxx.xxx.xxx"],
+                                      "UDP_PORT"   : ["Port",
+                                                      "Port used to communicate with device",
+                                                      "textbox",
+                                                      "7778"]},
+                     "RaspberryPi" : {"LED_PIN"    : ["LED Pin",
+                                                      "GPIO pin connected to the LED strip RaspberryPi (must support PWM)",
+                                                      "textbox",
+                                                      "10"],
+                                      "LED_FREQ_HZ": ["LED Frequency",
+                                                      "LED signal frequency in Hz",
+                                                      "textbox",
+                                                      "800000"],
+                                      "LED_DMA"    : ["DMA Channel",
+                                                      "DMA channel used for generating PWM signal",
+                                                      "textbox",
+                                                      "5"],
+                                      "LED_INVERT" : ["Invert LEDs",
+                                                      "Set True if using an inverting logic level converter",
+                                                      "checkbox",
+                                                      True]},
+                     "Fadecandy"   : {"SERVER"     : ["Server Address",
+                                                      "Address of Fadecandy server",
+                                                      "textbox",
+                                                      "localhost:7890"]}
+                     }
 
 """
     ~~ NOTES ~~
@@ -215,45 +266,45 @@ be loaded. Basically it works as you would expect it to.
 
 Device used to control LED strip.
 
-'esp8266' means that you are using an ESP8266 module to control the LED strip
+'ESP8266' means that you are using an ESP8266 module to control the LED strip
 and commands will be sent to the ESP8266 over WiFi. You can have as many of 
 these as your computer is able to handle.
 
-'pi' means that you are using a Raspberry Pi as a standalone unit to process
+'RaspberryPi' means that you are using a Raspberry Pi as a standalone unit to process
 audio input and control the LED strip directly.
 
-'blinkstick' means that a BlinkstickPro is connected to this PC which will be used
+'BlinkStick' means that a BlinkstickPro is connected to this PC which will be used
 to control the leds connected to it.
 
-'fadecandy' means that a fadecandy server is running on your computer and is connected
-via usb to a fadecandy board connected to LEDs
+'Fadecandy' means that a Fadecandy server is running on your computer and is connected
+via usb to a Fadecandy board connected to LEDs
 
-'dotstar' creates an APA102-based output device. LMK if you have any success 
+'DotStar' creates an APA102-based output device. LMK if you have any success 
 getting this to work becuase i have no clue if it will.
 
-'stripless' means that the program will run without sending data to a strip.
+'Stripless' means that the program will run without sending data to a strip.
 Useful for development etc, but doesn't look half as good ;)
 
 [REQUIRED CONFIGURATION KEYS]
 
-===== 'esp8266'
+===== 'ESP8266'
  "AUTO_DETECT"            # Set this true if you're using windows hotspot to connect (see below for more info)
  "MAC_ADDR"               # MAC address of the ESP8266. Only used if AUTO_DETECT is True
  "UDP_IP"                 # IP address of the ESP8266. Must match IP in ws2812_controller.ino
  "UDP_PORT"               # Port number used for socket communication between Python and ESP8266
-===== 'pi'
+===== 'RaspberryPi'
  "LED_PIN"                # GPIO pin connected to the LED strip pixels (must support PWM)
  "LED_FREQ_HZ"            # LED signal frequency in Hz (usually 800kHz)
  "LED_DMA"                # DMA channel used for generating PWM signal (try 5)
  "BRIGHTNESS"             # Brightness of LED strip between 0 and 255
  "LED_INVERT"             # Set True if using an inverting logic level converter
-===== 'blinkstick'
+===== 'BlinkStick'
  No required configuration keys
-===== 'fadecandy'
- "SERVER"                 # Address of fadecandy server. (usually 'localhost:7890')
-===== 'dotstar'
+===== 'Fadecandy'
+ "SERVER"                 # Address of Fadecandy server. (usually 'localhost:7890')
+===== 'DotStar'
  No required configuration keys
-===== 'stripless'
+===== 'Stripless'
  No required configuration keys (heh)
 
 [AUTO_DETECT]
@@ -293,19 +344,19 @@ There is no point using more bins than there are pixels on the LED strip.
 """
 
 for board in settings["devices"]:
-    if settings["devices"][board]["configuration"]["TYPE"] == 'esp8266':
+    if settings["devices"][board]["configuration"]["TYPE"] == 'ESP8266':
         settings["devices"][board]["configuration"]["SOFTWARE_GAMMA_CORRECTION"] = False
         # Set to False because the firmware handles gamma correction + dither
-    elif settings["devices"][board]["configuration"]["TYPE"] == 'pi':
+    elif settings["devices"][board]["configuration"]["TYPE"] == 'RaspberryPi':
         settings["devices"][board]["configuration"]["SOFTWARE_GAMMA_CORRECTION"] = True
         # Set to True because Raspberry Pi doesn't use hardware dithering
-    elif settings["devices"][board]["configuration"]["TYPE"] == 'blinkstick':
+    elif settings["devices"][board]["configuration"]["TYPE"] == 'BlinkStick':
         settings["devices"][board]["configuration"]["SOFTWARE_GAMMA_CORRECTION"] = True
-    elif settings["devices"][board]["configuration"]["TYPE"] == 'dotstar':
+    elif settings["devices"][board]["configuration"]["TYPE"] == 'DotStar':
         settings["devices"][board]["configuration"]["SOFTWARE_GAMMA_CORRECTION"] = False
-    elif settings["devices"][board]["configuration"]["TYPE"] == 'fadecandy':
+    elif settings["devices"][board]["configuration"]["TYPE"] == 'Fadecandy':
         settings["devices"][board]["configuration"]["SOFTWARE_GAMMA_CORRECTION"] = False
-    elif settings["devices"][board]["configuration"]["TYPE"] == 'stripless':
+    elif settings["devices"][board]["configuration"]["TYPE"] == 'Stripless':
         settings["devices"][board]["configuration"]["SOFTWARE_GAMMA_CORRECTION"] = False
     else:
         raise ValueError("Invalid device selected. Device {} not known.".format(settings["devices"][board]["configuration"]["TYPE"]))

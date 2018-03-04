@@ -47,7 +47,8 @@ class Visualizer():
         self.beat_count = 0
         self.freq_channels = [deque(maxlen=self.freq_channel_history) for i in range(config.settings["devices"][self.board]["configuration"]["N_FFT_BINS"])]
         self.prev_output = np.array([[0 for i in range(config.settings["devices"][self.board]["configuration"]["N_PIXELS"])] for i in range(3)])
-        self.prev_spectrum = [0 for i in range(config.settings["devices"][self.board]["configuration"]["N_PIXELS"]//2)]
+        self.output = np.array([[0 for i in range(config.settings["devices"][self.board]["configuration"]["N_PIXELS"])] for i in range(3)])
+        self.prev_spectrum = np.array([config.settings["devices"][self.board]["configuration"]["N_PIXELS"] // 2])
         self.current_freq_detects = {"beat":False,
                                      "low":False,
                                      "mid":False,
@@ -118,12 +119,12 @@ class Visualizer():
                                                  ["reverse_grad", "Reverse Gradient", "checkbox"],
                                                  ["reverse_roll", "Reverse Roll", "checkbox"],
                                                  ["flip_lr", "Flip LR", "checkbox"]],
-                                       "Scroll":[["blur", "Blur", "float_slider", (0.05,4.0,0.05)],
+                                       "Scroll":[["lows_color", "Lows Color", "dropdown", config.settings["colors"]],
+                                                 ["mids_color", "Mids Color", "dropdown", config.settings["colors"]],
+                                                 ["high_color", "Highs Color", "dropdown", config.settings["colors"]],
+                                                 ["blur", "Blur", "float_slider", (0.05,4.0,0.05)],
                                                  ["decay", "Decay", "float_slider", (0.97,1.0,0.0005)],
-                                                 ["speed", "Speed", "slider", (1,5,1)],
-                                                 ["r_multiplier", "Red", "float_slider", (0.05,1.0,0.05)],
-                                                 ["g_multiplier", "Green", "float_slider", (0.05,1.0,0.05)],
-                                                 ["b_multiplier", "Blue", "float_slider", (0.05,1.0,0.05)]],
+                                                 ["speed", "Speed", "slider", (1,5,1)]],
                                         "Power":[["color_mode", "Color Mode", "dropdown", config.settings["gradients"]],
                                                  ["s_color", "Spark Color ", "dropdown", config.settings["colors"]],
                                                  ["s_count", "Spark Amount", "slider", (0,config.settings["devices"][self.board]["configuration"]["N_PIXELS"]//6,1)],
@@ -149,8 +150,9 @@ class Visualizer():
                                                  ["g", "Green value", "slider", (0,255,1)],
                                                  ["b", "Blue value", "slider", (0,255,1)]]
                                        }
-        # Setup for latency timer
-        self.latency_deque = deque(maxlen=1000)
+        # Setup for fps counter
+        self.frame_counter = 0
+        self.start_time = time.time()
         # Setup for "Wave" (don't change these)
         self.wave_wipe_count = 0
         # Setup for "Power" (don't change these)
@@ -270,17 +272,23 @@ class Visualizer():
     def get_vis(self, y, audio_input):
         self.update_freq_channels(y)
         self.detect_freqs()
-        time1 = time.time()
         if config.settings["devices"][self.board]["configuration"]["current_effect"] in self.non_reactive_effects:
             self.prev_output = self.effects[config.settings["devices"][self.board]["configuration"]["current_effect"]]()
         elif audio_input:
             self.prev_output = self.effects[config.settings["devices"][self.board]["configuration"]["current_effect"]](y)
         else:
             self.prev_output = np.multiply(self.prev_output, 0.95)
-        time2 = time.time()
-        self.latency_deque.append(1000*(time2-time1))
-        if config.settings["configuration"]["USE_GUI"]:
-            gui.label_latency.setText("{} ms Processing Latency   ".format(int(sum(self.latency_deque)/len(self.latency_deque))))
+        self.frame_counter += 1
+        elapsed = time.time() - self.start_time
+        if elapsed >= 1.0:
+            self.start_time = time.time()
+            fps = self.frame_counter//elapsed
+            latency = elapsed/self.frame_counter
+            self.frame_counter = 0
+
+            if config.settings["configuration"]["USE_GUI"]:
+                gui.label_latency.setText("{:0.3f} ms Processing Latency   ".format(latency))
+                gui.label_fps.setText('{:.0f} / {:.0f} FPS   '.format(fps, config.settings["configuration"]["FPS"]))
         return self.prev_output
 
     def _split_equal(self, value, parts):
@@ -315,54 +323,76 @@ class Visualizer():
 
     def visualize_scroll(self, y):
         """Effect that originates in the center and scrolls outwards"""
-        global p
         y = y**4.0
-        signal_processers[self.board].gain.update(y)
-        y /= signal_processers[self.board].gain.value
-        y *= 255.0
-        r = int(np.max(y[:len(y) // 3])*config.settings["devices"][self.board]["effect_opts"]["Scroll"]["r_multiplier"])
-        g = int(np.max(y[len(y) // 3: 2 * len(y) // 3])*config.settings["devices"][self.board]["effect_opts"]["Scroll"]["g_multiplier"])
-        b = int(np.max(y[2 * len(y) // 3:])*config.settings["devices"][self.board]["effect_opts"]["Scroll"]["b_multiplier"])
+        # signal_processers[self.board].gain.update(y)
+        # y /= signal_processers[self.board].gain.value
+        # y *= 255.0
+        n_pixels = config.settings["devices"][self.board]["configuration"]["N_PIXELS"]
+        y = np.copy(interpolate(y, n_pixels // 2))
+        signal_processers[self.board].common_mode.update(y)
+        diff = y - self.prev_spectrum
+        self.prev_spectrum = np.copy(y)
+        # split spectrum up
+        # r = signal_processers[self.board].r_filt.update(y - signal_processers[self.board].common_mode.value)
+        # g = np.abs(diff)
+        # b = signal_processers[self.board].b_filt.update(np.copy(y))
+        y = np.clip(y, 0, 1)
+        lows = y[:len(y) // 6]
+        mids = y[len(y) // 6: 2 * len(y) // 5]
+        high = y[2 * len(y) // 5:]
+        # max values
+        lows_max = np.max(lows)#*config.settings["devices"][self.board]["effect_opts"]["Scroll"]["lows_multiplier"])
+        mids_max = float(np.max(mids))#*config.settings["devices"][self.board]["effect_opts"]["Scroll"]["mids_multiplier"])
+        high_max = float(np.max(high))#*config.settings["devices"][self.board]["effect_opts"]["Scroll"]["high_multiplier"])
+        # indexes of max values
+        # map to colour gradient
+        lows_val = (np.array(config.settings["colors"][config.settings["devices"][self.board]["effect_opts"]["Scroll"]["lows_color"]]) * lows_max).astype(int)
+        mids_val = (np.array(config.settings["colors"][config.settings["devices"][self.board]["effect_opts"]["Scroll"]["mids_color"]]) * mids_max).astype(int)
+        high_val = (np.array(config.settings["colors"][config.settings["devices"][self.board]["effect_opts"]["Scroll"]["high_color"]]) * high_max).astype(int)
         # Scrolling effect window
         speed = config.settings["devices"][self.board]["effect_opts"]["Scroll"]["speed"]
-        p[:, speed:] = p[:, :-speed]
-        p *= config.settings["devices"][self.board]["effect_opts"]["Scroll"]["decay"]
-        p = gaussian_filter1d(p, sigma=config.settings["devices"][self.board]["effect_opts"]["Scroll"]["blur"])
+        self.output[:, speed:] = self.output[:, :-speed]
+        self.output = (self.output * config.settings["devices"][self.board]["effect_opts"]["Scroll"]["decay"]).astype(int)
+        self.output = gaussian_filter1d(self.output, sigma=config.settings["devices"][self.board]["effect_opts"]["Scroll"]["blur"])
         # Create new color originating at the center
-        p[0, :speed] = r
-        p[1, :speed] = g
-        p[2, :speed] = b
+        self.output[0, :speed] = lows_val[0] + mids_val[0] + high_val[0]
+        self.output[1, :speed] = lows_val[1] + mids_val[1] + high_val[1]
+        self.output[2, :speed] = lows_val[2] + mids_val[2] + high_val[2]
         # Update the LED strip
-        return np.concatenate((p[:, ::-1], p), axis=1)
+        #return np.concatenate((self.prev_spectrum[:, ::-speed], self.prev_spectrum), axis=1)
+        return self.output
 
     def visualize_energy(self, y):
         """Effect that expands from the center with increasing sound energy"""
-        global p
         y = np.copy(y)
         signal_processers[self.board].gain.update(y)
         y /= signal_processers[self.board].gain.value
         scale = config.settings["devices"][self.board]["effect_opts"]["Energy"]["scale"]
         # Scale by the width of the LED strip
         y *= float((config.settings["devices"][self.board]["configuration"]["N_PIXELS"] * scale) - 1)
+        y = np.copy(interpolate(y, config.settings["devices"][self.board]["configuration"]["N_PIXELS"] // 2))
         # Map color channels according to energy in the different freq bands
-        r = int(np.mean(y[:len(y) // 3]**scale)*config.settings["devices"][self.board]["effect_opts"]["Energy"]["r_multiplier"])
-        g = int(np.mean(y[len(y) // 3: 2 * len(y) // 3]**scale)*config.settings["devices"][self.board]["effect_opts"]["Energy"]["g_multiplier"])
-        b = int(np.mean(y[2 * len(y) // 3:]**scale)*config.settings["devices"][self.board]["effect_opts"]["Energy"]["b_multiplier"])
+        #y = np.copy(interpolate(y, config.settings["devices"][self.board]["configuration"]["N_PIXELS"] // 2))
+        diff = y - self.prev_spectrum
+        self.prev_spectrum = np.copy(y)
+        spectrum = np.copy(self.prev_spectrum)
+        spectrum = np.array([j for i in zip(spectrum,spectrum) for j in i])
+        # Color channel mappings
+        r = int(np.mean(spectrum[:len(spectrum) // 3]**scale)*config.settings["devices"][self.board]["effect_opts"]["Energy"]["r_multiplier"])
+        g = int(np.mean(spectrum[len(spectrum) // 3: 2 * len(spectrum) // 3]**scale)*config.settings["devices"][self.board]["effect_opts"]["Energy"]["g_multiplier"])
+        b = int(np.mean(spectrum[2 * len(spectrum) // 3:]**scale)*config.settings["devices"][self.board]["effect_opts"]["Energy"]["b_multiplier"])
         # Assign color to different frequency regions
-        p[0, :r] = 255.0
-        p[0, r:] = 0.0
-        p[1, :g] = 255.0
-        p[1, g:] = 0.0
-        p[2, :b] = 255.0
-        p[2, b:] = 0.0
-        signal_processers[self.board].p_filt.update(p)
-        p = np.round(signal_processers[self.board].p_filt.value)
+        self.output[0, :r] = 255
+        self.output[0, r:] = 0
+        self.output[1, :g] = 255
+        self.output[1, g:] = 0
+        self.output[2, :b] = 255
+        self.output[2, b:] = 0
         # Apply blur to smooth the edges
-        p[0, :] = gaussian_filter1d(p[0, :], sigma=config.settings["devices"][self.board]["effect_opts"]["Energy"]["blur"])
-        p[1, :] = gaussian_filter1d(p[1, :], sigma=config.settings["devices"][self.board]["effect_opts"]["Energy"]["blur"])
-        p[2, :] = gaussian_filter1d(p[2, :], sigma=config.settings["devices"][self.board]["effect_opts"]["Energy"]["blur"])
-        # Set the new pixel value
-        return np.concatenate((p[:, ::-1], p), axis=1)
+        self.output[0, :] = gaussian_filter1d(self.output[0, :], sigma=config.settings["devices"][self.board]["effect_opts"]["Energy"]["blur"])
+        self.output[1, :] = gaussian_filter1d(self.output[1, :], sigma=config.settings["devices"][self.board]["effect_opts"]["Energy"]["blur"])
+        self.output[2, :] = gaussian_filter1d(self.output[2, :], sigma=config.settings["devices"][self.board]["effect_opts"]["Energy"]["blur"])
+        return self.output
 
     def visualize_wavelength(self, y):
         y = np.copy(interpolate(y, config.settings["devices"][self.board]["configuration"]["N_PIXELS"] // 2))
@@ -371,7 +401,7 @@ class Visualizer():
         self.prev_spectrum = np.copy(y)
         # Color channel mappings
         r = signal_processers[self.board].r_filt.update(y - signal_processers[self.board].common_mode.value)
-        #g = np.abs(diff)
+        g = np.abs(diff)
         b = signal_processers[self.board].b_filt.update(np.copy(y))
         r = np.array([j for i in zip(r,r) for j in i])
         output = np.array([self.multicolor_modes[config.settings["devices"][self.board]["effect_opts"]["Wavelength"]["color_mode"]][0][
@@ -399,7 +429,6 @@ class Visualizer():
     
     def visualize_spectrum(self, y):
         """Effect that maps the Mel filterbank frequencies onto the LED strip"""
-        global p
         #print(len(y))
         #print(y)
         y = np.copy(interpolate(y, config.settings["devices"][self.board]["configuration"]["N_PIXELS"] // 2))
@@ -541,7 +570,7 @@ class Visualizer():
         return output
 
     def visualize_pulse(self, y):
-        """fckin dope ass visuals that's what"""
+        """dope ass visuals that's what"""
         config.settings["devices"][self.board]["effect_opts"]["Pulse"]["bar_color"]
         config.settings["devices"][self.board]["effect_opts"]["Pulse"]["bar_speed"]
         config.settings["devices"][self.board]["effect_opts"]["Pulse"]["bar_length"]
@@ -602,7 +631,7 @@ class GUI(QMainWindow):
         self.updateUIVisibleItems()
 
     def initMainWindow(self):
-        # ==================================== Set up window and wrapping layout
+        # Set up window and wrapping layout
         self.setWindowTitle("Visualization")
         # Initial window size/pos last saved if available
         settings.beginGroup("MainWindow")
@@ -613,19 +642,22 @@ class GUI(QMainWindow):
         settings.endGroup()
         self.main_wrapper = QVBoxLayout()
 
-        # ======================================================= Set up toolbar
+        # Set up toolbar
         #toolbar_guiDialogue.setShortcut('Ctrl+H')
+        toolbar_deviceDialogue = QAction('LED Strip Manager', self)
+        toolbar_deviceDialogue.triggered.connect(self.deviceDialogue)
         toolbar_guiDialogue = QAction('GUI Properties', self)
         toolbar_guiDialogue.triggered.connect(self.guiDialogue)
-        #toolbar_configDialogue = QAction('GUI Properties', self)
-        #toolbar_configDialogue.triggered.connect(self.configDialogue)
+        toolbar_saveDialogue = QAction('Save Settings', self)
+        toolbar_saveDialogue.triggered.connect(self.saveDialogue)
         
         self.toolbar = self.addToolBar('top_toolbar')
         self.toolbar.setObjectName('top_toolbar')
         self.toolbar.addAction(toolbar_guiDialogue)
-       # self.toolbar.addAction(toolbar_configDialogue)
+        self.toolbar.addAction(toolbar_saveDialogue)
+        self.toolbar.addAction(toolbar_deviceDialogue)
 
-        # ========================================== Set up FPS and error labels
+        # Set up FPS and error labels
         self.statusbar = QStatusBar()
         self.setStatusBar(self.statusbar)
         self.label_error = QLabel("")
@@ -637,8 +669,8 @@ class GUI(QMainWindow):
         self.statusbar.addPermanentWidget(self.label_latency)
         self.statusbar.addPermanentWidget(self.label_fps)
 
-        # ==================================================== Set up board tabs
-        self.label_boards = QLabel("Boards")
+        # Set up board tabs
+        self.label_boards = QLabel("LED Strips")
         self.boardsTabWidget = QTabWidget()
         # Dynamically set up boards tabs
         self.board_tabs = {}         # contains all the tabs for each board
@@ -648,9 +680,9 @@ class GUI(QMainWindow):
             self.addBoard(board)
         self.main_wrapper.addWidget(self.label_boards)
         self.main_wrapper.addWidget(self.boardsTabWidget)
-        self.setLayout(self.main_wrapper)
+        #self.setLayout(self.main_wrapper)
 
-        # =========================================== Set wrapper as main widget
+        # Set wrapper as main widget
         self.setCentralWidget(QWidget(self))
         self.centralWidget().setLayout(self.main_wrapper)
         self.show()
@@ -686,9 +718,184 @@ class GUI(QMainWindow):
             event.ignore()
 
     def updateUIVisibleItems(self):
+        #print("-UPDATE-")
         for section in self.gui_widgets:
             for widget in self.gui_widgets[section]:
+                #print(widget.isVisible(), "          ", config.settings["GUI_opts"][section])
                 widget.setVisible(config.settings["GUI_opts"][section])
+
+    def deviceDialogue(self):
+        def show_hide_addBoard_interface():
+            current_device = device_type_cbox.currentText()
+            for device in config.device_req_config:
+                for req_config_setting in widgets[device]:
+                    if req_config_setting is not "no_config":
+                        for widget in widgets[device][req_config_setting]:
+                            widget.setVisible(device == current_device)
+                    else:
+                        # doesn't make sense i know i know
+                        widgets[device][req_config_setting].setVisible(device == current_device)
+
+        def validate_input():
+            import re
+            current_device = device_type_cbox.currentText()
+            tests = []
+            print("testing")
+            if current_device == "ESP8266":
+                for req_config_setting in config.device_req_config[current_device]:
+                    test = widgets[current_device][req_config_setting][1].text()
+                    if req_config_setting == "MAC_ADDR":
+                        # Validate MAC
+                        tests.append(True if re.match("[0-9a-f]{2}([-:])[0-9a-f]{2}(\\1[0-9a-f]{2}){4}$", test.lower()) else False)
+                    elif req_config_setting == "UDP_IP":
+                        # Validate IP
+                        try:
+                            pieces = test.split('.')
+                            if len(pieces) != 4: return False
+                            tests.append(all(0<=int(self.prev_output)<256 for self.prev_output in pieces))
+                        except:
+                            tests.append(False)
+                    elif req_config_setting == "UDP_PORT":
+                        # Validate port
+                        print(test)
+                        try:
+                            int(test)
+                            if test > 0:
+                                test.append(True)
+                        except:
+                            tests.append(False)
+                
+
+
+
+
+                #pass
+                
+                
+                # Validate port
+            elif current_device == "RaspberryPi":
+                pass
+                # Validate LED Pin
+                # Validate LED Freq
+                # Validate LED DMA
+            elif current_device == "Fadecandy":
+                pass
+                # Validate server
+            elif not config.req_config_setting[current_device]:
+                pass
+            print(tests)
+
+        # def lineEdit(labelText, defaultText):
+        #     wrapper = QWidget()
+        #     hLayout = QHBoxLayout()
+        #     wrapper.setLayout(hLayout)
+        #     label = QLabel(labelText)
+        #     lEdit = QLineEdit()
+        #     lEdit.setPlaceholderText(defaultText)
+        #     hLayout.addWidget(label)
+        #     hLayout.addWidget(lEdit)
+        #     return wrapper
+
+        # Set up window and layout
+        self.device_dialogue = QDialog(None, Qt.WindowSystemMenuHint | Qt.WindowCloseButtonHint)
+        self.device_dialogue.setWindowTitle("LED Strip Manager")
+        self.device_dialogue.setWindowModality(Qt.ApplicationModal)
+        layout = QVBoxLayout()
+        self.device_dialogue.setLayout(layout)
+
+        # Set up tab layouts
+        tabs = QTabWidget()
+        layout.addWidget(tabs)
+        addDeviceTab = QWidget()
+        remDeviceTab = QWidget()
+        addDeviceTabLayout = QVBoxLayout()
+        remDeviceTabLayout = QVBoxLayout()
+        addDeviceTabButtonLayout = QGridLayout()
+        remDeviceTabButtonLayout = QGridLayout()
+        addDeviceTab.setLayout(addDeviceTabLayout)
+        remDeviceTab.setLayout(remDeviceTabLayout)
+        tabs.addTab(addDeviceTab, "Add Device")
+        tabs.addTab(remDeviceTab, "Remove Device")
+
+        # Set up "Add Device" tab
+        device_type_cbox = QComboBox()
+        device_type_cbox.addItems(config.device_req_config.keys())
+        device_type_cbox.currentIndexChanged.connect(show_hide_addBoard_interface)
+        addDeviceTabLayout.addWidget(device_type_cbox)
+
+        # Set up "Add Device" widgets
+        widgets = {}
+        addDeviceTabLayout.addLayout(addDeviceTabButtonLayout)
+        remDeviceTabLayout.addLayout(remDeviceTabButtonLayout)
+        # if the new board has required config
+        for device in config.device_req_config:
+            # Make the widgets
+            widgets[device] = {}
+            if config.device_req_config[device]:
+                for req_config_setting in config.device_req_config[device]:
+                    label = config.device_req_config[device][req_config_setting][0]
+                    guide = config.device_req_config[device][req_config_setting][1]
+                    wType = config.device_req_config[device][req_config_setting][2]
+                    deflt = config.device_req_config[device][req_config_setting][3]
+                    wLabel = QLabel(label)
+                    #wGuide = QLabel(guide)
+                    if wType == "textbox":
+                        wEdit = QLineEdit()
+                        wEdit.setPlaceholderText(deflt)
+                        wEdit.textChanged.connect(validate_input)
+                    elif wType == "checkbox":
+                        wEdit = QCheckBox()
+                        wEdit.setCheckState(Qt.Checked if deflt else Qt.Unchecked)
+                    widgets[device][req_config_setting] = [wLabel, wEdit]
+                # Add widgets to layout
+                i = 0
+                for req_config in widgets[device]:
+                    addDeviceTabButtonLayout.addWidget(widgets[device][req_config][0], i, 0)
+                    addDeviceTabButtonLayout.addWidget(widgets[device][req_config][1], i, 1)
+                    #addDeviceTabButtonLayout.addWidget(widget_set[2], i+1, 0, 1, 2)
+                    i += 1
+            else:
+                no_setup = QLabel("Device requires no additional setup here! :)")
+                widgets[device]["no_config"] = no_setup
+                addDeviceTabButtonLayout.addWidget(no_setup, 0, 0)
+
+        # Show appropriate widgets
+        show_hide_addBoard_interface()
+
+        # self.gui_vis_checkboxes = {}
+        # for section in self.gui_widgets:
+        #     self.gui_vis_checkboxes[section] = QCheckBox(section)
+        #     self.gui_vis_checkboxes[section].setCheckState(
+        #             Qt.Checked if config.settings["GUI_opts"][section] else Qt.Unchecked)
+        #     self.gui_vis_checkboxes[section].stateChanged.connect(update_visibilty_dict)
+        #     addDeviceTabLayout.addWidget(self.gui_vis_checkboxes[section])
+        self.add_device_button = QPushButton("Add Device")
+        addDeviceTabLayout.addWidget(self.add_device_button)
+
+        # Set up "Remove Device" tab
+
+        # Set up ok/cancel buttons
+        self.buttons = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel, Qt.Horizontal, self)
+        self.buttons.accepted.connect(self.device_dialogue.accept)
+        self.buttons.rejected.connect(self.device_dialogue.reject)
+        layout.addWidget(self.buttons)
+        
+        self.device_dialogue.show()
+
+    def saveDialogue(self):
+        # Save window state
+        settings.beginGroup("MainWindow")
+        settings.setValue("geometry", self.saveGeometry())
+        settings.setValue('state', self.saveState())
+        settings.endGroup()
+        # save all settings
+        settings.setValue("settings_dict", config.settings)
+        # save and close
+        settings.sync()
+        # Confirmation message
+        self.conf_dialogue = QMessageBox()
+        self.conf_dialogue.setText("Settings saved.\nSettings are also automatically saved when program closes.")
+        self.conf_dialogue.show()
 
     def guiDialogue(self):
         def update_visibilty_dict():
@@ -697,32 +904,7 @@ class GUI(QMainWindow):
             self.updateUIVisibleItems()
 
         self.gui_dialogue = QDialog(None, Qt.WindowSystemMenuHint | Qt.WindowCloseButtonHint)
-        self.gui_dialogue.setWindowTitle("GUI Properties")
-        self.gui_dialogue.setWindowModality(Qt.ApplicationModal)
-        layout = QGridLayout()
-        self.gui_dialogue.setLayout(layout)
-        # OK button
-        self.buttons = QDialogButtonBox(QDialogButtonBox.Ok, Qt.Horizontal, self)
-        self.buttons.accepted.connect(self.gui_dialogue.accept)
-
-        self.gui_vis_checkboxes = {}
-        for section in self.gui_widgets:
-            self.gui_vis_checkboxes[section] = QCheckBox(section)
-            self.gui_vis_checkboxes[section].setCheckState(
-                    Qt.Checked if config.settings["GUI_opts"][section] else Qt.Unchecked)
-            self.gui_vis_checkboxes[section].stateChanged.connect(update_visibilty_dict)
-            layout.addWidget(self.gui_vis_checkboxes[section])
-        layout.addWidget(self.buttons)
-        self.gui_dialogue.show()
-
-    def configDialogue(self):
-        def update_visibilty_dict():
-            for checkbox in self.gui_vis_checkboxes:
-                config.settings["GUI_opts"][checkbox] = self.gui_vis_checkboxes[checkbox].isChecked()
-            self.updateUIVisibleItems()
-
-        self.gui_dialogue = QDialog(None, Qt.WindowSystemMenuHint | Qt.WindowCloseButtonHint)
-        self.gui_dialogue.setWindowTitle("GUI Properties")
+        self.gui_dialogue.setWindowTitle("Show/hide Interface Sections")
         self.gui_dialogue.setWindowModality(Qt.ApplicationModal)
         layout = QGridLayout()
         self.gui_dialogue.setLayout(layout)
@@ -742,10 +924,10 @@ class GUI(QMainWindow):
         
     def initBoardUI(self, board):
         self.board = board
-        # =============================================== Set up wrapping layout
+        # Set up wrapping layout
         self.board_tabs_widgets[board]["wrapper"] = QVBoxLayout()
         
-        # ================================================== Set up graph layout
+        # Set up graph layout
         self.board_tabs_widgets[board]["graph_view"] = pg.GraphicsView()
         graph_layout = pg.GraphicsLayout(border=(100,100,100))
         self.board_tabs_widgets[board]["graph_view"].setCentralItem(graph_layout)
@@ -780,7 +962,7 @@ class GUI(QMainWindow):
         led_plot.addItem(self.board_tabs_widgets[board]["g_curve"])
         led_plot.addItem(self.board_tabs_widgets[board]["b_curve"])
 
-        # ================================================= Set up button layout
+        # Set up button layout
         self.board_tabs_widgets[board]["label_reactive"] = QLabel("Audio Reactive Effects")
         self.board_tabs_widgets[board]["label_non_reactive"] = QLabel("Non Reactive Effects")
         self.board_tabs_widgets[board]["reactive_button_grid_wrap"] = QWidget()
@@ -824,7 +1006,7 @@ class GUI(QMainWindow):
                     k = 0
                     l += 1
                 
-        # ============================================== Set up frequency slider
+        # Set up frequency slider
         # Frequency range label
         self.board_tabs_widgets[board]["label_slider"] = QLabel("Frequency Range")
         # Frequency slider
@@ -868,7 +1050,7 @@ class GUI(QMainWindow):
         }
         """)
 
-        # ============================================ Set up option tabs layout
+        # Set up option tabs layout
         self.board_tabs_widgets[board]["label_options"] = QLabel("Effect Options")
         self.board_tabs_widgets[board]["opts_tabs"] = QTabWidget()
         # Dynamically set up tabs
@@ -944,7 +1126,7 @@ class GUI(QMainWindow):
                 
         
         
-        # ============================================= Add layouts into self.board_tabs_widgets[board]["wrapper"]
+        # Add layouts into self.board_tabs_widgets[board]["wrapper"]
         self.board_tabs_widgets[board]["wrapper"].addWidget(self.board_tabs_widgets[board]["graph_view"])
         self.board_tabs_widgets[board]["wrapper"].addWidget(self.board_tabs_widgets[board]["label_reactive"])
         self.board_tabs_widgets[board]["wrapper"].addWidget(self.board_tabs_widgets[board]["reactive_button_grid_wrap"])
@@ -1174,8 +1356,6 @@ def microphone_update(audio_samples):
             gui.label_error.setText("")
         else:
             gui.label_error.setText("No audio input. Volume below threshold.")
-        # Update fps counter
-        gui.label_fps.setText('{:.0f} / {:.0f} FPS'.format(fps, config.settings["configuration"]["FPS"]))
         app.processEvents()
 
     # Left in just in case prople dont use the gui
@@ -1194,27 +1374,27 @@ visualizers = {}
 boards = {}
 for board in config.settings["devices"]:
     visualizers[board] = Visualizer(board)
-    if config.settings["devices"][board]["configuration"]["TYPE"] == 'esp8266':
+    if config.settings["devices"][board]["configuration"]["TYPE"] == 'ESP8266':
         boards[board] = devices.ESP8266(
                 auto_detect=config.settings["devices"][board]["configuration"]["AUTO_DETECT"],
                    mac_addr=config.settings["devices"][board]["configuration"]["MAC_ADDR"],
                          ip=config.settings["devices"][board]["configuration"]["UDP_IP"],
                        port=config.settings["devices"][board]["configuration"]["UDP_PORT"])
-    elif config.settings["devices"][board]["configuration"]["TYPE"] == 'pi':
+    elif config.settings["devices"][board]["configuration"]["TYPE"] == 'RaspberryPi':
         boards[board] = devices.RaspberryPi(
                    n_pixels=config.settings["devices"][board]["configuration"]["N_PIXELS"],
                         pin=config.settings["devices"][board]["configuration"]["LED_PIN"],
                invert_logic=config.settings["devices"][board]["configuration"]["LED_INVERT"],
                        freq=config.settings["devices"][board]["configuration"]["LED_FREQ_HZ"],
                         dma=config.settings["devices"][board]["configuration"]["LED_DMA"])
-    elif config.settings["devices"][board]["configuration"]["TYPE"] == 'fadecandy':
+    elif config.settings["devices"][board]["configuration"]["TYPE"] == 'Fadecandy':
         boards[board] = devices.FadeCandy(
                      server=config.settings["devices"][board]["configuration"]["SERVER"])
-    elif config.settings["devices"][board]["configuration"]["TYPE"] == 'blinkstick':
+    elif config.settings["devices"][board]["configuration"]["TYPE"] == 'BlinkStick':
         boards[board] = devices.BlinkStick()
-    elif config.settings["devices"][board]["configuration"]["TYPE"] == 'dotstar':
+    elif config.settings["devices"][board]["configuration"]["TYPE"] == 'DotStar':
         boards[board] = devices.DotStar()
-    elif config.settings["devices"][board]["configuration"]["TYPE"] == 'stripless':
+    elif config.settings["devices"][board]["configuration"]["TYPE"] == 'Stripless':
         pass
 
 # Initialise DSP
