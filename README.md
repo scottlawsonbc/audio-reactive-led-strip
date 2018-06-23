@@ -1,3 +1,9 @@
+# Nazberry Pi Version
+
+Original Readme text can be found below. You can also go to the main repo for more details. 
+
+Here is a demo of my implementation of it.  I used the standalone Pi set up: [https://www.youtube.com/watch?v=vY4P0MU62X8](https://www.youtube.com/watch?v=vY4P0MU62X8)
+
 # Audio Reactive LED Strip
 Real-time LED strip music visualization using Python and the ESP8266 or Raspberry Pi.
 
