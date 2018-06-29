@@ -1,0 +1,18 @@
+sudo: unable to resolve host dancy
+[?1049h[1;24r(B[m[4l[?7h[?1h=[?1h=[?1h=[39;49m[?25l[39;49m(B[m[H[2J[22;35H(B[0;7m[ New File ](B[m[22;33H(B[0;7m[ Reading File ](B[m[22;32H(B[0;7m[ Read 370 lines ](B[m[H[39;49m(B[0;7m  GNU nano 2.7.4                File: visualization.py                          [3;1H(B[0;1m[36mfrom[39m(B[m __future__ (B[0;1m[36mimport[39m(B[m print_function[4d(B[0;1m[36mfrom[39m(B[m __future__ (B[0;1m[36mimport[39m(B[m division[5d(B[0;1m[36mimport[39m(B[m time[6d(B[0;1m[36mimport[39m(B[m numpy (B[0;1m[36mas[39m(B[m np[7d(B[0;1m[36mfrom[39m(B[m scipy.ndimage.filters (B[0;1m[36mimport[39m(B[m gaussian_filter1d[8d(B[0;1m[36mimport[39m(B[m config[9d(B[0;1m[36mimport[39m(B[m microphone[10d(B[0;1m[36mimport[39m(B[m dsp[11d(B[0;1m[36mimport[39m(B[m led[12d(B[0;1m[36mimport[39m(B[m sys[14dvisType = sys.argv[1][16d_time_prev = time.time() * 1000.0[17d(B[0;1m[32m"""The previous time that the frames_per_second() function was called"""[19d[39m(B[m_fps = dsp.ExpFilter(val=config.FPS, alpha_decay=0.2, alpha_rise=0.2)[20d(B[0;1m[32m"""The low-pass filter used to estimate frames-per-second"""[23d[39m(B[0;7m^G(B[m Get Help  (B[0;7m^O(B[m Write Out (B[0;7m^W(B[m Where Is  (B[0;7m^K(B[m Cut Text  (B[0;7m^J(B[m Justify   (B[0;7m^C(B[m Cur Pos[24d(B[0;7m^X(B[m Close     (B[0;7m^R(B[m Read File (B[0;7m^\(B[m Replace   (B[0;7m^U(B[m Uncut Text(B[0;7m^T(B[m To Linter (B[0;7m^_(B[m Go To Line[22d[?12l[?25h[3d[24;1H[?1049l[?1l>Received SIGHUP or SIGTERM
+sudo: unable to resolve host dancy
+ALSA lib pcm_dmix.c:1052:(snd_pcm_dmix_open) unable to open slave
+ALSA lib confmisc.c:1281:(snd_func_refer) Unable to find definition 'defaults.bluealsa.device'
+ALSA lib conf.c:4528:(_snd_config_evaluate) function snd_func_refer returned error: No such file or directory
+ALSA lib conf.c:4996:(snd_config_expand) Args evaluate error: No such file or directory
+ALSA lib pcm.c:2495:(snd_pcm_open_noupdate) Unknown PCM bluealsa
+ALSA lib confmisc.c:1281:(snd_func_refer) Unable to find definition 'defaults.bluealsa.device'
+ALSA lib conf.c:4528:(_snd_config_evaluate) function snd_func_refer returned error: No such file or directory
+ALSA lib conf.c:4996:(snd_config_expand) Args evaluate error: No such file or directory
+ALSA lib pcm.c:2495:(snd_pcm_open_noupdate) Unknown PCM bluealsa
+ALSA lib pcm_dmix.c:1052:(snd_pcm_dmix_open) unable to open slave
+Cannot connect to server socket err = No such file or directory
+Cannot connect to server request channel
+jack server is not running or cannot be started
+JackShmReadWritePtr::~JackShmReadWritePtr - Init not done for -1, skipping unlock
+JackShmReadWritePtr::~JackShmReadWritePtr - Init not done for -1, skipping unlock
