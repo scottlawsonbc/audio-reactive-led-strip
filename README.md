@@ -1,8 +1,58 @@
-# Nazberry Pi Version
+# Nazberry Pi - Audio Reactive LEDs
 
 Original Readme text can be found below. You can also go to the main repo for more details. 
 
 Here is a demo of my implementation of it.  I used the standalone Pi set up: [https://www.youtube.com/watch?v=vY4P0MU62X8](https://www.youtube.com/watch?v=vY4P0MU62X8)
+
+# Nazberry Pi Modifications
+
+### `config.py` has been edited as follows:
+
+```
+DEVICE = 'pi'
+USE_GUI = False
+DISPLAY_FPS = False
+N_PIXELS = 142
+MIC_RATE = 48000
+FPS = 50
+```
+
+I'm using the standalone Raspberry Pi with a 142 LED strip (it had 144 but I had to remove two since they were broken). The USB Microphone that I'm using has a rate of 48000 hz. And I turned the FPS down to 50 but i was easily getting 90 FPS without issues. 
+
+I'm also using this headless so the GUI and FPS have been turned off for better perofrmance. 
+
+### `visualization.py` has been edited as follows:
+
+Added the following after line 9 to allow reading command line arguments:
+
+```
+import sys
+
+visType = sys.argv[1]
+``` 
+
+Also added if/elif statements starting on line 256 to assign the above `visType` variable to `visualization_effect` variable on line 265. 
+
+### `off.py` was added to the package
+
+Contains python code to turn off all the LEDs after the off command was sent. Change the `LED_COUNT` if your LED count is different from 142. 
+
+# CLI Options
+I modified the `visualization.py` script to accept an extra command line argument which tells the script which visualiztion to run. The options are spectrum, energy, or scroll. To run this, simply do `sudo python visualization.py spectrum` - substitute `spectrum` for either `energy` or `scroll` for the other two effects. 
+
+# Browser setup
+
+Still working on completing a full browser UI. But once you clone/download this repository, copy everything in the python/ folder into /var/www/html/ (assuming you installed apache already). You can put it in a sub folder if you'd like. You may need to edit all the files to be owned by www-data (apache2 user). You can do this with `chown www-data:www-data *` to change everything at once. 
+
+Once everything is placed, you can go to `http://ip_addr/control.php?on=spectrum` to turn on the lights. You can substitute `spectrum` for either `energy` or `scroll`. To turn off the lights, just go to `http://ip_addr/control.php?off=1`. 
+
+I'll work in a frontend UI with buttons for easier control at some point. 
+
+
+# The items below were untouched from the original project by Scott Lawson
+
+------------------------------------------------------------------------------------
+------------------------------------------------------------------------------------
 
 # Audio Reactive LED Strip
 Real-time LED strip music visualization using Python and the ESP8266 or Raspberry Pi.
