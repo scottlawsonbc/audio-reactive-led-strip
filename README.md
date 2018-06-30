@@ -8,7 +8,7 @@ Here is a demo of my implementation of it.  I used the standalone Pi set up: [ht
 
 ### `config.py` has been edited as follows:
 
-```
+```python
 DEVICE = 'pi'
 USE_GUI = False
 DISPLAY_FPS = False
@@ -25,7 +25,7 @@ I'm also using this headless so the GUI and FPS have been turned off for better 
 
 Added the following after line 9 to allow reading command line arguments:
 
-```
+```python
 import sys
 
 visType = sys.argv[1]
@@ -38,16 +38,28 @@ Also added if/elif statements starting on line 256 to assign the above `visType`
 Contains python code to turn off all the LEDs after the off command was sent. Change the `LED_COUNT` if your LED count is different from 142. 
 
 # CLI Options
-I modified the `visualization.py` script to accept an extra command line argument which tells the script which visualiztion to run. The options are spectrum, energy, or scroll. To run this, simply do `sudo python visualization.py spectrum` - substitute `spectrum` for either `energy` or `scroll` for the other two effects. 
+I modified the `visualization.py` script to accept an extra command line argument which tells the script which visualiztion to run. The options are spectrum, energy, or scroll. To run this, simply run:
+
+```shell
+sudo python visualization.py spectrum
+``` 
+
+You can substitute `spectrum` for either `energy` or `scroll` for the other two effects. 
 
 # Browser setup
 
-Still working on completing a full browser UI. But once you clone/download this repository, copy everything in the python/ folder into /var/www/html/ (assuming you installed apache already). You can put it in a sub folder if you'd like. You may need to edit all the files to be owned by www-data (apache2 user). You can do this with `chown www-data:www-data *` to change everything at once. 
+Still working on completing a full browser UI. But once you clone/download this repository, copy everything in the python/ folder into /var/www/html/ (assuming you installed apache already). You can put it in a sub folder if you'd like. You may need to edit all the files to be owned by www-data (apache2 user). You can do this with the following command to change everything at once:
+
+```shell
+chown www-data:www-data *
+```
 
 Once everything is placed, you can go to `http://ip_addr/control.php?on=spectrum` to turn on the lights. You can substitute `spectrum` for either `energy` or `scroll`. To turn off the lights, just go to `http://ip_addr/control.php?off=1`. 
 
 I'll work in a frontend UI with buttons for easier control at some point. 
 
+------------------------------------------------------------------------------------
+------------------------------------------------------------------------------------
 
 # The items below were untouched from the original project by Scott Lawson
 
