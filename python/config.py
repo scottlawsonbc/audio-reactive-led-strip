@@ -17,7 +17,7 @@ to control the leds connected to it.
 """
 
 if DEVICE == 'esp8266':
-    UDP_IP = '192.168.0.150'
+    UDP_IP = '192.168.2.71'
     """IP address of the ESP8266. Must match IP in ws2812_controller.ino"""
     UDP_PORT = 7777
     """Port number used for socket communication between Python and ESP8266"""
@@ -42,8 +42,10 @@ if DEVICE == 'blinkstick':
     SOFTWARE_GAMMA_CORRECTION = True
     """Set to True because blinkstick doesn't use hardware dithering"""
 
-USE_GUI = True
+USE_GUI = False
 """Whether or not to display a PyQtGraph GUI plot of visualization"""
+
+USE_TKGUI = True
 
 DISPLAY_FPS = True
 """Whether to display the FPS when running (can reduce performance)"""

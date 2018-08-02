@@ -7,6 +7,10 @@ import config
 import microphone
 import dsp
 import led
+from tkinter import *
+import socket
+import os
+
 
 _time_prev = time.time() * 1000.0
 """The previous time that the frames_per_second() function was called"""
@@ -14,6 +18,78 @@ _time_prev = time.time() * 1000.0
 _fps = dsp.ExpFilter(val=config.FPS, alpha_decay=0.2, alpha_rise=0.2)
 """The low-pass filter used to estimate frames-per-second"""
 
+def set_energy():
+	visualization_effect = visualize_energy
+	ve_dsp.set('Energy')
+	btn_enr.configure(background='black', foreground='white')
+	btn_scr.configure(background='deep sky blue', foreground='white')
+	btn_spc.configure(background='deep sky blue', foreground='white')
+	
+def set_scroll():
+	visualization_effect = visualize_scroll
+	ve_dsp.set('Scroll')
+	btn_scr.configure(background='black', foreground='white')
+	btn_enr.configure(background='deep sky blue', foreground='white')
+	btn_spc.configure(background='deep sky blue', foreground='white')
+	
+def set_spectrum():
+	visualization_effect = visualize_spectrum
+	ve_dsp.set('Spectrum')
+	btn_spc.configure(background='black', foreground='white')
+	btn_enr.configure(background='deep sky blue', foreground='white')
+	btn_scr.configure(background='deep sky blue', foreground='white')
+	
+def get_ip():
+    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    try:
+        # doesn't even have to be reachable
+        s.connect(('10.255.255.255', 1))
+        IP = s.getsockname()[0]
+    except:
+        IP = '127.0.0.1'
+    finally:
+        s.close()
+    return IP
+
+my_ip = get_ip()
+	
+root = Tk()
+root.title("Led Visualiser TK GUI")
+root.configure(background='black')	
+	
+btn_enr = Button(text="ENERGY".center(14, ' '), command=set_energy, background='black', foreground='white')
+btn_enr.grid(row=0, column=0, padx=5, sticky = 'ew')
+
+btn_scr = Button(text="SCROLL".center(14, ' '), command=set_scroll, background='deep sky blue', foreground='white')
+btn_scr.grid(row=0, column=1, padx=5, sticky = 'ew')
+
+btn_spc = Button(text="SPECTRUM".center(14, ' '), command=set_spectrum, background='deep sky blue', foreground='white')
+btn_spc.grid(row=0, column=2, padx=5, sticky = 'ew')
+
+ve_dsp = StringVar()
+ve_dsp.set('Energy')
+lbl_ve = Label(master=root,textvariable = ve_dsp, background='black', foreground='white')
+lbl_ve.grid(row=1, column=0, columnspan=3, sticky='EW')
+
+FPS_dsp = StringVar()
+lbl_fps = Label(master=root,textvariable = FPS_dsp, background='black', foreground='white')
+lbl_fps.grid(row=2, column=0, columnspan=3,sticky='EW')
+
+lbl_mip = Label(master=root,text = 'My IP: ' + my_ip,background='black', foreground='white')
+lbl_mip.grid(row=3, column=0, columnspan=3,sticky='EW')
+
+lbl_lip = Label(master=root,text = 'LED IP: ' + config.UDP_IP,background='black', foreground='white')
+lbl_lip.grid(row=4, column=0, columnspan=3,sticky='EW')
+
+con_dsp = StringVar()
+response = os.system("ping -c 1 " + config.UDP_IP + " -n 1")
+if response == 0:
+  con_dsp.set('Connected to LEDs')
+else:
+  con_dsp.set('No Connection')
+  
+lbl_con = Label(master=root,textvariable = con_dsp,background='black', foreground='white')
+lbl_con.grid(row=5, column=0, columnspan=3,sticky='EW')
 
 def frames_per_second():
     """Return the estimated frames per second
@@ -186,10 +262,10 @@ volume = dsp.ExpFilter(config.MIN_VOLUME_THRESHOLD,
                        alpha_decay=0.02, alpha_rise=0.02)
 fft_window = np.hamming(int(config.MIC_RATE / config.FPS) * config.N_ROLLING_HISTORY)
 prev_fps_update = time.time()
-
+prev_con_test = time.time()
 
 def microphone_update(audio_samples):
-    global y_roll, prev_rms, prev_exp, prev_fps_update
+    global y_roll, prev_rms, prev_exp, prev_fps_update, prev_con_test
     # Normalize samples between 0 and 1
     y = audio_samples / 2.0**15
     # Construct a rolling window of audio samples
@@ -233,9 +309,25 @@ def microphone_update(audio_samples):
             g_curve.setData(y=led.pixels[1])
             b_curve.setData(y=led.pixels[2])
     if config.USE_GUI:
-        app.processEvents()
+	    app.processEvents()
+		
+    if config.USE_TKGUI:
+        fps = frames_per_second()
+        if time.time() - 0.5 > prev_fps_update:
+            prev_fps_update = time.time()
+            FPS_dsp.set('FPS {:.0f} / {:.0f}'.format(fps, config.FPS))
+			
+        if time.time() - 60 > prev_con_test:
+            prev_con_test = time.time()
+            response = os.system("ping -c 1 " + config.UDP_IP + " -n 1")
+            if response == 0:
+                con_dsp.set('Connected to LEDs')
+            else:
+                con_dsp.set('No Connection')
+		
+        root.update()
     
-    if config.DISPLAY_FPS:
+    if config.DISPLAY_FPS and not config.USE_TKGUI:
         fps = frames_per_second()
         if time.time() - 0.5 > prev_fps_update:
             prev_fps_update = time.time()
