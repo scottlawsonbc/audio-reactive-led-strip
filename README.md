@@ -46,7 +46,10 @@ You can also build a standalone visualizer using a Raspberry Pi. For this you wi
 Limitations when using the Raspberry Pi:
 - Raspberry Pi is just fast enough the run the visualization, but it is too slow to run the GUI window as well. It is recommended that you disable the GUI when running the code on the Raspberry Pi.
 - The ESP8266 uses a technique called temporal dithering to improve the color depth of the LED strip. Unfortunately the Raspberry Pi lacks this capability.
-
+# Raspberry Pi and ESP8266
+-Simple Tkinter GUI to change visualization style from the raspberry pi with a screen.
+-Enable GUITK in config.
+![TkGUI](images/TkGUI.png)
 # Installation for Computer + ESP8266
 ## Python Dependencies
 Visualization code is compatible with Python 2.7 or 3.5. A few Python dependencies must also be installed:
