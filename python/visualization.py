@@ -19,6 +19,7 @@ _fps = dsp.ExpFilter(val=config.FPS, alpha_decay=0.2, alpha_rise=0.2)
 """The low-pass filter used to estimate frames-per-second"""
 
 def set_energy():
+	global visualization_effect
 	visualization_effect = visualize_energy
 	ve_dsp.set('Energy')
 	btn_enr.configure(background='black', foreground='white')
@@ -26,6 +27,7 @@ def set_energy():
 	btn_spc.configure(background='deep sky blue', foreground='white')
 	
 def set_scroll():
+	global visualization_effect
 	visualization_effect = visualize_scroll
 	ve_dsp.set('Scroll')
 	btn_scr.configure(background='black', foreground='white')
@@ -33,6 +35,7 @@ def set_scroll():
 	btn_spc.configure(background='deep sky blue', foreground='white')
 	
 def set_spectrum():
+	global visualization_effect
 	visualization_effect = visualize_spectrum
 	ve_dsp.set('Spectrum')
 	btn_spc.configure(background='black', foreground='white')
