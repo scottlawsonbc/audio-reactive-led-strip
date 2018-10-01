@@ -5,9 +5,6 @@ import numpy as np
 from scipy.ndimage.filters import gaussian_filter1d
 import argparse
 import config
-import microphone
-import dsp
-import led
 
 
 def str_to_bool(v):
@@ -24,6 +21,13 @@ parser.add_argument("-b", "--fftbins", help="Number of FFT bins (see config.py)"
 parser.add_argument("-g", "--gui", help="Bool display GUI", type=str_to_bool, nargs='?', const=True)
 parser.add_argument("-f", "--fpsdisp", help="Bool display FPS counter?", type=str_to_bool, nargs='?', const=True)
 parser.add_argument("-t", "--disptype", help="0 - Spectrum, 1 - Energy, 2 - Scroll", type=int)
+parser.add_argument("-c", "--colormode", help="0 - Purple/Blue, 1 - Yellow/Green, 2 - Aqua, 3 - Blue/Green, 4 - Red/Yellow, 5 - Red/Purple", type=int)
+parser.add_argument("-n", "--nhist", help="Default -- 2", type=int)
+parser.add_argument("-m", "--minfreq", help="Minimum frequency registered, default -- 200", type=int)
+parser.add_argument("-s", "--intensityscale", help="Power scale of lights, default -- 1", type=float)
+parser.add_argument("--rscale", help="Scale of red color from 0 to 1", type=float)
+parser.add_argument("--gscale", help="Scale of green color from 0 to 1", type=float)
+parser.add_argument("--bscale", help="Scale of blue color from 0 to 1", type=float)
 args = parser.parse_args()
 if args.device:
     config.DEVICE = args.device
@@ -35,11 +39,31 @@ if args.gui is not None:
     config.USE_GUI = args.gui
 if args.fpsdisp is not None:
     config.DISPLAY_FPS = args.gui
+if args.nhist is not None:
+        config.N_ROLLING_HISTORY = args.nhist
+if args.minfreq is not None:
+        config.MIN_FREQUENCY = args.minfreq
 
 disp_type = 0
 if args.disptype:
     disp_type = args.disptype
+color_mode = 0
+if args.colormode:
+    color_mode = args.colormode
+    intensityscale = 1.0
+if args.intensityscale:
+    intensityscale = args.intensityscale
+    color_scales = [1.0, 1.0, 1.0]
+if args.rscale:
+    color_scales[0] = args.rscale
+if args.gscale:
+    color_scales[1] = args.gscale  
+if args.bscale:
+    color_scales[2] = args.bscale
 
+import microphone
+import dsp
+import led
 
 _time_prev = time.time() * 1000.0
 """The previous time that the frames_per_second() function was called"""
@@ -205,8 +229,14 @@ def visualize_spectrum(y):
     r = np.concatenate((r[::-1], r))
     g = np.concatenate((g[::-1], g))
     b = np.concatenate((b[::-1], b))
-    output = np.array([r, g,b]) * 255
+    output = np.array(pick_colors(color_mode, [r,g,b])) * 255
     return output
+
+def pick_colors(color_mode, rgb):
+    from itertools import permutations
+    color_sets = list(permutations(rgb))
+    return color_sets[color_mode]
+
 
 
 fft_plot_filter = dsp.ExpFilter(np.tile(1e-1, config.N_FFT_BINS),
