@@ -47,13 +47,16 @@ if args.minfreq is not None:
 disp_type = 0
 if args.disptype:
     disp_type = args.disptype
+
 color_mode = 0
 if args.colormode:
     color_mode = args.colormode
-    intensityscale = 1.0
+
+intensityscale = 1.0
 if args.intensityscale:
     intensityscale = args.intensityscale
-    color_scales = [1.0, 1.0, 1.0]
+
+color_scales = [1.0, 1.0, 1.0]
 if args.rscale:
     color_scales[0] = args.rscale
 if args.gscale:
@@ -226,9 +229,9 @@ def visualize_spectrum(y):
     g = np.abs(diff)
     b = b_filt.update(np.copy(y))
     # Mirror the color channels for symmetric output
-    r = np.concatenate((r[::-1], r))
-    g = np.concatenate((g[::-1], g))
-    b = np.concatenate((b[::-1], b))
+    r = np.concatenate((r[::-1], r))**intensityscale
+    g = np.concatenate((g[::-1], g))**intensityscale
+    b = np.concatenate((b[::-1], b))**intensityscale
     output = np.array(pick_colors(color_mode, [r,g,b])) * 255
     return output
 
