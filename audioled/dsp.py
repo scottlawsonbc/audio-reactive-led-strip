@@ -4,6 +4,7 @@ from __future__ import unicode_literals
 from __future__ import absolute_import
 import itertools
 import numpy as np
+import math
 
 
 def rollwin(signal, n_overlaps):
@@ -194,3 +195,8 @@ def preprocess(audio, fs, fmax, n_overlaps):
     audio = (x for x in audio if np.sqrt(np.mean(np.square(x))) > 1e-5)
     audio = pad_zeros(audio)
     return audio, fs
+
+def rms(normalized_sample_points):
+    N = len(normalized_sample_points)
+    sum_squares = sum(s**2  for s in normalized_sample_points)
+    return math.sqrt(sum_squares / (N / 2))

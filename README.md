@@ -57,11 +57,13 @@ On Windows machines, the use of [Anaconda](https://www.continuum.io/downloads) i
 Create a [conda virtual environment](http://conda.pydata.org/docs/using/envs.html) (this step is optional but recommended)
 ```
 conda create --name visualization-env python=3.5
-activate visualization-env
+source activate visualization-env
 ```
 Install dependencies using pip and the conda package manager
 ```
 conda install numpy scipy pyqtgraph
+# On Mac:
+brew install portaudio
 pip install pyaudio
 ```
 
