@@ -68,6 +68,30 @@ class InterpolateHSV_gen(Color_gen):
         self.colorgen_min = colorgen_min
         self.num_pixels = num_pixels
     
+    def ilerp(self, it1, it2, samples, index):
+        step = (it2 - it1) / (samples - 1)
+        
+        return  it1 + (step * index)
+
+    def ilerp_hue(self, hue1, hue2, samples, index, reverse=False):
+        if not reverse and hue1 > hue2:
+            # wrap foward (e.g 300..360..0..50)
+            hue = self.ilerp(hue1, hue2 + 1.0, samples, index)
+            if hue <= 1.0:
+                return hue
+            else:
+                return hue - 1.0
+        elif reverse and hue1 < hue2:
+            # wrap backward (e.g 50..0..360..300)
+            hue = self.ilerp(hue1, hue2 - 1.0, samples, index)
+            if hue >= 0.0:
+                return hue
+            else:
+                return hue + 1.0
+        else:
+            hue = self.ilerp(hue1, hue2, samples, index)
+            return hue
+
     def get_color(self, t, pixel):
         if(abs(t-self.last_t) > 1e-10):
             # basic
@@ -75,40 +99,18 @@ class InterpolateHSV_gen(Color_gen):
             rgb_b = 1./255.* self.colorgen_max.get_color(t, pixel)
             h_a,s_a,v_a = colorsys.rgb_to_hsv(rgb_a[0], rgb_a[1], rgb_a[2])
             h_b,s_b,v_b = colorsys.rgb_to_hsv(rgb_b[0], rgb_b[1], rgb_b[2])
-            h=0.0
-            d = h_b - h_a
-            if h_a > h_b:
-                h3 = h_b
-                h_b = h_a
-                h_a = h3
-                d = -d
             self.h_a = h_a
             self.s_a = s_a
             self.v_a = v_a
             self.h_b = h_b
             self.s_b = s_b
             self.v_b = v_b
-            self.d = d
             self.last_t = t
+
+        h = self.ilerp_hue(self.h_a, self.h_b, self.num_pixels, pixel)
+        s = self.ilerp(self.s_a, self.s_b, self.num_pixels, pixel)
+        v = self.ilerp(self.v_a, self.v_b, self.num_pixels, pixel)
         
-
-        frac = float(pixel)/float(self.num_pixels)
-
-        if self.h_a > self.h_b:
-            frac = 1 - frac
-    
-        h = 0.0
-        h_a = self.h_a
-        if self.d > 0.5: # 180deg
-
-            h_a += 1 # 360deg
-            h = ( h_a + frac * (self.h_b - h_a) ) % 1 # 360deg
- 
-        if self.d <= 0.5: # 180deg
- 
-            h = h_a + frac * self.d
-
-        
-        r,g,b = colorsys.hsv_to_rgb(h, self.s_a + frac * (self.s_b-self.s_a), self.v_a + frac * (self.v_b-self.s_b))
+        r,g,b = colorsys.hsv_to_rgb(h, s, v)
         
         return np.array([[r*255.0],[g*255.0],[b*255.0]])
