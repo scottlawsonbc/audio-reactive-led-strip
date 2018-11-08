@@ -2,9 +2,12 @@ from __future__ import print_function
 from __future__ import division
 from __future__ import unicode_literals
 from __future__ import absolute_import
+from scipy.signal import butter
+from scipy.signal import lfilter_zi
 import itertools
 import numpy as np
 import math
+
 
 
 def rollwin(signal, n_overlaps):
@@ -200,3 +203,10 @@ def rms(normalized_sample_points):
     N = len(normalized_sample_points)
     sum_squares = sum(s**2  for s in normalized_sample_points)
     return math.sqrt(sum_squares / (N / 2))
+
+def design_filter(lowcut, highcut, fs, order=3):
+    nyq = 0.5*fs
+    low = lowcut/nyq
+    high = highcut/nyq
+    b,a = butter(order, [low,high], btype='band')
+    return b,a,lfilter_zi(b, a)

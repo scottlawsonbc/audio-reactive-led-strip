@@ -8,6 +8,8 @@ import colorsys
 import numpy as np
 import audioled.dsp as dsp
 import math
+from scipy.ndimage.filters import gaussian_filter1d
+from scipy.signal import lfilter
 
 SHORT_NORMALIZE = 1.0 / 32768.0
 
@@ -175,6 +177,58 @@ class AfterGlowEffect(Effect):
             self.pixel_state = self.pixel_state.clip(0.0, 255.0)
             yield self.pixel_state
 
+class MovingLightEffect(Effect):
+
+    audio_gen = None
+    t = 0.0
+    last_t = 0.0
+    num_pixels = 0
+    pixel_state = None
+    speed = 0.0
+    dim_time = 1.0
+    last_move_t = 0.0
+
+    def __init__(self, num_pixels, audio_gen, color_gen, speed, dim_time=20.0):
+        self.num_pixels = num_pixels
+        self.audio_gen = audio_gen
+        self.pixel_state = np.zeros(num_pixels) * np.array([[0.0],[0.0],[0.0]])
+        self.speed = speed
+        self.dim_time = dim_time
+        self.color_gen = color_gen
+        self.filter_b, self.filter_a, self.filter_zi = dsp.design_filter(50, 300, 48000, 3)
+
+    def update(self, scal_dt):
+        self.t+=scal_dt
+    
+    def effect(self):
+        for y in self.audio_gen:
+            # apply bandpass to audio
+            y, self.filter_zi = lfilter(b=self.filter_b, a=self.filter_a, x=np.array(y), zi=self.filter_zi)
+            # move in speed
+            dt_move = self.t - self.last_move_t
+            if dt_move * self.speed > 1:
+                shift_pixels = int(dt_move * self.speed)
+                self.pixel_state[:, shift_pixels:] = self.pixel_state[:, :-shift_pixels]
+                self.pixel_state[:, 0:shift_pixels] = self.pixel_state[:, shift_pixels:shift_pixels+1]
+                # convolve to smooth edges
+                self.pixel_state[:, 0:2*shift_pixels] = gaussian_filter1d(self.pixel_state[:,0:2*shift_pixels],0.5)
+                self.last_move_t = self.t
+            # dim with time
+            dt = self.t - self.last_t
+            self.last_t = self.t
+            self.pixel_state*= (1.0 - dt / self.dim_time)
+            self.pixel_state = gaussian_filter1d(self.pixel_state, sigma=0.5)
+            self.pixel_state = gaussian_filter1d(self.pixel_state, sigma=0.5)
+            # new color at origin
+            peak = dsp.rms(y) * 2.0
+            peak = peak**2
+            r,g,b = self.color_gen.get_color(self.t, -1)
+            self.pixel_state[0][0] = r * peak + peak * 255.0
+            self.pixel_state[1][0] = g * peak+ peak * 255.0
+            self.pixel_state[2][0] = b * peak+ peak * 255.0
+
+            yield self.pixel_state.clip(0.0,255.0)
+
 class ShiftEffect(Effect):
 
     pixel_gen = None
@@ -226,5 +280,11 @@ class MirrorEffect(Effect):
         self.t+=scal_dt
     
     def effect(self):
+        h = int(self.num_pixels/2)
+        n = self.num_pixels
         for y in self.pixel_gen:
+            y[:,h:n] = y[:,0:h]
+            temp = y[:,0:h]
+            temp = temp[:,::-1]
+            y[:,0:h] = temp
             yield y
