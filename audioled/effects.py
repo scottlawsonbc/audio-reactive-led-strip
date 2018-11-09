@@ -46,10 +46,10 @@ class SpectrumEffect(Effect):
     bass_colorgen=None
     melody_colorgen=None
 
-    def __init__(self, pixels, fs, audio_gen, bass_colorgen, melody_colorgen, fmax=6000, n_overlaps=8, chunk_rate=60, mirror_middle=True):
-        self.norm_dist = np.linspace(0, 1, pixels)
+    def __init__(self, num_pixels, fs, audio_gen, bass_colorgen, melody_colorgen, fmax=6000, n_overlaps=8, chunk_rate=60, mirror_middle=True):
+        self.norm_dist = np.linspace(0, 1, num_pixels)
         if mirror_middle:
-            self.norm_dist = np.linspace(0, 1, pixels // 2)
+            self.norm_dist = np.linspace(0, 1, num_pixels // 2)
         self.fft_dist = np.linspace(0, 1, self.fft_bins)
         self.chunk_rate = chunk_rate
         self.n_overlaps = n_overlaps
@@ -188,14 +188,14 @@ class MovingLightEffect(Effect):
     dim_time = 1.0
     last_move_t = 0.0
 
-    def __init__(self, num_pixels, audio_gen, color_gen, speed, dim_time=20.0):
+    def __init__(self, num_pixels, fs, audio_gen, color_gen, speed=10.0, dim_time=20.0, lowcut_hz=50.0, highcut_hz=300.0):
         self.num_pixels = num_pixels
         self.audio_gen = audio_gen
         self.pixel_state = np.zeros(num_pixels) * np.array([[0.0],[0.0],[0.0]])
         self.speed = speed
         self.dim_time = dim_time
         self.color_gen = color_gen
-        self.filter_b, self.filter_a, self.filter_zi = dsp.design_filter(50, 300, 48000, 3)
+        self.filter_b, self.filter_a, self.filter_zi = dsp.design_filter(lowcut_hz, highcut_hz, fs, 3)
 
     def update(self, scal_dt):
         self.t+=scal_dt
