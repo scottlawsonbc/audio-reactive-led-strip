@@ -24,6 +24,7 @@ $RECYCLE.BIN/
 
 # vscode files
 .vscode
+.idea
 
 # =========================
 # Operating System Files
