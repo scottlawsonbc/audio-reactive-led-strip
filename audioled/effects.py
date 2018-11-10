@@ -111,7 +111,7 @@ class VUMeterRMSEffect(Effect):
         for y in self.audio_gen:
             N = len(y) # blocksize
             rms = dsp.rms(y)
-            db = 20 * math.log10(rms+(1e-40))
+            db = 20 * math.log10(max(rms, 1e-16))
             scal_value = (60.0+db)/60.0
             
             bar = np.zeros(self.num_pixels) * np.array([[0],[0],[0]])
@@ -139,7 +139,7 @@ class VUMeterPeakEffect(Effect):
         for y in self.audio_gen:
             N = len(y) # blocksize
             peak = np.max(y)
-            db = (20*(math.log10(peak+(1e-40))))
+            db = (20*(math.log10(max(peak, 1e-16))))
             scal_value = (60.0+db)/60.0
             bar = np.zeros(self.num_pixels) * np.array([[0],[0],[0]])
             index = int(self.num_pixels * scal_value)
