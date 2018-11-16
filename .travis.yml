@@ -1,6 +1,12 @@
 language: python
 python:
   - "3.5"
+
+addons:
+    apt:
+        packages:
+            - portaudio19-dev
+
 install:
   - sudo apt-get update
   # We do this conditionally because it saves us some downloading if the
@@ -17,7 +23,6 @@ install:
   - conda update -q conda
   # Useful for debugging any issues with conda
   - conda info -a
-
   # Install conda dependencies
   - conda create -q -n visualization-env python=$TRAVIS_PYTHON_VERSION numpy scipy
   - source activate visualization-env
