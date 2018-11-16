@@ -50,3 +50,9 @@ For this you can use [openpixelcontrol](https://github.com/zestyping/openpixelco
 ```
 python demo.py
 ```
+
+## Running unit tests
+
+```
+python -m unittest discover
+```
