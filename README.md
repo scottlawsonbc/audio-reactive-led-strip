@@ -1,5 +1,7 @@
 # Audio Reactive LED Strip
 
+[![Build Status](https://travis-ci.org/segfault16/audio-reactive-led-strip.svg?branch=develop)](https://travis-ci.org/segfault16/audio-reactive-led-strip)
+
 Real-time LED strip music visualization using Python and the ESP8266 or Raspberry Pi.
 
 The works in this project is based on [https://github.com/scottlawsonbc/audio-reactive-led-strip](https://github.com/scottlawsonbc/audio-reactive-led-strip).
