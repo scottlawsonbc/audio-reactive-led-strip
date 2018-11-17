@@ -24,7 +24,8 @@ class FilterGraph(object):
     _filterConnections = []
 
     def __init__(self):
-        None
+        self._filterConnections = []
+        self._filterNodes = []
 
     def update(self):
         None

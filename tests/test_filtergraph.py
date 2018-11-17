@@ -18,13 +18,13 @@ class TestDSP(unittest.TestCase):
         ef2 = MockEffect()
 
         fg.addEffectNode(ef1)
-        self.assertTrue(fg._filterNodes.count,1)
+        self.assertEqual(len(fg._filterNodes),1)
         fg.addEffectNode(ef2)
-        self.assertTrue(fg._filterNodes.count,2)
+        self.assertEqual(len(fg._filterNodes),2)
         fg.removeEffectNode(ef1)
-        self.assertTrue(fg._filterNodes.count,1)
+        self.assertEqual(len(fg._filterNodes),1)
         fg.removeEffectNode(ef2)
-        self.assertTrue(fg._filterNodes.count,0)
+        self.assertEqual(len(fg._filterNodes),0)
     
     def test_canAddRemoveNodeConnections(self):
         fg = filtergraph.FilterGraph()
@@ -34,6 +34,17 @@ class TestDSP(unittest.TestCase):
         fg.addEffectNode(ef1)
         fg.addEffectNode(ef2)
         fg.addConnection(ef1,0,ef2,0)
-        self.assertTrue(fg._filterConnections.count,1)
+        self.assertEqual(len(fg._filterConnections),1)
         fg.removeConnection(ef1,0,ef2,0)
-        self.assertTrue(fg._filterConnections.count,0)
+        self.assertEqual(len(fg._filterConnections),0)
+
+    def test_autoRemoveConnections(self):
+        fg = filtergraph.FilterGraph()
+        ef1 = MockEffect()
+        ef2 = MockEffect()
+        fg.addEffectNode(ef1)
+        fg.addEffectNode(ef2)
+        fg.addConnection(ef1,0,ef2,0)
+        self.assertEqual(len(fg._filterConnections),1)
+        fg.removeEffectNode(ef1)
+        self.assertEqual(len(fg._filterConnections),0)
