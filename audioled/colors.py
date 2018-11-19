@@ -50,6 +50,31 @@ class ColorWheel_gen(Color_gen):
     def get_color_array(self, t, num_pixels):
         return np.ones(num_pixels) * self.get_color(t, -1)
 
+
+class ColorWheel2_gen(Color_gen):
+    cycle_time = 30.0
+    offset = 0.0
+    cycle_time_dim = 10.0
+
+    def __init__(self, cycle_time=30.0, offset=0.0, cycle_time_dim=10.0):
+        self.cycle_time = cycle_time
+        self.offset = offset
+        self.cycle_time_dim = cycle_time_dim
+
+    def get_color(self, t, pixel):
+        L = 0.5
+        S = 1.0
+        dim = math.sin(2 * math.pi / self.cycle_time_dim * t)
+        h = (t + self.offset % self.cycle_time) / self.cycle_time
+        r, g, b = colorsys.hls_to_rgb(h, L, S)
+        CArray = np.array([[dim * r * 255.0], [dim * g * 255.0], [dim * b * 255.0]])
+
+        return CArray
+
+    def get_color_array(self, t, num_pixels):
+        return np.ones(num_pixels) * self.get_color(t, -1)
+
+
 class InterpolateRGB_gen(Color_gen):
     def __init__(self, num_pixels, colorgen_max, colorgen_min):
         self.colorgen_max = colorgen_max
