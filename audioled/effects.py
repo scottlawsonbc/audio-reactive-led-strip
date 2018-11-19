@@ -120,6 +120,29 @@ class VUMeterRMSEffect(Effect):
             bar[0:3,0:index] = self.color_gen.get_color_array(self.t, self.num_pixels)[0:3,0:index]
             yield bar
 
+
+class ActivateAll(Effect):
+    #testEffect for colors and dim
+    audio_gen = None
+    t = 0.0
+    num_pixels = 0
+
+    def __init__(self, num_pixels, audio_gen, color_gen):
+        self.num_pixels = num_pixels
+        self.audio_gen = audio_gen
+        self.color_gen = color_gen
+
+    def update(self, scal_dt):
+        self.t += scal_dt
+
+    def effect(self):
+        for y in self.audio_gen:
+            bar = np.zeros(self.num_pixels) * np.array([[0], [0], [0]])
+            index = self.num_pixels
+            bar[0:3, 0:index] = self.color_gen.get_color_array(self.t, self.num_pixels)[0:3, 0:index]
+            yield bar
+
+
 class VUMeterPeakEffect(Effect):
 
     audio_gen = None
@@ -146,6 +169,7 @@ class VUMeterPeakEffect(Effect):
             index = np.clip(index, 0, self.num_pixels-1)
             bar[0:3,0:index] = self.color_gen.get_color_array(self.t, self.num_pixels)[0:3,0:index]
             yield bar
+
 
 class AfterGlowEffect(Effect):
 
