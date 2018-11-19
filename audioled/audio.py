@@ -55,7 +55,7 @@ def stream_audio(chunk_rate=60, ignore_overflows=True, device_index=None):
         while True:
             try:
                 chunk = stream.read(chunk_length)
-            except OSError as e:
+            except IOError as e:
                 if e.errno == pyaudio.paInputOverflowed:
                     print('Audio buffer full')
                     if ignore_overflows:
