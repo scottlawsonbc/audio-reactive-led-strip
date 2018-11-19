@@ -73,7 +73,7 @@ class SpectrumEffect(Effect):
             melody = dsp.warped_psd(y, self.fft_bins, self.fs_ds, [261.0, self.fmax], 'bark')
             bass = self.process_line(bass, self.bass_rms)
             melody = self.process_line(melody, self.melody_rms)
-            pixels = 1./255.0 * bass * self.bass_colorgen.get_color(self.t, -1) + 1./255.0 * melody * self.melody_colorgen.get_color(self.t, -1)
+            pixels = 1./255.0 * bass * self.bass_colorgen.get_color_array(self.t, 1) + 1./255.0 * melody * self.melody_colorgen.get_color_array(self.t, 1)
             yield pixels.clip(0, 255).astype(int)
 
     def update(self, scal_dt):
@@ -117,7 +117,7 @@ class VUMeterRMSEffect(Effect):
             bar = np.zeros(self.num_pixels) * np.array([[0],[0],[0]])
             index = int(self.num_pixels * rms)
             index = np.clip(index, 0, self.num_pixels-1)
-            bar[0:3,0:index] = np.array([1 * self.color_gen.get_color(self.t, i) for i in range(0, index)]).T
+            bar[0:3,0:index] = self.color_gen.get_color_array(self.t, self.num_pixels)[0:3,0:index]
             yield bar
 
 class VUMeterPeakEffect(Effect):
@@ -144,7 +144,7 @@ class VUMeterPeakEffect(Effect):
             bar = np.zeros(self.num_pixels) * np.array([[0],[0],[0]])
             index = int(self.num_pixels * scal_value)
             index = np.clip(index, 0, self.num_pixels-1)
-            bar[0:3,0:index] = np.array([1 * self.color_gen.get_color(self.t, i) for i in range(0, index)]).T
+            bar[0:3,0:index] = self.color_gen.get_color_array(self.t, self.num_pixels)[0:3,0:index]
             yield bar
 
 class AfterGlowEffect(Effect):
@@ -222,7 +222,7 @@ class MovingLightEffect(Effect):
             # new color at origin
             peak = dsp.rms(y) * 2.0
             peak = peak**2
-            r,g,b = self.color_gen.get_color(self.t, -1)
+            r,g,b = self.color_gen.get_color_array(self.t, 1)
             self.pixel_state[0][0] = r * peak + peak * 255.0
             self.pixel_state[1][0] = g * peak+ peak * 255.0
             self.pixel_state[2][0] = b * peak+ peak * 255.0
