@@ -58,3 +58,11 @@ python demo.py
 ```
 python -m unittest discover
 ```
+
+# Getting started (raspberry pi)
+
+## Install dependencies
+```
+sudo apt-get update
+sudo apt-get install python-numpy python-scipy python-pyaudio python-matplotlib
+```
