@@ -96,11 +96,13 @@ class VUMeterRMSEffect(Effect):
     audio_gen = None
     t = 0.0
     num_pixels = 0
+    db_range = 0.0
 
-    def __init__(self, num_pixels, audio_gen, color_gen):
+    def __init__(self, num_pixels, audio_gen, color_gen, db_range = 60.0):
         self.num_pixels = num_pixels
         self.audio_gen = audio_gen
         self.color_gen = color_gen
+        self.db_range = db_range
         
     
     def update(self, scal_dt):
@@ -112,7 +114,7 @@ class VUMeterRMSEffect(Effect):
             N = len(y) # blocksize
             rms = dsp.rms(y)
             db = 20 * math.log10(max(rms, 1e-16))
-            scal_value = (60.0+db)/60.0
+            scal_value = (self.db_range+db)/self.db_range
             
             bar = np.zeros(self.num_pixels) * np.array([[0],[0],[0]])
             index = int(self.num_pixels * rms)
@@ -125,11 +127,13 @@ class VUMeterPeakEffect(Effect):
     audio_gen = None
     t = 0.0
     num_pixels = 0
+    db_range = 0.0
 
-    def __init__(self, num_pixels, audio_gen, color_gen):
+    def __init__(self, num_pixels, audio_gen, color_gen, db_range=60.0):
         self.num_pixels = num_pixels
         self.audio_gen = audio_gen
         self.color_gen = color_gen
+        self.db_range = db_range
         
     
     def update(self, scal_dt):
@@ -140,7 +144,7 @@ class VUMeterPeakEffect(Effect):
             N = len(y) # blocksize
             peak = np.max(y)
             db = (20*(math.log10(max(peak, 1e-16))))
-            scal_value = (60.0+db)/60.0
+            scal_value = (self.db_range+db)/self.db_range
             bar = np.zeros(self.num_pixels) * np.array([[0],[0],[0]])
             index = int(self.num_pixels * scal_value)
             index = np.clip(index, 0, self.num_pixels-1)
