@@ -38,7 +38,7 @@ class TestDSP(unittest.TestCase):
         fg.removeConnection(ef1,0,ef2,0)
         self.assertEqual(len(fg._filterConnections),0)
 
-    def test_autoRemoveConnections(self):
+    def test_removeNodes_connectionsAreRemove(self):
         fg = filtergraph.FilterGraph()
         ef1 = MockEffect()
         ef2 = MockEffect()
@@ -48,3 +48,15 @@ class TestDSP(unittest.TestCase):
         self.assertEqual(len(fg._filterConnections),1)
         fg.removeEffectNode(ef1)
         self.assertEqual(len(fg._filterConnections),0)
+
+    def test_circularConnections_raisesError(self):
+        fg = filtergraph.FilterGraph()
+        ef1 = MockEffect()
+        ef2 = MockEffect()
+        ef3 = MockEffect()
+        fg.addEffectNode(ef1)
+        fg.addEffectNode(ef2)
+        fg.addEffectNode(ef3)
+        fg.addConnection(ef1,0,ef2,0)
+        fg.addConnection(ef2,0,ef3,0)
+        self.assertRaises(RuntimeError, fg.addConnection, ef3,0,ef1,0)
