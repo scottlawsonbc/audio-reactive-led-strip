@@ -30,35 +30,33 @@ class Effect:
         """
         raise NotImplementedError('effect() was not implemented')
 
+
+
 class SpectrumEffect(Effect):
-    fft_bins = 64
-    max_filter = np.ones(8)
-    min_feature_win = np.hamming(4)
-    t = 0.0
-    cycle_time = 30.0
-    chunk_rate = 60
-    n_overlaps = 8
-    mirror_middle=True
-    audio_gen=None
-    fs_ds=0.0
-    bass_rms=None
-    melody_rms=None
-    bass_colorgen=None
-    melody_colorgen=None
 
     def __init__(self, num_pixels, fs, audio_gen, bass_colorgen, melody_colorgen, fmax=6000, n_overlaps=8, chunk_rate=60, mirror_middle=True):
         self.norm_dist = np.linspace(0, 1, num_pixels)
         if mirror_middle:
             self.norm_dist = np.linspace(0, 1, num_pixels // 2)
+        self.fft_bins = 64
         self.fft_dist = np.linspace(0, 1, self.fft_bins)
         self.chunk_rate = chunk_rate
         self.n_overlaps = n_overlaps
         self.fs = fs
         self.fmax = fmax
-        self.mirror_middle=mirror_middle
+        self.mirror_middle = mirror_middle
         self.audio_gen = self._audio_gen(audio_gen)
         self.bass_colorgen = bass_colorgen
         self.melody_colorgen = melody_colorgen
+        self.t = 0.0
+        self.max_filter = np.ones(8)
+        self.min_feature_win = np.hamming(4)
+        self.cycle_time = 30.0
+        self.chunk_rate = 60
+        self.n_overlaps = 8
+        self.fs_ds = 0.0
+        self.bass_rms = None
+        self.melody_rms = None
 
     def _audio_gen(self, audio_gen):
         self.bass_rms = np.zeros(self.chunk_rate * 6)
@@ -91,20 +89,16 @@ class SpectrumEffect(Effect):
         return fft
 
 
-class VUMeterRMSEffect(Effect):
 
-    audio_gen = None
-    t = 0.0
-    num_pixels = 0
-    db_range = 0.0
+class VUMeterRMSEffect(Effect):
 
     def __init__(self, num_pixels, audio_gen, color_gen, db_range = 60.0):
         self.num_pixels = num_pixels
         self.audio_gen = audio_gen
         self.color_gen = color_gen
         self.db_range = db_range
-        
-    
+        self.t = 0.0
+
     def update(self, scal_dt):
         self.t+=scal_dt
 
@@ -123,16 +117,15 @@ class VUMeterRMSEffect(Effect):
             yield bar
 
 
+
 class ActivateAll(Effect):
     #testEffect for colors and dim
-    audio_gen = None
-    t = 0.0
-    num_pixels = 0
 
     def __init__(self, num_pixels, audio_gen, color_gen):
         self.num_pixels = num_pixels
         self.audio_gen = audio_gen
         self.color_gen = color_gen
+        self.t = 0.0
 
     def update(self, scal_dt):
         self.t += scal_dt
@@ -145,19 +138,15 @@ class ActivateAll(Effect):
             yield bar
 
 
-class VUMeterPeakEffect(Effect):
 
-    audio_gen = None
-    t = 0.0
-    num_pixels = 0
-    db_range = 0.0
+class VUMeterPeakEffect(Effect):
 
     def __init__(self, num_pixels, audio_gen, color_gen, db_range=60.0):
         self.num_pixels = num_pixels
         self.audio_gen = audio_gen
         self.color_gen = color_gen
         self.db_range = db_range
-        
+        self.t = 0.0
     
     def update(self, scal_dt):
         self.t+=scal_dt
@@ -175,20 +164,16 @@ class VUMeterPeakEffect(Effect):
             yield bar
 
 
-class AfterGlowEffect(Effect):
 
-    pixel_gen = None
-    t = 0.0
-    num_pixels = 0
-    pixel_state = None
-    last_t = 0.0
-    glow_time=1.0
+class AfterGlowEffect(Effect):
 
     def __init__(self, num_pixels, pixel_gen, glow_time=1.0):
         self.num_pixels = num_pixels
         self.pixel_gen = pixel_gen
         self.pixel_state = np.zeros(num_pixels) * np.array([[0.0],[0.0],[0.0]])
         self.glow_time = glow_time
+        self.t = 0.0
+        self.last_t = 0.0
 
     def update(self, scal_dt):
         self.t+=scal_dt
@@ -205,16 +190,10 @@ class AfterGlowEffect(Effect):
             self.pixel_state = self.pixel_state.clip(0.0, 255.0)
             yield self.pixel_state
 
+
+
 class MovingLightEffect(Effect):
 
-    audio_gen = None
-    t = 0.0
-    last_t = 0.0
-    num_pixels = 0
-    pixel_state = None
-    speed = 0.0
-    dim_time = 1.0
-    last_move_t = 0.0
 
     def __init__(self, num_pixels, fs, audio_gen, color_gen, speed=10.0, dim_time=20.0, lowcut_hz=50.0, highcut_hz=300.0):
         self.num_pixels = num_pixels
@@ -224,6 +203,9 @@ class MovingLightEffect(Effect):
         self.dim_time = dim_time
         self.color_gen = color_gen
         self.filter_b, self.filter_a, self.filter_zi = dsp.design_filter(lowcut_hz, highcut_hz, fs, 3)
+        self.t = 0.0
+        self.last_t = 0.0
+        self.last_move_t = 0.0
 
     def update(self, scal_dt):
         self.t+=scal_dt
@@ -257,15 +239,9 @@ class MovingLightEffect(Effect):
 
             yield self.pixel_state.clip(0.0,255.0)
 
-class ShiftEffect(Effect):
 
-    pixel_gen = None
-    t = 0.0
-    last_t = 0.0
-    num_pixels = 0
-    pixel_state = None
-    speed = 0.0
-    dim_time = 1.0
+
+class ShiftEffect(Effect):
 
     def __init__(self, num_pixels, pixel_gen, speed, dim_time=1.0):
         self.num_pixels = num_pixels
@@ -273,6 +249,8 @@ class ShiftEffect(Effect):
         self.pixel_state = np.zeros(num_pixels) * np.array([[0.0],[0.0],[0.0]])
         self.speed = speed
         self.dim_time = dim_time
+        self.t = 0.0
+        self.last_t = 0.0
 
     def update(self, scal_dt):
         self.t+=scal_dt
@@ -296,13 +274,10 @@ class ShiftEffect(Effect):
 
 class MirrorEffect(Effect):
 
-    pixel_gen = None
-    t = 0.0
-    num_pixels = 0
-
     def __init__(self, num_pixels, pixel_gen):
         self.num_pixels = num_pixels
         self.pixel_gen = pixel_gen
+        self.t = 0.0
 
     def update(self, scal_dt):
         self.t+=scal_dt

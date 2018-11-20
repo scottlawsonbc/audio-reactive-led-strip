@@ -33,14 +33,15 @@ glow_effect2 = effects.AfterGlowEffect(num_pixels=N_pixels, pixel_gen=vu_effect.
 
 # Instanciate moving light effect
 movinglight_effect = effects.MovingLightEffect(num_pixels=N_pixels, fs=fs, audio_gen=audio_stream, color_gen=colors.ColorWheel_gen(), speed=150.0, dim_time=1.0)
-movinglight_effect = effects.MovingLightEffect(num_pixels=N_pixels, fs=fs, audio_gen=audio_stream, color_gen=colors.StaticColor_gen(255,255,0), speed=150.0, dim_time=1.0)
 mirror_effect = effects.MirrorEffect(num_pixels=N_pixels, pixel_gen=movinglight_effect.effect())
 
 # Instanciate activateAll effect
-activateAll = effects.ActivateAll(num_pixels=N_pixels, audio_gen=audio_stream, color_gen=colors.ColorWheel2_gen())
+activateAll = effects.ActivateAll(num_pixels=N_pixels, audio_gen=audio_stream, color_gen=colors.ColorWheel2_gen(cycle_time_dim=10))
+shift_effect = effects.ShiftEffect(num_pixels=N_pixels, pixel_gen=activateAll.effect(), speed=2, dim_time=100)
+glow_effect3 = effects.AfterGlowEffect(num_pixels=N_pixels, pixel_gen=shift_effect.effect())
 
 # Select generator to show
-gen = mirror_effect.effect()
+gen = glow_effect3.effect()
 
 fps = 100
 loop_delta = 1./fps
@@ -57,6 +58,8 @@ while True:
     glow_effect2.update(dt)
     movinglight_effect.update(dt)
     activateAll.update(dt)
+    shift_effect.update(dt)
+    glow_effect3.update(dt)
     pixel = next(gen)
     
     # oldnorm = float(np.linalg.norm(pixel))
