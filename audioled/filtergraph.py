@@ -1,15 +1,35 @@
-class Node(object):
+class Effect(object):
+    def numOutputChannels(self):
+        raise NotImplementedError('update() was not implemented')
 
-    effect = None
+    def setOutputBuffer(self,buffer):
+        raise NotImplementedError('update() was not implemented')
+
+    def setInputBuffer(self, buffer):
+        raise NotImplementedError('update() was not implemented')
+
+    def process(self):
+        raise NotImplementedError('update() was not implemented')
+
+class Node(object):
 
     def __init__(self, effect):
         self.effect = effect
+        self.outputBuffer = [None for i in range(0, effect.numOutputChannels())]
+        self.inputBuffer = [None for i in range(0, effect.numInputChannels())]
+        self.incomingConnections = []
+
+        effect.setOutputBuffer(self.outputBuffer)
+        effect.setInputBuffer(self.inputBuffer)
+
+    def process(self):
+        # propagate values
+        for con in self.incomingConnections:
+            self.inputBuffer[con.toChannel] = con.fromNode.outputBuffer[con.fromChannel]
+        # process
+        self.effect.process()
 
 class Connection(object):
-    fromNode = None
-    toNode = None
-    fromChannel = None
-    toChannel = None
 
     def __init__(self, from_node, from_channel, to_node, to_channel):
         self.fromChannel = from_channel
@@ -20,10 +40,6 @@ class Connection(object):
 
 class FilterGraph(object):
 
-    _filterNodes = []
-    _filterConnections = []
-    _processOrder = []
-
     def __init__(self):
         self._filterConnections = []
         self._filterNodes = []
@@ -33,7 +49,8 @@ class FilterGraph(object):
         None
     
     def process(self):
-        None
+        for node in self._processOrder:
+            node.process()
 
     def addEffectNode(self, effect):
         """Adds a filter node to the graph
@@ -42,8 +59,10 @@ class FilterGraph(object):
         ----------
         filterNode: node to add
         """
-        self._filterNodes.append(Node(effect))
+        node = Node(effect)
+        self._filterNodes.append(node)
         self._updateProcessOrder()
+        return node
 
     def removeEffectNode(self, effect):
         """Removes a filter node from the graph
@@ -73,6 +92,7 @@ class FilterGraph(object):
         # construct connection
         newConnection = Connection(fromNode, fromEffectChannel, toNode, toEffectChannel)
         self._filterConnections.append(newConnection)
+        toNode.incomingConnections.append(newConnection)
         self._updateProcessOrder()
         
     
@@ -83,6 +103,7 @@ class FilterGraph(object):
         con = next(con for con in self._filterConnections if con.fromNode.effect == fromEffect and con.toNode.effect == toEffect and con.fromChannel == fromEffectChannel and con.toChannel == toEffectChannel)
         if con != None:
             self._filterConnections.remove(con)
+            con.toNode.incomingConnections.remove(con)
         None
     
     def _updateProcessOrder(self):
@@ -91,14 +112,14 @@ class FilterGraph(object):
         # find nodes without inputs
         allNodes = self._filterNodes.copy()
         for con in self._filterConnections:
-            if allNodes.count(con.fromNode) > 0:
-                allNodes.remove(con.fromNode)
+            if allNodes.count(con.toNode) > 0:
+                allNodes.remove(con.toNode)
         
         # Add those nodes first
         for node in allNodes:
             self._processOrder.append(node)
         
-        print("{} of {} nodes processed".format(len(self._processOrder), len(self._filterNodes)))
+        #print("{} of {} nodes without inputs processed".format(len(self._processOrder), len(self._filterNodes)))
 
         # Process others
         connectionsToProcess = self._filterConnections.copy()
@@ -124,7 +145,8 @@ class FilterGraph(object):
                 if self._processOrder.count(con.fromNode) > 0 and self._processOrder.count(con.toNode) > 0:
                     connectionsToProcess.remove(con)
 
-            print("{} of {} nodes processed".format(len(self._processOrder), len(self._filterNodes)))
+            #print("{} of {} nodes processed".format(len(self._processOrder), len(self._filterNodes)))
+
             if len(self._processOrder) == nodesBefore:
                 print("circular graph detected")
                 raise RuntimeError("circular graph detected")
