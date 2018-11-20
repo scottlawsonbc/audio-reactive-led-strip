@@ -22,19 +22,25 @@ audio.print_audio_devices()
 audio_stream, fs = audio.stream_audio()
 chunk_rate=60
 duration=1
-# Instanciate effect
+# Instanciate spectrum effect
+spectrum_effect = effects.SpectrumEffect(num_pixels=N_pixels, fs=fs, audio_gen=audio_stream, bass_colorgen=colors.ColorWheel_gen(), melody_colorgen=colors.ColorWheel_gen(offset=15.0), chunk_rate=chunk_rate, mirror_middle=True)
 glow_effect = effects.AfterGlowEffect(num_pixels=N_pixels, pixel_gen=spectrum_effect.effect(),glow_time=.2)
-# Instanciate effect
+
+# Instanciate vu meter effect
 interpol  = colors.InterpolateHSV_gen(N_pixels, colors.ColorWheel_gen(), colors.ColorWheel_gen(cycle_time=15.0))
 vu_effect = effects.VUMeterPeakEffect(num_pixels=N_pixels, audio_gen=audio_stream, color_gen=interpol)
 glow_effect2 = effects.AfterGlowEffect(num_pixels=N_pixels, pixel_gen=vu_effect.effect(),glow_time=0.1)
 
-
+# Instanciate moving light effect
 movinglight_effect = effects.MovingLightEffect(num_pixels=N_pixels, fs=fs, audio_gen=audio_stream, color_gen=colors.ColorWheel_gen(), speed=150.0, dim_time=1.0)
 movinglight_effect = effects.MovingLightEffect(num_pixels=N_pixels, fs=fs, audio_gen=audio_stream, color_gen=colors.StaticColor_gen(255,255,0), speed=150.0, dim_time=1.0)
 mirror_effect = effects.MirrorEffect(num_pixels=N_pixels, pixel_gen=movinglight_effect.effect())
 
+# Instanciate activateAll effect
+activateAll = effects.ActivateAll(num_pixels=N_pixels, audio_gen=audio_stream, color_gen=colors.ColorWheel2_gen())
+
 # Select generator to show
+gen = mirror_effect.effect()
 
 fps = 100
 loop_delta = 1./fps
