@@ -4,9 +4,9 @@ from __future__ import division
 from __future__ import absolute_import
 import numpy as np
 import pyaudio
+from audioled.filtergraph import Effect
 
-
-def _open_input_stream(device_index=None):
+def _open_input_stream(device_index=None, channels = 1):
     """Opens a PyAudio audio input stream
 
     Parameters
@@ -30,7 +30,7 @@ def _open_input_stream(device_index=None):
 
     try:
         stream = p.open(format=pyaudio.paFloat32,
-                        channels=1,
+                        channels=channels,
                         rate=int(device_info['defaultSampleRate']),
                         input=True,
                         input_device_index=device_index,
@@ -45,8 +45,8 @@ def _open_input_stream(device_index=None):
     return stream, int(device_info['defaultSampleRate'])
 
 
-def stream_audio(chunk_rate=60, ignore_overflows=True, device_index=None):
-    audio_stream, samplerate = _open_input_stream(device_index)
+def stream_audio(chunk_rate=60, ignore_overflows=True, device_index=None, channels = 1):
+    audio_stream, samplerate = _open_input_stream(device_index, channels)
     chunk_length = int(samplerate // chunk_rate)
 
     def audio_chunks():
@@ -79,3 +79,37 @@ def print_audio_devices():
         print('\tMax input channels:', info['maxInputChannels'])
         print('\tMax output channels:', info['maxOutputChannels'])
     p.terminate()
+
+def numInputChannels(device_index=None):
+    p = pyaudio.PyAudio()
+    device = device_index
+    defaults = p.get_default_host_api_info()
+    if device_index is None:
+        device= defaults['defaultInputDevice']
+    info = p.get_device_info_by_index(device)
+    return info['maxInputChannels']
+
+class AudioInput(Effect):
+
+    def __init__(self, device_index=None):
+        self.device_index = device_index
+        self._outputBuffer = None
+        self._inputBuffer = None
+        self._audioStream, _ = stream_audio()
+        super(AudioInput, self).__init__()
+
+    def numOutputChannels(self):
+        return numInputChannels(self.device_index)
+    
+    def numInputChannels(self):
+        return 0
+
+    def setOutputBuffer(self, buffer):
+        self._outputBuffer = buffer
+
+    def setInputBuffer(self, buffer):
+        self._inputBuffer = buffer
+
+    def process(self):
+        chunks = next(self._audioStream)
+        self._outputBuffer[0] = chunks

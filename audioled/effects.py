@@ -7,6 +7,7 @@ import struct
 import colorsys
 import numpy as np
 import audioled.dsp as dsp
+import audioled.filtergraph as filtergraph
 import math
 from scipy.ndimage.filters import gaussian_filter1d
 from scipy.signal import lfilter
@@ -88,33 +89,6 @@ class SpectrumEffect(Effect):
             fft = np.r_[fft, fft[::-1]]
         return fft
 
-
-
-class VUMeterRMSEffect(Effect):
-
-    def __init__(self, num_pixels, audio_gen, color_gen, db_range = 60.0):
-        self.num_pixels = num_pixels
-        self.audio_gen = audio_gen
-        self.color_gen = color_gen
-        self.db_range = db_range
-        self.t = 0.0
-
-    def update(self, scal_dt):
-        self.t+=scal_dt
-
-    def effect(self):
-        #norm_rms = dsp.normalize_rms(self.audio_gen, 10)
-        for y in self.audio_gen:
-            N = len(y) # blocksize
-            rms = dsp.rms(y)
-            db = 20 * math.log10(max(rms, 1e-16))
-            scal_value = (self.db_range+db)/self.db_range
-            
-            bar = np.zeros(self.num_pixels) * np.array([[0],[0],[0]])
-            index = int(self.num_pixels * rms)
-            index = np.clip(index, 0, self.num_pixels-1)
-            bar[0:3,0:index] = self.color_gen.get_color_array(self.t, self.num_pixels)[0:3,0:index]
-            yield bar
 
 
 
@@ -291,3 +265,49 @@ class MirrorEffect(Effect):
             temp = temp[:,::-1]
             y[:,0:h] = temp
             yield y
+
+
+# New Filtergraph Style effects
+
+class VUMeterRMSEffect(filtergraph.Effect):
+    """ VU Meter style effect
+    Inputs:
+    0: Audio
+    1: Color
+    """ 
+
+    def __init__(self, num_pixels, db_range = 60.0):
+        self.num_pixels = num_pixels
+        self.db_range = db_range
+        self._inputBuffer = None
+        self._outputBuffer = None
+        super(VUMeterRMSEffect, self).__init__()
+
+    def numInputChannels(self):
+        return 2
+    def numOutputChannels(self):
+        return 1
+    def setInputBuffer(self, buffer):
+        self._inputBuffer = buffer
+    def setOutputBuffer(self, buffer):
+        self._outputBuffer = buffer
+
+    def process(self):
+        if self._inputBuffer != None and self._outputBuffer != None:
+            buffer = self._inputBuffer[0]
+            color = self._inputBuffer[1]
+            if color is None:
+                # default color: all white
+                color = np.ones(self.num_pixels) * np.array([[255.0],[255.0],[255.0]])
+            if buffer is not None:
+                y = self._inputBuffer[0]
+                N = len(y) # blocksize
+                rms = dsp.rms(y)
+                db = 20 * math.log10(max(rms, 1e-16))
+                scal_value = (self.db_range+db)/self.db_range
+                
+                bar = np.zeros(self.num_pixels) * np.array([[0],[0],[0]])
+                index = int(self.num_pixels * rms)
+                index = np.clip(index, 0, self.num_pixels-1)
+                bar[0:3,0:index] = color[0:3,0:index]
+                self._outputBuffer[0] = bar

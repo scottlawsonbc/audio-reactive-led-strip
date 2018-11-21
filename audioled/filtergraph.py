@@ -1,5 +1,11 @@
 class Effect(object):
+    def __init__(self):
+        self.t = 0.0
+
     def numOutputChannels(self):
+        raise NotImplementedError('update() was not implemented')
+
+    def numInputChannels(self):
         raise NotImplementedError('update() was not implemented')
 
     def setOutputBuffer(self,buffer):
@@ -10,6 +16,9 @@ class Effect(object):
 
     def process(self):
         raise NotImplementedError('update() was not implemented')
+    
+    def update(self, dt):
+        self.t += dt
 
 class Node(object):
 
@@ -28,6 +37,9 @@ class Node(object):
             self.inputBuffer[con.toChannel] = con.fromNode.outputBuffer[con.fromChannel]
         # process
         self.effect.process()
+    
+    def update(self, dt):
+        self.effect.update(dt)
 
 class Connection(object):
 
@@ -45,8 +57,9 @@ class FilterGraph(object):
         self._filterNodes = []
         self._processOrder = []
 
-    def update(self):
-        None
+    def update(self, dt):
+        for node in self._processOrder:
+            node.update(dt)
     
     def process(self):
         for node in self._processOrder:

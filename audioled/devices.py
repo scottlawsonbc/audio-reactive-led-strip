@@ -4,6 +4,7 @@ from __future__ import unicode_literals
 from __future__ import absolute_import
 import time
 import numpy as np
+import audioled.filtergraph as filtergraph
 
 _GAMMA_TABLE = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1,
                 1, 1, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 4, 4, 4, 4, 5, 5,
@@ -274,6 +275,25 @@ class DotStar(LEDController):
         self.led_data[0:,1:4] = pixels[bgr].T.clip(0,255)
         self.strip.show()
 
+class LEDOutput(filtergraph.Effect):
+    def __init__(self, controller):
+        self.controller = controller
+        self._inputBuffer = None
+        self._outputBuffer = None
+        super(LEDOutput, self).__init__()
+    
+    def numInputChannels(self):
+        return 1
+    def numOutputChannels(self):
+        return 0
+    def setInputBuffer(self, buffer):
+        self._inputBuffer = buffer
+    def setOutputBuffer(self, buffer):
+        self._outputBuffer = buffer
+    def process(self):
+        if self._inputBuffer != None:
+            if self._inputBuffer[0] is not None:
+                self.controller.show(self._inputBuffer[0])
 
 # # Execute this file to run a LED strand test
 # # If everything is working, you should see a red, green, and blue pixel scroll

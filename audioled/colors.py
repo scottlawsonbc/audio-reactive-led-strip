@@ -7,6 +7,7 @@ import struct
 import colorsys
 import numpy as np
 import audioled.dsp as dsp
+import audioled.filtergraph as filtergraph
 import math
 import matplotlib as mpl
 
@@ -110,3 +111,75 @@ class InterpolateHSV_gen(Color_gen):
         return rgb.T * 255.0
 
 
+# New Filtergraph Style effects
+
+class StaticColorEffect(filtergraph.Effect):
+    def __init__(self, num_pixels, r, g, b):
+        self.num_pixels = num_pixels
+        self.r = r
+        self.g = g
+        self.b = b
+        self.color = None
+        super(StaticColorEffect, self).__init__()
+    
+    def numInputChannels(self):
+        return 0
+
+    def numOutputChannels(self):
+        return 1
+    
+    def setInputBuffer(self, buffer):
+        self._inputBuffer = buffer
+
+    def setOutputBuffer(self, buffer):
+        self._outputBuffer = buffer
+    
+    def update(self, dt):
+        super(StaticColorEffect, self).update(dt)
+        if self.color is None:
+            self.color = np.ones(self.num_pixels) * np.array([[self.r],[self.g],[self.b]])
+
+    def process(self):
+        self._outputBuffer[0] = self.color
+
+class ColorWheelEffect(filtergraph.Effect):
+    """ Generates colors
+    """
+
+    def __init__(self, num_pixels = 1, cycle_time = 30.0, offset = 0.0):
+        self.cycle_time = cycle_time
+        self.offset = offset
+        self.num_pixels = num_pixels
+        self.color = None
+        super(ColorWheelEffect, self).__init__()
+
+    def numInputChannels(self):
+        return 2
+
+    def numOutputChannels(self):
+        return 1
+    
+    def setInputBuffer(self, buffer):
+        self._inputBuffer = buffer
+
+    def setOutputBuffer(self, buffer):
+        self._outputBuffer = buffer
+    
+    def update(self, dt):
+        super(ColorWheelEffect, self).update(dt)
+        self.color = self.get_color_array(self.t, self.num_pixels)
+
+    def process(self):
+        if self._outputBuffer is not None:
+            self._outputBuffer[0] = self.color
+
+    def get_color(self, t, pixel):
+        L=0.5
+        S=1.0
+        h = (t + self.offset % self.cycle_time) / self.cycle_time
+        r, g, b = colorsys.hls_to_rgb(h, L, S) 
+        
+        return np.array([[r* 255.0], [g* 255.0], [b* 255.0]])
+    
+    def get_color_array(self, t, num_pixels):
+        return np.ones(num_pixels) * self.get_color(t, -1)
