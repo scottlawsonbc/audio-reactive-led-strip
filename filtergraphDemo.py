@@ -31,11 +31,15 @@ fg.addEffectNode(color_gen2)
 interpCol = colors.InterpolateHSVEffect(N_pixels)
 fg.addEffectNode(interpCol)
 
+afterGlow = effects.AfterGlowEffect(N_pixels)
+fg.addEffectNode(afterGlow)
+
 fg.addConnection(color_gen,0,interpCol,1)
 fg.addConnection(color_gen2,0,interpCol,0)
 fg.addConnection(interpCol, 0, vu_rms, 1)
 fg.addConnection(audio_in, 0, vu_rms, 0)
-fg.addConnection(vu_rms,0,led_out,0)
+fg.addConnection(vu_rms, 0, afterGlow, 0)
+fg.addConnection(afterGlow,0,led_out,0)
 
 current_time = timer()
 while True:

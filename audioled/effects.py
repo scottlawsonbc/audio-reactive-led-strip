@@ -117,30 +117,7 @@ class ActivateAll(Effect):
 
 
 
-class AfterGlowEffect(Effect):
 
-    def __init__(self, num_pixels, pixel_gen, glow_time=1.0):
-        self.num_pixels = num_pixels
-        self.pixel_gen = pixel_gen
-        self.pixel_state = np.zeros(num_pixels) * np.array([[0.0],[0.0],[0.0]])
-        self.glow_time = glow_time
-        self.t = 0.0
-        self.last_t = 0.0
-
-    def update(self, scal_dt):
-        self.t+=scal_dt
-    
-    def effect(self):
-        for y in self.pixel_gen:
-            dt = self.t - self.last_t
-            self.last_t = self.t
-            
-            if dt > 0:
-                self.pixel_state*= (1.0 - dt / self.glow_time)
-                self.pixel_state = self.pixel_state.clip(0.0, 255.0)
-            self.pixel_state = np.maximum(self.pixel_state, y)
-            self.pixel_state = self.pixel_state.clip(0.0, 255.0)
-            yield self.pixel_state
 
 
 
@@ -323,3 +300,34 @@ class VUMeterPeakEffect(filtergraph.Effect):
                 index = np.clip(index, 0, self.num_pixels-1)
                 bar[0:3,0:index] = color[0:3,0:index]
                 self._outputBuffer[0] = bar
+
+class AfterGlowEffect(filtergraph.Effect):
+
+    def __init__(self, num_pixels, glow_time=1.0):
+        self.num_pixels = num_pixels
+        self.pixel_state = np.zeros(num_pixels) * np.array([[0.0],[0.0],[0.0]])
+        self.glow_time = glow_time
+        self.last_t = 0.0
+        super(AfterGlowEffect, self).__init__()
+
+    def numInputChannels(self):
+        return 1
+    
+    def numOutputChannels(self):
+        return 1
+
+    def update(self, scal_dt):
+        self.t+=scal_dt
+    
+    def process(self):
+        if self._inputBuffer is not None and self._outputBuffer is not None:
+            y = self._inputBuffer[0]
+            dt = self.t - self.last_t
+            self.last_t = self.t
+            
+            if dt > 0:
+                self.pixel_state*= (1.0 - dt / self.glow_time)
+                self.pixel_state = self.pixel_state.clip(0.0, 255.0)
+            self.pixel_state = np.maximum(self.pixel_state, y)
+            self.pixel_state = self.pixel_state.clip(0.0, 255.0)
+            self._outputBuffer[0] = self.pixel_state
