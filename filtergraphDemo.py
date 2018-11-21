@@ -28,7 +28,7 @@ fg.addEffectNode(color_gen)
 color_gen2 = colors.ColorWheelEffect(N_pixels)
 fg.addEffectNode(color_gen2)
 
-interpCol = colors.InterpolateRGBEffect(N_pixels)
+interpCol = colors.InterpolateHSVEffect(N_pixels)
 fg.addEffectNode(interpCol)
 
 fg.addConnection(color_gen,0,interpCol,1)

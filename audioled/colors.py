@@ -78,28 +78,6 @@ class ColorWheel2_gen(Color_gen):
 
 
 
-class InterpolateHSV_gen(Color_gen):
-    last_t = -1
-    def __init__(self, num_pixels, colorgen_max, colorgen_min):
-        self.colorgen_max = colorgen_max
-        self.colorgen_min = colorgen_min
-        self.num_pixels = num_pixels
-
-    def get_color_array(self, t, num_pixels):
-        rgb_a = 1./255. * self.colorgen_min.get_color_array(t, 1)
-        rgb_b = 1./255. * self.colorgen_max.get_color_array(t, 1)
-        h_a,s_a,v_a = colorsys.rgb_to_hsv(rgb_a[0], rgb_a[1], rgb_a[2])
-        h_b,s_b,v_b = colorsys.rgb_to_hsv(rgb_b[0], rgb_b[1], rgb_b[2])
-
-        interp_v = np.linspace(v_a, v_b, num_pixels)
-        interp_s = np.linspace(s_a, s_b, num_pixels)
-        interp_h = np.linspace(h_a, h_b, num_pixels)
-        hsv = np.array([interp_h, interp_s, interp_v]).T
-        
-        rgb = mpl.colors.hsv_to_rgb(hsv)
-        
-        return rgb.T * 255.0
-
 
 # New Filtergraph Style effects
 
@@ -190,3 +168,34 @@ class InterpolateRGBEffect(filtergraph.Effect):
                 self._outputBuffer[0] = a
             elif b is not None:
                 self._outputBuffer[0] = b
+
+class InterpolateHSVEffect(filtergraph.Effect):
+    def __init__(self, num_pixels):
+        self.num_pixels = num_pixels
+        super(InterpolateHSVEffect, self).__init__()
+
+    def numInputChannels(self):
+        return 2
+
+    def numOutputChannels(self):
+        return 1
+    
+    def process(self):
+        if self._inputBuffer is not None and self._outputBuffer is not None:
+            a = self._inputBuffer[0]
+            b = self._inputBuffer[1]
+            
+            if a is not None and b is not None:
+                rgb_a = 1./255. * a[0:3,0]
+                rgb_b = 1./255. * b[0:3,0]
+                h_a,s_a,v_a = colorsys.rgb_to_hsv(rgb_a[0], rgb_a[1], rgb_a[2])
+                h_b,s_b,v_b = colorsys.rgb_to_hsv(rgb_b[0], rgb_b[1], rgb_b[2])
+
+                interp_v = np.linspace(v_a, v_b, self.num_pixels)
+                interp_s = np.linspace(s_a, s_b, self.num_pixels)
+                interp_h = np.linspace(h_a, h_b, self.num_pixels)
+                hsv = np.array([interp_h, interp_s, interp_v]).T
+                
+                rgb = mpl.colors.hsv_to_rgb(hsv)
+                
+                self._outputBuffer[0] = rgb.T * 255.0
