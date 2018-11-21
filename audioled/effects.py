@@ -121,52 +121,7 @@ class ActivateAll(Effect):
 
 
 
-class MovingLightEffect(Effect):
 
-
-    def __init__(self, num_pixels, fs, audio_gen, color_gen, speed=10.0, dim_time=20.0, lowcut_hz=50.0, highcut_hz=300.0):
-        self.num_pixels = num_pixels
-        self.audio_gen = audio_gen
-        self.pixel_state = np.zeros(num_pixels) * np.array([[0.0],[0.0],[0.0]])
-        self.speed = speed
-        self.dim_time = dim_time
-        self.color_gen = color_gen
-        self.filter_b, self.filter_a, self.filter_zi = dsp.design_filter(lowcut_hz, highcut_hz, fs, 3)
-        self.t = 0.0
-        self.last_t = 0.0
-        self.last_move_t = 0.0
-
-    def update(self, scal_dt):
-        self.t+=scal_dt
-    
-    def effect(self):
-        for y in self.audio_gen:
-            # apply bandpass to audio
-            y, self.filter_zi = lfilter(b=self.filter_b, a=self.filter_a, x=np.array(y), zi=self.filter_zi)
-            # move in speed
-            dt_move = self.t - self.last_move_t
-            if dt_move * self.speed > 1:
-                shift_pixels = int(dt_move * self.speed)
-                self.pixel_state[:, shift_pixels:] = self.pixel_state[:, :-shift_pixels]
-                self.pixel_state[:, 0:shift_pixels] = self.pixel_state[:, shift_pixels:shift_pixels+1]
-                # convolve to smooth edges
-                self.pixel_state[:, 0:2*shift_pixels] = gaussian_filter1d(self.pixel_state[:,0:2*shift_pixels],0.5)
-                self.last_move_t = self.t
-            # dim with time
-            dt = self.t - self.last_t
-            self.last_t = self.t
-            self.pixel_state*= (1.0 - dt / self.dim_time)
-            self.pixel_state = gaussian_filter1d(self.pixel_state, sigma=0.5)
-            self.pixel_state = gaussian_filter1d(self.pixel_state, sigma=0.5)
-            # new color at origin
-            peak = dsp.rms(y) * 2.0
-            peak = peak**2
-            r,g,b = self.color_gen.get_color_array(self.t, 1)
-            self.pixel_state[0][0] = r * peak + peak * 255.0
-            self.pixel_state[1][0] = g * peak+ peak * 255.0
-            self.pixel_state[2][0] = b * peak+ peak * 255.0
-
-            yield self.pixel_state.clip(0.0,255.0)
 
 
 
@@ -201,25 +156,7 @@ class ShiftEffect(Effect):
 
 
 
-class MirrorEffect(Effect):
 
-    def __init__(self, num_pixels, pixel_gen):
-        self.num_pixels = num_pixels
-        self.pixel_gen = pixel_gen
-        self.t = 0.0
-
-    def update(self, scal_dt):
-        self.t+=scal_dt
-    
-    def effect(self):
-        h = int(self.num_pixels/2)
-        n = self.num_pixels
-        for y in self.pixel_gen:
-            y[:,h:n] = y[:,0:h]
-            temp = y[:,0:h]
-            temp = temp[:,::-1]
-            y[:,0:h] = temp
-            yield y
 
 
 # New Filtergraph Style effects
@@ -301,6 +238,60 @@ class VUMeterPeakEffect(filtergraph.Effect):
                 bar[0:3,0:index] = color[0:3,0:index]
                 self._outputBuffer[0] = bar
 
+class MovingLightEffect(filtergraph.Effect):
+
+
+    def __init__(self, num_pixels, fs, speed=10.0, dim_time=20.0, lowcut_hz=50.0, highcut_hz=300.0):
+        self.num_pixels = num_pixels
+        self.pixel_state = np.zeros(num_pixels) * np.array([[0.0],[0.0],[0.0]])
+        self.speed = speed
+        self.dim_time = dim_time
+        self.filter_b, self.filter_a, self.filter_zi = dsp.design_filter(lowcut_hz, highcut_hz, fs, 3)
+        self.last_t = 0.0
+        self.last_move_t = 0.0
+        super(MovingLightEffect, self).__init__()
+
+    def numInputChannels(self):
+        return 2
+    
+    def numOutputChannels(self):
+        return 1
+    
+    def process(self):
+        if self._inputBuffer != None and self._outputBuffer != None:
+            buffer = self._inputBuffer[0]
+            color = self._inputBuffer[1]
+            if color is None:
+                # default color: all white
+                color = np.ones(self.num_pixels) * np.array([[255.0],[255.0],[255.0]])
+            if buffer is not None:
+                audio = self._inputBuffer[0]
+                # apply bandpass to audio
+                y, self.filter_zi = lfilter(b=self.filter_b, a=self.filter_a, x=np.array(audio), zi=self.filter_zi)
+                # move in speed
+                dt_move = self.t - self.last_move_t
+                if dt_move * self.speed > 1:
+                    shift_pixels = int(dt_move * self.speed)
+                    self.pixel_state[:, shift_pixels:] = self.pixel_state[:, :-shift_pixels]
+                    self.pixel_state[:, 0:shift_pixels] = self.pixel_state[:, shift_pixels:shift_pixels+1]
+                    # convolve to smooth edges
+                    self.pixel_state[:, 0:2*shift_pixels] = gaussian_filter1d(self.pixel_state[:,0:2*shift_pixels],0.5)
+                    self.last_move_t = self.t
+                # dim with time
+                dt = self.t - self.last_t
+                self.last_t = self.t
+                self.pixel_state*= (1.0 - dt / self.dim_time)
+                self.pixel_state = gaussian_filter1d(self.pixel_state, sigma=0.5)
+                self.pixel_state = gaussian_filter1d(self.pixel_state, sigma=0.5)
+                # new color at origin
+                peak = dsp.rms(y) * 2.0
+                peak = peak**2
+                r,g,b = color[0,0], color[1,0], color[2,0]
+                self.pixel_state[0][0] = r * peak + peak * 255.0
+                self.pixel_state[1][0] = g * peak+ peak * 255.0
+                self.pixel_state[2][0] = b * peak+ peak * 255.0
+                self._outputBuffer[0] = self.pixel_state.clip(0.0,255.0)
+
 class AfterGlowEffect(filtergraph.Effect):
 
     def __init__(self, num_pixels, glow_time=1.0):
@@ -316,18 +307,57 @@ class AfterGlowEffect(filtergraph.Effect):
     def numOutputChannels(self):
         return 1
 
-    def update(self, scal_dt):
-        self.t+=scal_dt
     
     def process(self):
         if self._inputBuffer is not None and self._outputBuffer is not None:
             y = self._inputBuffer[0]
-            dt = self.t - self.last_t
-            self.last_t = self.t
-            
-            if dt > 0:
-                self.pixel_state*= (1.0 - dt / self.glow_time)
+            if y is not None:
+                dt = self.t - self.last_t
+                self.last_t = self.t
+                
+                if dt > 0:
+                    self.pixel_state*= (1.0 - dt / self.glow_time)
+                    self.pixel_state = self.pixel_state.clip(0.0, 255.0)
+                self.pixel_state = np.maximum(self.pixel_state, y)
                 self.pixel_state = self.pixel_state.clip(0.0, 255.0)
-            self.pixel_state = np.maximum(self.pixel_state, y)
-            self.pixel_state = self.pixel_state.clip(0.0, 255.0)
-            self._outputBuffer[0] = self.pixel_state
+                self._outputBuffer[0] = self.pixel_state
+
+class MirrorEffect(filtergraph.Effect):
+
+    def __init__(self, num_pixels, mirror_lower = True):
+        self.num_pixels = num_pixels
+        self.mirror_lower = mirror_lower
+        super(MirrorEffect, self).__init__()
+
+    def numInputChannels(self):
+        return 1
+    
+    def numOutputChannels(self):
+        return 1
+
+    def process(self):
+        if self._inputBuffer is not None and self._outputBuffer is not None:
+            n = self.num_pixels
+            h = int(n/2)
+            buffer = self._inputBuffer[0]
+            if buffer is not None:
+                y = buffer.copy()
+                # 0 .. h .. n
+                #   h    n-h
+                if self.mirror_lower:
+                    # take lower values
+                    temp = y[:,0:h]
+                    # reverse
+                    temp = temp[:,::-1]
+                    # assign reverse to upper part
+                    y[:,h:n] = temp[:,0:h]
+                    self._outputBuffer[0] = y
+                else:
+                    # take higher values
+                    temp = y[:,h:n] # lenght: n-h
+                    # reverse
+                    temp = temp[:,::-1]
+                    # assign reverse to lower part
+                    y[:,0:n-h] = temp[:,0:n-h]
+                    
+                    self._outputBuffer[0] = y

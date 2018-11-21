@@ -90,12 +90,17 @@ def numInputChannels(device_index=None):
     return info['maxInputChannels']
 
 class AudioInput(Effect):
-
+    """
+    Outputs:
+    0: Audio Channel 0
+    1: Audio Channel 1...
+    
+    """
     def __init__(self, device_index=None):
         self.device_index = device_index
         self._outputBuffer = None
         self._inputBuffer = None
-        self._audioStream, _ = stream_audio()
+        self._audioStream, self._sampleRate = stream_audio()
         super(AudioInput, self).__init__()
 
     def numOutputChannels(self):
@@ -103,6 +108,9 @@ class AudioInput(Effect):
     
     def numInputChannels(self):
         return 0
+
+    def getSampleRate(self):
+        return self._sampleRate
 
     def setOutputBuffer(self, buffer):
         self._outputBuffer = buffer

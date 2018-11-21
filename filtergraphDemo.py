@@ -19,6 +19,9 @@ fg.addEffectNode(audio_in)
 vu_rms = effects.VUMeterPeakEffect(N_pixels)
 fg.addEffectNode(vu_rms)
 
+movingLight = effects.MovingLightEffect(N_pixels, audio_in.getSampleRate(),speed=150.0, dim_time=2.0)
+fg.addEffectNode(movingLight)
+
 led_out = devices.LEDOutput(devices.FadeCandy('192.168.9.241:7890'))
 fg.addEffectNode(led_out)
 
@@ -34,12 +37,16 @@ fg.addEffectNode(interpCol)
 afterGlow = effects.AfterGlowEffect(N_pixels)
 fg.addEffectNode(afterGlow)
 
+mirrorLower = effects.MirrorEffect(N_pixels,mirror_lower=True)
+fg.addEffectNode(mirrorLower)
+
 fg.addConnection(color_gen,0,interpCol,1)
 fg.addConnection(color_gen2,0,interpCol,0)
-fg.addConnection(interpCol, 0, vu_rms, 1)
-fg.addConnection(audio_in, 0, vu_rms, 0)
-fg.addConnection(vu_rms, 0, afterGlow, 0)
-fg.addConnection(afterGlow,0,led_out,0)
+fg.addConnection(interpCol, 0, movingLight, 1)
+fg.addConnection(audio_in, 0, movingLight, 0)
+fg.addConnection(movingLight, 0, mirrorLower, 0)
+fg.addConnection(mirrorLower,0,led_out,0)
+#fg.addConnection(afterGlow,0,led_out,0)
 
 current_time = timer()
 while True:
