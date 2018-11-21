@@ -12,18 +12,28 @@ import math
 N_pixels = 300
 
 fg = filtergraph.FilterGraph()
+
 audio_in = audio.AudioInput()
-vu_rms = effects.VUMeterRMSEffect(N_pixels)
-led_out = devices.LEDOutput(devices.FadeCandy())
-color_gen = colors.StaticColorEffect(N_pixels, 0, 255.0, 0)
-color_gen2 = colors.ColorWheelEffect(N_pixels)
 fg.addEffectNode(audio_in)
-fg.addEffectNode(color_gen)
-fg.addEffectNode(color_gen2)
+
+vu_rms = effects.VUMeterRMSEffect(N_pixels)
 fg.addEffectNode(vu_rms)
+
+led_out = devices.LEDOutput(devices.FadeCandy('192.168.9.241:7890'))
 fg.addEffectNode(led_out)
 
-fg.addConnection(color_gen2, 0, vu_rms, 1)
+color_gen = colors.StaticColorEffect(N_pixels, 0, 255.0, 0)
+fg.addEffectNode(color_gen)
+
+color_gen2 = colors.ColorWheelEffect(N_pixels)
+fg.addEffectNode(color_gen2)
+
+interpCol = colors.InterpolateRGBEffect(N_pixels)
+fg.addEffectNode(interpCol)
+
+fg.addConnection(color_gen,0,interpCol,1)
+fg.addConnection(color_gen2,0,interpCol,0)
+fg.addConnection(interpCol, 0, vu_rms, 1)
 fg.addConnection(audio_in, 0, vu_rms, 0)
 fg.addConnection(vu_rms,0,led_out,0)
 

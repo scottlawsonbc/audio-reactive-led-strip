@@ -1,6 +1,8 @@
 class Effect(object):
     def __init__(self):
         self.t = 0.0
+        self._inputBuffer = None
+        self._outputBuffer = None
 
     def numOutputChannels(self):
         raise NotImplementedError('update() was not implemented')
@@ -9,10 +11,10 @@ class Effect(object):
         raise NotImplementedError('update() was not implemented')
 
     def setOutputBuffer(self,buffer):
-        raise NotImplementedError('update() was not implemented')
+        self._outputBuffer = buffer
 
     def setInputBuffer(self, buffer):
-        raise NotImplementedError('update() was not implemented')
+        self._inputBuffer = buffer
 
     def process(self):
         raise NotImplementedError('update() was not implemented')

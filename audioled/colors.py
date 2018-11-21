@@ -76,17 +76,7 @@ class ColorWheel2_gen(Color_gen):
         return np.ones(num_pixels) * self.get_color(t, -1)
 
 
-class InterpolateRGB_gen(Color_gen):
-    def __init__(self, num_pixels, colorgen_max, colorgen_min):
-        self.colorgen_max = colorgen_max
-        self.colorgen_min = colorgen_min
-        self.num_pixels = num_pixels
-    
-    def get_color_array(self, t, num_pixels):
-        a = self.colorgen_min.get_color_array(t, num_pixels)
-        b = self.colorgen_max.get_color_array(t, num_pixels)
-        fact = np.linspace(0., 1., num_pixels)
-        return a + np.multiply((b-a), fact)
+
 
 class InterpolateHSV_gen(Color_gen):
     last_t = -1
@@ -158,13 +148,7 @@ class ColorWheelEffect(filtergraph.Effect):
 
     def numOutputChannels(self):
         return 1
-    
-    def setInputBuffer(self, buffer):
-        self._inputBuffer = buffer
 
-    def setOutputBuffer(self, buffer):
-        self._outputBuffer = buffer
-    
     def update(self, dt):
         super(ColorWheelEffect, self).update(dt)
         self.color = self.get_color_array(self.t, self.num_pixels)
@@ -183,3 +167,26 @@ class ColorWheelEffect(filtergraph.Effect):
     
     def get_color_array(self, t, num_pixels):
         return np.ones(num_pixels) * self.get_color(t, -1)
+
+class InterpolateRGBEffect(filtergraph.Effect):
+    def __init__(self, num_pixels):
+        self.num_pixels = num_pixels
+        super(InterpolateRGBEffect, self).__init__()
+
+    def numInputChannels(self):
+        return 2
+
+    def numOutputChannels(self):
+        return 1
+    
+    def process(self):
+        if self._inputBuffer is not None and self._outputBuffer is not None:
+            a = self._inputBuffer[0]
+            b = self._inputBuffer[1]
+            if a is not None and b is not None:
+                fact = np.linspace(0., 1., self.num_pixels)
+                self._outputBuffer[0] = a + np.multiply((b-a), fact)
+            elif a is not None:
+                self._outputBuffer[0] = a
+            elif b is not None:
+                self._outputBuffer[0] = b
