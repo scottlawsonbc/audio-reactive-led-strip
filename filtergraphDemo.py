@@ -16,7 +16,7 @@ fg = filtergraph.FilterGraph()
 audio_in = audio.AudioInput()
 fg.addEffectNode(audio_in)
 
-vu_rms = effects.VUMeterRMSEffect(N_pixels)
+vu_rms = effects.VUMeterPeakEffect(N_pixels)
 fg.addEffectNode(vu_rms)
 
 led_out = devices.LEDOutput(devices.FadeCandy('192.168.9.241:7890'))
