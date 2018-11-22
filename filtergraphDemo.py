@@ -22,6 +22,7 @@ fg.addEffectNode(vu_rms)
 movingLight = effects.MovingLightEffect(N_pixels, audio_in.getSampleRate(),speed=150.0, dim_time=2.0)
 fg.addEffectNode(movingLight)
 
+led_out = devices.LEDOutput(devices.FadeCandy('127.0.0.1:7890'))
 fg.addEffectNode(led_out)
 
 color_gen = colors.StaticColorEffect(N_pixels, 0, 255.0, 0)
