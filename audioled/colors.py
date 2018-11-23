@@ -137,7 +137,7 @@ class ColorWheelEffect(filtergraph.Effect):
 
     def get_color(self, t, pixel):
         L=0.5
-        S=1.0
+        S=1
         h = (t + self.offset % self.cycle_time) / self.cycle_time
         r, g, b = colorsys.hls_to_rgb(h, L, S) 
         
@@ -145,6 +145,44 @@ class ColorWheelEffect(filtergraph.Effect):
     
     def get_color_array(self, t, num_pixels):
         return np.ones(num_pixels) * self.get_color(t, -1)
+
+
+class ColorDimEffect(filtergraph.Effect):
+    """ Dim colors, set cycle_time=0 and 0 <  offset < 1 for static dimming
+    """
+
+    def __init__(self, num_pixels=1, cycle_time=30.0, offset=0.0):
+        self.cycle_time = cycle_time
+        self.offset = offset
+        self.num_pixels = num_pixels
+        self.color = None
+        super(ColorDimEffect, self).__init__()
+
+    def numInputChannels(self):
+        return 2
+
+    def numOutputChannels(self):
+        return 1
+
+    def update(self, dt):
+        super(ColorDimEffect, self).update(dt)
+        self.color = self.get_color_array(self.t, self.num_pixels)
+
+    def process(self):
+        if self._outputBuffer is not None:
+            self._outputBuffer[0] = self.color
+
+    def get_color(self, t, pixel):
+        if self.cycle_time == 0:
+            dim = self.offset
+        else:
+            dim = abs(math.sin((2*math.pi*t / self.cycle_time) + self.offset))
+
+        return np.array([[dim * 255.0], [dim * 255.0], [dim * 255.0]])
+
+    def get_color_array(self, t, num_pixels):
+        return np.ones(num_pixels) * self.get_color(t, -1)
+
 
 class InterpolateRGBEffect(filtergraph.Effect):
     def __init__(self, num_pixels):
