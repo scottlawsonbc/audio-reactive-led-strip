@@ -37,7 +37,7 @@ fg.addEffectNode(interpCol)
 afterGlow = effects.AfterGlowEffect(N_pixels)
 fg.addEffectNode(afterGlow)
 
-mirrorLower = effects.MirrorEffect(N_pixels,mirror_lower=True)
+mirrorLower = effects.MirrorEffect(N_pixels,mirror_lower=False, recursion=2)
 fg.addEffectNode(mirrorLower)
 
 fg.addConnection(color_gen,0,interpCol,1)

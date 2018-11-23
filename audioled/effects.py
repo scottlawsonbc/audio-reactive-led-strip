@@ -324,9 +324,11 @@ class AfterGlowEffect(filtergraph.Effect):
 
 class MirrorEffect(filtergraph.Effect):
 
-    def __init__(self, num_pixels, mirror_lower = True):
+    def __init__(self, num_pixels, mirror_lower = True, recursion = 0):
         self.num_pixels = num_pixels
         self.mirror_lower = mirror_lower
+        self._mirrorLower = self._genMirrorLowerMap(num_pixels,recursion)
+        self._mirrorUpper = self._genMirrorUpperMap(num_pixels,recursion)
         super(MirrorEffect, self).__init__()
 
     def numInputChannels(self):
@@ -345,19 +347,69 @@ class MirrorEffect(filtergraph.Effect):
                 # 0 .. h .. n
                 #   h    n-h
                 if self.mirror_lower:
-                    # take lower values
-                    temp = y[:,0:h]
-                    # reverse
-                    temp = temp[:,::-1]
-                    # assign reverse to upper part
-                    y[:,h:n] = temp[:,0:h]
-                    self._outputBuffer[0] = y
+                    self._outputBuffer[0] = buffer[self._mirrorLower[:,:,0],self._mirrorLower[:,:,1]]
+                    # # take lower values
+                    # temp = y[:,0:h]
+                    # # reverse
+                    # temp = temp[:,::-1]
+                    # # assign reverse to upper part
+                    # y[:,h:n] = temp[:,0:h]
+                    # self._outputBuffer[0] = y
                 else:
-                    # take higher values
-                    temp = y[:,h:n] # lenght: n-h
-                    # reverse
-                    temp = temp[:,::-1]
-                    # assign reverse to lower part
-                    y[:,0:n-h] = temp[:,0:n-h]
+                    self._outputBuffer[0] = buffer[self._mirrorUpper[:,:,0],self._mirrorUpper[:,:,1]]
+                    # # take higher values
+                    # temp = y[:,h:n] # lenght: n-h
+                    # # reverse
+                    # temp = temp[:,::-1]
+                    # # assign reverse to lower part
+                    # y[:,0:n-h] = temp[:,0:n-h]
                     
-                    self._outputBuffer[0] = y
+                    # self._outputBuffer[0] = y
+
+    def _genMirrorLowerMap(self, n, recursion):
+        h = int(n/2)
+        mapMask = np.array([[[0,i] for i in range(0,n)],
+                                [[1,i] for i in range(0,n)],
+                                [[2,i] for i in range(0,n)]],dtype=np.int64)
+        mapMask = self._genMirrorLower(mapMask,recursion)
+        return mapMask
+
+    def _genMirrorLower(self, mask, recurse=0):
+        mapMask = mask.copy()
+        n = mapMask.shape[1]
+        if n%2 == 1:
+            n=n-1
+        h = int(n/2)
+        temp = mapMask[:,0:h,:]
+        temp = temp[:,::-1,:]
+        mapMask[:,h:n,:] = temp[:,0:h,:]
+        if recurse > 0:
+            mapMask[:,0:h,:] = self._genMirrorLower(mapMask[:,0:h,:], recurse-1)
+            mapMask[:,h:n,:] = self._genMirrorUpper(mapMask[:,h:n,:], recurse-1)
+        return mapMask
+
+    def _genMirrorUpperMap(self, n, recursion):
+        h = int(n/2)
+        mapMask = np.array([[[0,i] for i in range(0,n)],
+                                [[1,i] for i in range(0,n)],
+                                [[2,i] for i in range(0,n)]],dtype=np.int64)
+        mapMask = self._genMirrorUpper(mapMask,recursion)
+        return mapMask
+
+    def _genMirrorUpper(self,mask, recurse=0):
+        mapMask = mask.copy()
+        n=mapMask.shape[1]
+        if n%2 == 1:
+            n=n-1
+        h = int(n/2)
+        # take upper part
+        temp = mapMask[:,h:n,:]
+        # revert
+        temp = temp[:,::-1,:]
+        # assign to lower part
+        mapMask[:,0:n-h,:] = temp[:,0:n-h,:]
+        if recurse > 0:
+            mapMask[:,0:h,:] = self._genMirrorUpper(mapMask[:,0:h,:], recurse-1)
+            mapMask[:,h:n,:] = self._genMirrorLower(mapMask[:,h:n,:], recurse-1)
+        return mapMask
+    
