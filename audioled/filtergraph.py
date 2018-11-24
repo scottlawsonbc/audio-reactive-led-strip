@@ -1,26 +1,4 @@
-class Effect(object):
-    def __init__(self):
-        self.t = 0.0
-        self._inputBuffer = None
-        self._outputBuffer = None
 
-    def numOutputChannels(self):
-        raise NotImplementedError('numOutputChannels() was not implemented')
-
-    def numInputChannels(self):
-        raise NotImplementedError('numInputChannels() was not implemented')
-
-    def setOutputBuffer(self,buffer):
-        self._outputBuffer = buffer
-
-    def setInputBuffer(self, buffer):
-        self._inputBuffer = buffer
-
-    def process(self):
-        raise NotImplementedError('process() was not implemented')
-    
-    def update(self, dt):
-        self.t += dt
 
 class Node(object):
 

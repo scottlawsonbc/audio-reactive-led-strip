@@ -10,6 +10,7 @@ import audioled.dsp as dsp
 import audioled.filtergraph as filtergraph
 import math
 import matplotlib as mpl
+from audioled.effects import Effect
 
 
 
@@ -19,7 +20,7 @@ import matplotlib as mpl
 
 # New Filtergraph Style effects
 
-class StaticColorEffect(filtergraph.Effect):
+class StaticColorEffect(Effect):
     def __init__(self, num_pixels, r, g, b):
         self.num_pixels = num_pixels
         self.r = r
@@ -48,7 +49,7 @@ class StaticColorEffect(filtergraph.Effect):
     def process(self):
         self._outputBuffer[0] = self.color
 
-class ColorWheelEffect(filtergraph.Effect):
+class ColorWheelEffect(Effect):
     """ Generates colors
     """
 
@@ -85,7 +86,7 @@ class ColorWheelEffect(filtergraph.Effect):
         return np.ones(num_pixels) * self.get_color(t, -1)
 
 
-class ColorWheel2_gen(filtergraph.Effect):
+class ColorWheel2_gen(Effect):
     cycle_time = 30.0
     offset = 0.0
     cycle_time_dim = 10.0
@@ -125,7 +126,7 @@ class ColorWheel2_gen(filtergraph.Effect):
         return np.ones(num_pixels) * self.get_color(t, -1)
 
 
-class ColorDimEffect(filtergraph.Effect):
+class ColorDimEffect(Effect):
     """ Dim colors, set cycle_time=0 and 0 <  offset < 1 for static dimming
     """
 
@@ -162,7 +163,7 @@ class ColorDimEffect(filtergraph.Effect):
         return np.ones(num_pixels) * self.get_color(t, -1)
 
 
-class InterpolateRGBEffect(filtergraph.Effect):
+class InterpolateRGBEffect(Effect):
     def __init__(self, num_pixels):
         self.num_pixels = num_pixels
         super(InterpolateRGBEffect, self).__init__()
@@ -185,7 +186,7 @@ class InterpolateRGBEffect(filtergraph.Effect):
             elif b is not None:
                 self._outputBuffer[0] = b
 
-class InterpolateHSVEffect(filtergraph.Effect):
+class InterpolateHSVEffect(Effect):
     def __init__(self, num_pixels):
         self.num_pixels = num_pixels
         super(InterpolateHSVEffect, self).__init__()

@@ -4,7 +4,7 @@ from __future__ import unicode_literals
 from __future__ import absolute_import
 import time
 import numpy as np
-import audioled.filtergraph as filtergraph
+from audioled.effects import Effect
 
 _GAMMA_TABLE = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1,
                 1, 1, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 4, 4, 4, 4, 5, 5,
@@ -275,7 +275,7 @@ class DotStar(LEDController):
         self.led_data[0:,1:4] = pixels[bgr].T.clip(0,255)
         self.strip.show()
 
-class LEDOutput(filtergraph.Effect):
+class LEDOutput(Effect):
     def __init__(self, controller):
         self.controller = controller
         self._inputBuffer = None

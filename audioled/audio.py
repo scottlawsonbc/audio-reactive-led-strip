@@ -4,7 +4,7 @@ from __future__ import division
 from __future__ import absolute_import
 import numpy as np
 import pyaudio
-from audioled.filtergraph import Effect
+from audioled.effects import Effect
 
 def _open_input_stream(device_index=None, channels = 1):
     """Opens a PyAudio audio input stream

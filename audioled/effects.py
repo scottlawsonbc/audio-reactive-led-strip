@@ -14,24 +14,61 @@ from scipy.signal import lfilter
 
 SHORT_NORMALIZE = 1.0 / 32768.0
 
-class Effect:
-    """Base class for effects
+class Effect(object):
     """
+    Base class for effects
 
+    Effects have a number of input channels and a number of output channels.
+    Before each processing the effect is updated.
+
+    Input values can be accessed by self._inputBuffer[channelNumber], output values
+    are to be written into self_outputBuffer[channelNumber].
+    """
     def __init__(self):
-        pass
+        self.t = 0.0
+        self._inputBuffer = None
+        self._outputBuffer = None
 
-    def update(self, scal_dt):
-        """Update effect
+    def numOutputChannels(self):
         """
-        raise NotImplementedError('update() was not implemented')
-
-    def effect(self):
-        """Process effect
+        Returns the number of output channels for this effect
         """
-        raise NotImplementedError('effect() was not implemented')
+        raise NotImplementedError('numOutputChannels() was not implemented')
 
-class SpectrumEffect(filtergraph.Effect):
+    def numInputChannels(self):
+        """
+        Returns the number of input channels for this effect.
+        """
+        raise NotImplementedError('numInputChannels() was not implemented')
+
+    def setOutputBuffer(self,buffer):
+        """
+        Set output buffer where processed data is to be written
+        """
+        self._outputBuffer = buffer
+
+    def setInputBuffer(self, buffer):
+        """
+        Set input buffer for incoming data
+        """
+        self._inputBuffer = buffer
+
+    def process(self):
+        """
+        The main processing function:
+        - Read input data from self._inputBuffer
+        - Process data
+        - Write output data to self._outputBuffer
+        """
+        raise NotImplementedError('process() was not implemented')
+    
+    def update(self, dt):
+        """
+        Update timing, can be used to precalculate stuff that doesn't depend on input values
+        """
+        self.t += dt
+
+class SpectrumEffect(Effect):
 
     def __init__(self, num_pixels, fs, fmax=6000, n_overlaps=8, chunk_rate=60, mirror_middle=True):
         self.num_pixels = num_pixels
@@ -112,7 +149,7 @@ class SpectrumEffect(filtergraph.Effect):
         return fft
 
 
-class ShiftEffect(filtergraph.Effect):
+class ShiftEffect(Effect):
 
     def __init__(self, num_pixels, speed=2.0, dim_time=.1):
         self.num_pixels = num_pixels
@@ -146,7 +183,7 @@ class ShiftEffect(filtergraph.Effect):
                 self._outputBuffer[0] = self.pixel_state.clip(0.0,255.0)
 
 
-class VUMeterRMSEffect(filtergraph.Effect):
+class VUMeterRMSEffect(Effect):
     """ VU Meter style effect
     Inputs:
     0: Audio
@@ -184,7 +221,7 @@ class VUMeterRMSEffect(filtergraph.Effect):
                 bar[0:3,0:index] = color[0:3,0:index]
                 self._outputBuffer[0] = bar
 
-class VUMeterPeakEffect(filtergraph.Effect):
+class VUMeterPeakEffect(Effect):
     """ VU Meter style effect
     Inputs:
     0: Audio
@@ -223,7 +260,7 @@ class VUMeterPeakEffect(filtergraph.Effect):
                 bar[0:3,0:index] = color[0:3,0:index]
                 self._outputBuffer[0] = bar
 
-class MovingLightEffect(filtergraph.Effect):
+class MovingLightEffect(Effect):
 
 
     def __init__(self, num_pixels, fs, speed=10.0, dim_time=20.0, lowcut_hz=50.0, highcut_hz=300.0):
@@ -277,7 +314,7 @@ class MovingLightEffect(filtergraph.Effect):
                 self.pixel_state[2][0] = b * peak+ peak * 255.0
                 self._outputBuffer[0] = self.pixel_state.clip(0.0,255.0)
 
-class AfterGlowEffect(filtergraph.Effect):
+class AfterGlowEffect(Effect):
 
     def __init__(self, num_pixels, glow_time=1.0):
         self.num_pixels = num_pixels
@@ -307,7 +344,7 @@ class AfterGlowEffect(filtergraph.Effect):
                 self.pixel_state = self.pixel_state.clip(0.0, 255.0)
                 self._outputBuffer[0] = self.pixel_state
 
-class MirrorEffect(filtergraph.Effect):
+class MirrorEffect(Effect):
 
     def __init__(self, num_pixels, mirror_lower = True, recursion = 0):
         self.num_pixels = num_pixels
