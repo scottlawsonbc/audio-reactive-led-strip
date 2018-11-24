@@ -11,69 +11,7 @@ import audioled.filtergraph as filtergraph
 import math
 import matplotlib as mpl
 
-class Color_gen(object):
-    def __init__(self):
-        None
-    
-    def get_color_array(self, t, num_pixels):
-        raise NotImplementedError('get_color_array not implemented')
-    
-class StaticColor_gen(Color_gen):
-    r=0
-    g=0
-    b=0
 
-    def __init__(self, r, g, b):
-        self.r = r
-        self.g = g
-        self.b = b
-    
-    def get_color_array(self, t, num_pixels):
-        return np.ones(num_pixels) * np.array([[self.r],[self.g],[self.b]])
-
-class ColorWheel_gen(Color_gen):
-
-    cycle_time = 30.0
-    offset = 0.0
-
-    def __init__(self, cycle_time = 30.0, offset = 0.0):
-        self.cycle_time = cycle_time
-        self.offset = offset
-    
-    def get_color(self, t, pixel):
-        L=0.5
-        S=1.0
-        h = (t + self.offset % self.cycle_time) / self.cycle_time
-        r, g, b = colorsys.hls_to_rgb(h, L, S) 
-        
-        return np.array([[r* 255.0], [g* 255.0], [b* 255.0]])
-    
-    def get_color_array(self, t, num_pixels):
-        return np.ones(num_pixels) * self.get_color(t, -1)
-
-
-class ColorWheel2_gen(Color_gen):
-    cycle_time = 30.0
-    offset = 0.0
-    cycle_time_dim = 10.0
-
-    def __init__(self, cycle_time=30.0, offset=0.0, cycle_time_dim=10.0):
-        self.cycle_time = cycle_time
-        self.offset = offset
-        self.cycle_time_dim = cycle_time_dim
-
-    def get_color(self, t, pixel):
-        L = 0.5
-        S = 1.0
-        dim = math.sin(2 * math.pi / self.cycle_time_dim * t)
-        h = (t + self.offset % self.cycle_time) / self.cycle_time
-        r, g, b = colorsys.hls_to_rgb(h, L, S)
-        CArray = np.array([[dim * r * 255.0], [dim * g * 255.0], [dim * b * 255.0]])
-
-        return CArray
-
-    def get_color_array(self, t, num_pixels):
-        return np.ones(num_pixels) * self.get_color(t, -1)
 
 
 
@@ -122,7 +60,7 @@ class ColorWheelEffect(filtergraph.Effect):
         super(ColorWheelEffect, self).__init__()
 
     def numInputChannels(self):
-        return 2
+        return 0
 
     def numOutputChannels(self):
         return 1
@@ -143,6 +81,46 @@ class ColorWheelEffect(filtergraph.Effect):
         
         return np.array([[r* 255.0], [g* 255.0], [b* 255.0]])
     
+    def get_color_array(self, t, num_pixels):
+        return np.ones(num_pixels) * self.get_color(t, -1)
+
+
+class ColorWheel2_gen(filtergraph.Effect):
+    cycle_time = 30.0
+    offset = 0.0
+    cycle_time_dim = 10.0
+
+    def __init__(self, num_pixels, cycle_time=30.0, offset=0.0, cycle_time_dim=10.0):
+        self.num_pixels = num_pixels
+        self.cycle_time = cycle_time
+        self.offset = offset
+        self.cycle_time_dim = cycle_time_dim
+        super(ColorWheel2_gen, self).__init__()
+
+    def numInputChannels(self):
+        return 0
+
+    def numOutputChannels(self):
+        return 1
+
+    def get_color(self, t, pixel):
+        L = 0.5
+        S = 1.0
+        dim = math.sin(2 * math.pi / self.cycle_time_dim * t)
+        h = (t + self.offset % self.cycle_time) / self.cycle_time
+        r, g, b = colorsys.hls_to_rgb(h, L, S)
+        CArray = np.array([[dim * r * 255.0], [dim * g * 255.0], [dim * b * 255.0]])
+
+        return CArray
+
+    def update(self, dt):
+        super(ColorWheel2_gen, self).update(dt)
+        self.color = self.get_color_array(self.t, self.num_pixels)
+
+    def process(self):
+        if self._outputBuffer is not None:
+            self._outputBuffer[0] = self.color
+
     def get_color_array(self, t, num_pixels):
         return np.ones(num_pixels) * self.get_color(t, -1)
 
