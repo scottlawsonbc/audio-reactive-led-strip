@@ -31,11 +31,10 @@ class Effect:
         """
         raise NotImplementedError('effect() was not implemented')
 
+class SpectrumEffect(filtergraph.Effect):
 
-
-class SpectrumEffect(Effect):
-
-    def __init__(self, num_pixels, fs, audio_gen, bass_colorgen, melody_colorgen, fmax=6000, n_overlaps=8, chunk_rate=60, mirror_middle=True):
+    def __init__(self, num_pixels, fs, fmax=6000, n_overlaps=8, chunk_rate=60, mirror_middle=True):
+        self.num_pixels = num_pixels
         self.norm_dist = np.linspace(0, 1, num_pixels)
         if mirror_middle:
             self.norm_dist = np.linspace(0, 1, num_pixels // 2)
@@ -46,10 +45,6 @@ class SpectrumEffect(Effect):
         self.fs = fs
         self.fmax = fmax
         self.mirror_middle = mirror_middle
-        self.audio_gen = self._audio_gen(audio_gen)
-        self.bass_colorgen = bass_colorgen
-        self.melody_colorgen = melody_colorgen
-        self.t = 0.0
         self.max_filter = np.ones(8)
         self.min_feature_win = np.hamming(4)
         self.cycle_time = 30.0
@@ -58,25 +53,52 @@ class SpectrumEffect(Effect):
         self.fs_ds = 0.0
         self.bass_rms = None
         self.melody_rms = None
+        self.lastAudioChunk = None
+        self.gen = None
+        super(SpectrumEffect, self).__init__()
+
+    def numInputChannels(self):
+        return 3
+
+    def numOutputChannels(self):
+        return 1
 
     def _audio_gen(self, audio_gen):
         self.bass_rms = np.zeros(self.chunk_rate * 6)
         self.melody_rms = np.zeros(self.chunk_rate * 6)
         audio, self.fs_ds = dsp.preprocess(audio_gen, self.fs, self.fmax, self.n_overlaps)
-        for y in audio:
-            yield y
+        return audio
 
-    def effect(self):
-        for y in self.audio_gen:
-            bass = dsp.warped_psd(y, self.fft_bins, self.fs_ds, [32.7, 261.0], 'bark')
-            melody = dsp.warped_psd(y, self.fft_bins, self.fs_ds, [261.0, self.fmax], 'bark')
-            bass = self.process_line(bass, self.bass_rms)
-            melody = self.process_line(melody, self.melody_rms)
-            pixels = 1./255.0 * bass * self.bass_colorgen.get_color_array(self.t, 1) + 1./255.0 * melody * self.melody_colorgen.get_color_array(self.t, 1)
-            yield pixels.clip(0, 255).astype(int)
+    def buffer_coroutine(self):
+        while True:
+            yield self.lastAudioChunk    
 
-    def update(self, scal_dt):
-        self.t+=scal_dt
+    def process(self):
+        
+        if self._inputBuffer is not None and self._outputBuffer is not None:
+            audio = self._inputBuffer[0]
+            col_melody = self._inputBuffer[1]
+            col_bass = self._inputBuffer[2]
+            if col_melody is None:
+                # default color: all white
+                col_melody = np.ones(self.num_pixels) * np.array([[255.0],[255.0],[255.0]])
+            if col_bass is None:
+                # default color: all white
+                col_bass = np.ones(self.num_pixels) * np.array([[255.0],[255.0],[255.0]])
+            if audio is not None:        
+                if self.gen is None:
+                    g = self.buffer_coroutine()
+                    next(g)
+                    self.lastAudioChunk = audio
+                    self.gen = self._audio_gen(g)
+                self.lastAudioChunk = audio
+                y = next(self.gen)
+                bass = dsp.warped_psd(y, self.fft_bins, self.fs_ds, [32.7, 261.0], 'bark')
+                melody = dsp.warped_psd(y, self.fft_bins, self.fs_ds, [261.0, self.fmax], 'bark')
+                bass = self.process_line(bass, self.bass_rms)
+                melody = self.process_line(melody, self.melody_rms)
+                pixels = 1./255.0 * np.multiply(bass, col_bass) + 1./255.0 * np.multiply(melody, col_melody)
+                self._outputBuffer[0] = pixels.clip(0,255).astype(int)
 
     def process_line(self, fft, fft_rms):
         fft = np.convolve(fft, self.max_filter, 'same')
@@ -88,43 +110,6 @@ class SpectrumEffect(Effect):
         if self.mirror_middle:
             fft = np.r_[fft, fft[::-1]]
         return fft
-
-
-
-
-class ActivateAll(Effect):
-    #testEffect for colors and dim
-
-    def __init__(self, num_pixels, audio_gen, color_gen):
-        self.num_pixels = num_pixels
-        self.audio_gen = audio_gen
-        self.color_gen = color_gen
-        self.t = 0.0
-
-    def update(self, scal_dt):
-        self.t += scal_dt
-
-    def effect(self):
-        for y in self.audio_gen:
-            bar = np.zeros(self.num_pixels) * np.array([[0], [0], [0]])
-            index = self.num_pixels
-            bar[0:3, 0:index] = self.color_gen.get_color_array(self.t, self.num_pixels)[0:3, 0:index]
-            yield bar
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 class ShiftEffect(Effect):
 
     def __init__(self, num_pixels, pixel_gen, speed, dim_time=1.0):
@@ -155,11 +140,9 @@ class ShiftEffect(Effect):
             yield self.pixel_state.clip(0.0,255.0)
 
 
-
-
-
-
 # New Filtergraph Style effects
+
+
 
 class VUMeterRMSEffect(filtergraph.Effect):
     """ VU Meter style effect
