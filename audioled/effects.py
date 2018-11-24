@@ -69,6 +69,18 @@ class Effect(object):
         self.t += dt
 
 class SpectrumEffect(Effect):
+    """
+    SpectrumEffect performs a FFT and visualizes bass and melody frequencies with different colors.
+
+    Inputs:
+    - 0: Audio
+    - 1: Color for melody (default: white)
+    - 2: Color for bass (default: white)
+
+    Outputs:
+    - 0: Pixel array
+
+    """
 
     def __init__(self, num_pixels, fs, fmax=6000, n_overlaps=8, chunk_rate=60, mirror_middle=True):
         self.num_pixels = num_pixels
@@ -150,7 +162,7 @@ class SpectrumEffect(Effect):
 
 
 class ShiftEffect(Effect):
-
+    
     def __init__(self, num_pixels, speed=2.0, dim_time=.1):
         self.num_pixels = num_pixels
         self.pixel_state = np.zeros(num_pixels) * np.array([[0.0],[0.0],[0.0]])
@@ -186,8 +198,8 @@ class ShiftEffect(Effect):
 class VUMeterRMSEffect(Effect):
     """ VU Meter style effect
     Inputs:
-    0: Audio
-    1: Color
+    - 0: Audio
+    - 1: Color
     """ 
 
     def __init__(self, num_pixels, db_range = 60.0):
@@ -224,8 +236,8 @@ class VUMeterRMSEffect(Effect):
 class VUMeterPeakEffect(Effect):
     """ VU Meter style effect
     Inputs:
-    0: Audio
-    1: Color
+    - 0: Audio
+    - 1: Color
     """ 
 
     def __init__(self, num_pixels, db_range = 60.0):
@@ -260,8 +272,16 @@ class VUMeterPeakEffect(Effect):
                 bar[0:3,0:index] = color[0:3,0:index]
                 self._outputBuffer[0] = bar
 
-class MovingLightEffect(Effect):
 
+
+class MovingLightEffect(Effect):
+    """
+    This effect generates a peak at the beginning of the strip that moves and dissipates
+
+    Inputs:
+    - 0: Audio
+    - 1: Color
+    """
 
     def __init__(self, num_pixels, fs, speed=10.0, dim_time=20.0, lowcut_hz=50.0, highcut_hz=300.0):
         self.num_pixels = num_pixels
@@ -314,7 +334,12 @@ class MovingLightEffect(Effect):
                 self.pixel_state[2][0] = b * peak+ peak * 255.0
                 self._outputBuffer[0] = self.pixel_state.clip(0.0,255.0)
 
+
+
 class AfterGlowEffect(Effect):
+    """
+    Effect that 
+    """
 
     def __init__(self, num_pixels, glow_time=1.0):
         self.num_pixels = num_pixels
