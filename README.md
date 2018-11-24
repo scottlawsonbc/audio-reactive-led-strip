@@ -50,7 +50,13 @@ For this you can use [openpixelcontrol](https://github.com/zestyping/openpixelco
 ## Running the demo
 
 ```
-python demo.py
+python filtergraphDemo.py
+# For more information:
+python filtergraphDemo.py -h
+# e.g.
+python filtergraphDemo.py -N 300 -D FadeCandy --device_candy_server 192.168.9.241:7890 -C spectrum
+# Running on RaspberryPi:
+sudo python filtergraphDemo.py
 ```
 
 ## Running unit tests

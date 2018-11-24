@@ -11,25 +11,46 @@ import math
 import jsonpickle
 import os
 import errno
-
+import argparse
+import json
 
 N_pixels = 300
-
-fg = filtergraph.FilterGraph()
-
-
-audio_in = audio.AudioInput()
-fg.addEffectNode(audio_in)
-
-led_out = devices.LEDOutput(devices.FadeCandy('192.168.9.241:7890'))
-fg.addEffectNode(led_out)
+device = None
 
 # define configs (add other configs here)
 movingLightConf = 'movingLight'
 spectrumConf = 'spectrum'
 
+deviceRasp = 'RaspberryPi'
+deviceCandy = 'FadeCandy'
+
+parser = argparse.ArgumentParser(description='Audio Reactive LED Strip')
+
+parser.add_argument('-N', '--num_pixels',  dest='num_pixels', type=int, default=300, help = 'number of pixels (default: 300)')
+parser.add_argument('-D', '--device', dest='device', default=deviceCandy, choices=[deviceRasp,deviceCandy], help = 'device to send RGB to')
+parser.add_argument('--device_candy_server', dest='device_candy_server', default='127.0.0.1:7890', help = 'Server for device FadeCandy')
+parser.add_argument('-C', '--config', dest='config', default=movingLightConf, choices=[movingLightConf, spectrumConf], help = 'config to use')
+args = parser.parse_args()
+
+N_pixels = args.num_pixels
+
+if args.device == deviceRasp:
+    device = devices.RaspberryPi(N_pixels)
+elif args.device == deviceCandy:
+    device = devices.FadeCandy(args.device_candy_server)
+
+fg = filtergraph.FilterGraph()
+
+audio_in = audio.AudioInput()
+fg.addEffectNode(audio_in)
+
+led_out = devices.LEDOutput(device)
+fg.addEffectNode(led_out)
+
+
+
 # select config to show
-config = movingLightConf
+config = args.config
 
 if config == movingLightConf:
     
@@ -114,6 +135,9 @@ if not os.path.exists(os.path.dirname(filename)):
             raise
 
 saveJson = jsonpickle.encode(fg)
+temp = json.loads(saveJson)
+saveJson = json.dumps(temp, sort_keys=True)
+
 with open(filename,"w") as f:
     f.write(saveJson)
 
