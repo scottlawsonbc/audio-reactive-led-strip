@@ -98,10 +98,11 @@ class AudioInput(Effect):
     """
     def __init__(self, device_index=None):
         self.device_index = device_index
-        self._outputBuffer = None
-        self._inputBuffer = None
+        self.__initstate__()
+
+    def __initstate__(self):
         self._audioStream, self._sampleRate = stream_audio()
-        super(AudioInput, self).__init__()
+        super(AudioInput, self).__initstate__()
 
     def numOutputChannels(self):
         return numInputChannels(self.device_index)
@@ -111,12 +112,6 @@ class AudioInput(Effect):
 
     def getSampleRate(self):
         return self._sampleRate
-
-    def setOutputBuffer(self, buffer):
-        self._outputBuffer = buffer
-
-    def setInputBuffer(self, buffer):
-        self._inputBuffer = buffer
 
     def process(self):
         chunks = next(self._audioStream)

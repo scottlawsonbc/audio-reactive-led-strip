@@ -278,18 +278,12 @@ class DotStar(LEDController):
 class LEDOutput(Effect):
     def __init__(self, controller):
         self.controller = controller
-        self._inputBuffer = None
-        self._outputBuffer = None
-        super(LEDOutput, self).__init__()
+        self.__initstate__()
     
     def numInputChannels(self):
         return 1
     def numOutputChannels(self):
         return 0
-    def setInputBuffer(self, buffer):
-        self._inputBuffer = buffer
-    def setOutputBuffer(self, buffer):
-        self._outputBuffer = buffer
     def process(self):
         if self._inputBuffer != None:
             if self._inputBuffer[0] is not None:

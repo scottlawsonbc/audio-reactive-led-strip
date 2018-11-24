@@ -147,4 +147,33 @@ class FilterGraph(object):
         if len(self._processOrder) != len(self._filterNodes):
             raise RuntimeError("not all nodes processed")
 
+    def __getstate__(self):
+        state = {}
+        effects = [node.effect for node in self._filterNodes]
+        state['effects'] = effects
+        connections = []
+        for con in self._filterConnections:
+            conDict = {}
+            # find index of effect of fromNode in effects
+            conDict['from_effect_idx'] = effects.index(con.fromNode.effect)
+            conDict['from_channel'] = con.fromChannel
+            conDict['to_effect_idx'] = effects.index(con.toNode.effect)
+            conDict['to_channel'] = con.toChannel
+            connections.append(conDict)
+        state['connections'] = connections
+        return state
 
+    def __setstate__(self, state):
+        self.__init__()
+        effects = state['effects']
+        for effect in effects:
+            self.addEffectNode(effect)
+        connections = state['connections']
+        for con in connections:
+            fromEffect = self._filterNodes[con['from_effect_idx']].effect
+            fromChannel = con['from_channel']
+            toEffect = self._filterNodes[con['to_effect_idx']].effect
+            toChannel = con['to_channel']
+            self.addConnection(fromEffect, fromChannel, toEffect, toChannel)
+        
+        

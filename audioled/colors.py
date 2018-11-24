@@ -26,9 +26,14 @@ class StaticColorEffect(Effect):
         self.r = r
         self.g = g
         self.b = b
-        self.color = None
-        super(StaticColorEffect, self).__init__()
+        self.__initstate__()
+
+    def __initstate__(self):
+        # state 
+        self._color = None
+        super(StaticColorEffect, self).__initstate__()
     
+
     def numInputChannels(self):
         return 0
 
@@ -43,11 +48,11 @@ class StaticColorEffect(Effect):
     
     def update(self, dt):
         super(StaticColorEffect, self).update(dt)
-        if self.color is None:
-            self.color = np.ones(self.num_pixels) * np.array([[self.r],[self.g],[self.b]])
+        if self._color is None:
+            self._color = np.ones(self.num_pixels) * np.array([[self.r],[self.g],[self.b]])
 
     def process(self):
-        self._outputBuffer[0] = self.color
+        self._outputBuffer[0] = self._color
 
 class ColorWheelEffect(Effect):
     """ Generates colors
@@ -57,8 +62,12 @@ class ColorWheelEffect(Effect):
         self.cycle_time = cycle_time
         self.offset = offset
         self.num_pixels = num_pixels
-        self.color = None
-        super(ColorWheelEffect, self).__init__()
+        self.__initstate__()
+
+    def __initstate__(self):
+        # state
+        self._color = None
+        super(ColorWheelEffect, self).__initstate__()
 
     def numInputChannels(self):
         return 0
@@ -68,11 +77,11 @@ class ColorWheelEffect(Effect):
 
     def update(self, dt):
         super(ColorWheelEffect, self).update(dt)
-        self.color = self.get_color_array(self.t, self.num_pixels)
+        self._color = self.get_color_array(self._t, self.num_pixels)
 
     def process(self):
         if self._outputBuffer is not None:
-            self._outputBuffer[0] = self.color
+            self._outputBuffer[0] = self._color
 
     def get_color(self, t, pixel):
         L=0.5
@@ -87,16 +96,14 @@ class ColorWheelEffect(Effect):
 
 
 class ColorWheel2_gen(Effect):
-    cycle_time = 30.0
-    offset = 0.0
-    cycle_time_dim = 10.0
 
     def __init__(self, num_pixels, cycle_time=30.0, offset=0.0, cycle_time_dim=10.0):
         self.num_pixels = num_pixels
         self.cycle_time = cycle_time
         self.offset = offset
         self.cycle_time_dim = cycle_time_dim
-        super(ColorWheel2_gen, self).__init__()
+        self._color = None
+        self.__initstate__()
 
     def numInputChannels(self):
         return 0
@@ -116,11 +123,11 @@ class ColorWheel2_gen(Effect):
 
     def update(self, dt):
         super(ColorWheel2_gen, self).update(dt)
-        self.color = self.get_color_array(self.t, self.num_pixels)
+        self._color = self.get_color_array(self._t, self.num_pixels)
 
     def process(self):
         if self._outputBuffer is not None:
-            self._outputBuffer[0] = self.color
+            self._outputBuffer[0] = self._color
 
     def get_color_array(self, t, num_pixels):
         return np.ones(num_pixels) * self.get_color(t, -1)
@@ -134,8 +141,11 @@ class ColorDimEffect(Effect):
         self.cycle_time = cycle_time
         self.offset = offset
         self.num_pixels = num_pixels
-        self.color = None
-        super(ColorDimEffect, self).__init__()
+        
+    def __initstate__(self):
+        # state
+        self._color = None
+        super(ColorDimEffect, self).__initstate__()
 
     def numInputChannels(self):
         return 2
@@ -145,11 +155,11 @@ class ColorDimEffect(Effect):
 
     def update(self, dt):
         super(ColorDimEffect, self).update(dt)
-        self.color = self.get_color_array(self.t, self.num_pixels)
+        self._color = self.get_color_array(self._t, self.num_pixels)
 
     def process(self):
         if self._outputBuffer is not None:
-            self._outputBuffer[0] = self.color
+            self._outputBuffer[0] = self._color
 
     def get_color(self, t, pixel):
         if self.cycle_time == 0:
@@ -166,7 +176,7 @@ class ColorDimEffect(Effect):
 class InterpolateRGBEffect(Effect):
     def __init__(self, num_pixels):
         self.num_pixels = num_pixels
-        super(InterpolateRGBEffect, self).__init__()
+        self.__initstate__()
 
     def numInputChannels(self):
         return 2
@@ -189,7 +199,7 @@ class InterpolateRGBEffect(Effect):
 class InterpolateHSVEffect(Effect):
     def __init__(self, num_pixels):
         self.num_pixels = num_pixels
-        super(InterpolateHSVEffect, self).__init__()
+        self.__initstate__()
 
     def numInputChannels(self):
         return 2

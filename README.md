@@ -31,7 +31,7 @@ Install dependencies using pip and the conda package manager
 ```
 conda install numpy scipy
 
-pip install pyaudio matplotlib
+pip install pyaudio matplotlib jsonpickle
 ```
 
 ## Visualization Server
