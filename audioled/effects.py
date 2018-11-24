@@ -110,38 +110,40 @@ class SpectrumEffect(filtergraph.Effect):
         if self.mirror_middle:
             fft = np.r_[fft, fft[::-1]]
         return fft
-class ShiftEffect(Effect):
 
-    def __init__(self, num_pixels, pixel_gen, speed, dim_time=1.0):
+
+class ShiftEffect(filtergraph.Effect):
+
+    def __init__(self, num_pixels, speed=2.0, dim_time=.1):
         self.num_pixels = num_pixels
-        self.pixel_gen = pixel_gen
         self.pixel_state = np.zeros(num_pixels) * np.array([[0.0],[0.0],[0.0]])
         self.speed = speed
         self.dim_time = dim_time
-        self.t = 0.0
         self.last_t = 0.0
+        super(ShiftEffect, self).__init__()
 
-    def update(self, scal_dt):
-        self.t+=scal_dt
+    def numInputChannels(self):
+        return 1
+
+    def numOutputChannels(self):
+        return 1
     
-    def effect(self):
-        for y in self.pixel_gen:
+    def process(self):
+        if self._inputBuffer is not None and self._outputBuffer is not None:
+            pixels = self._inputBuffer[0]
+            if pixels is not None:
+                y = pixels
+                pixels = np.roll(self.pixel_state, -1, axis=1)
+                pixels[0][0] = 0
+                pixels[1][0] = 0
+                pixels[2][0] = 0
+                dt = self.t - self.last_t
+                self.last_t = self.t
+                if self.dim_time > 0:
+                    pixels *=(1-dt / self.dim_time)
 
-            pixels = np.roll(self.pixel_state, -1, axis=1)
-            pixels[0][0] = 0
-            pixels[1][0] = 0
-            pixels[2][0] = 0
-            dt = self.t - self.last_t
-            self.last_t = self.t
-            if self.dim_time > 0:
-                pixels *=(1-dt / self.dim_time)
-
-            self.pixel_state = pixels + y
-            yield self.pixel_state.clip(0.0,255.0)
-
-
-# New Filtergraph Style effects
-
+                self.pixel_state = pixels + y
+                self._outputBuffer[0] = self.pixel_state.clip(0.0,255.0)
 
 
 class VUMeterRMSEffect(filtergraph.Effect):
