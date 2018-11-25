@@ -114,6 +114,7 @@ class SpectrumEffect(Effect):
         self.n_overlaps = n_overlaps
         self.chunk_rate = chunk_rate
         self.mirror_middle = mirror_middle
+        self.__initstate__()
 
     def __initstate__(self):
         # state
@@ -192,6 +193,7 @@ class ShiftEffect(Effect):
         self.num_pixels = num_pixels
         self.speed = speed
         self.dim_time = dim_time
+        self.__initstate__()
 
     def __initstate__(self):
         # state
