@@ -191,7 +191,7 @@ class BlinkStick(LEDController):
 class RaspberryPi(LEDController):
 
     def __init__(self, pixels, pin=18, invert_logic=False,
-                 freq=800000, dma=5):
+                 freq=800000, dma=10):
         """Creates a Raspberry Pi output device
 
         Parameters
@@ -212,15 +212,14 @@ class RaspberryPi(LEDController):
             If you aren't sure, try 5.
         """
         try:
-            import neopixel
+            import rpi_ws281x
         except ImportError as e:
             url = 'learn.adafruit.com/neopixels-on-raspberry-pi/software'
             print('Could not import the neopixel library')
             print('For installation instructions, see {}'.format(url))
             raise e
-        self.strip = neopixel.Adafruit_NeoPixel(pixels, pin, freq, dma,
-                                                invert_logic, 255)
-        self.strip.begin()
+        self.strip = rpi_ws281x.PixelStrip(num=pixels, pin=pin, freq_hz=freq, dma=dma,
+                                                invert=invert_logic, brightness=255)
 
     def show(self, pixels):
         """Writes new LED values to the Raspberry Pi's LED strip
@@ -239,8 +238,9 @@ class RaspberryPi(LEDController):
         b = pixels[2][:].astype(int)
         rgb = np.bitwise_or(np.bitwise_or(r, g), b)
         # Update the pixels
+        self.strip.begin()
         for i in range(n_pixels):
-            self.strip._led_data[i] = rgb[i]
+            self.strip.setPixelColor(i,int(rgb[i]))
         self.strip.show()
 
 
