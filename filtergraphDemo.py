@@ -126,7 +126,7 @@ else:
 
 
 # save filtergraph to json
-filename = "configs/"+config+".json"
+filename = "configs/{}.json".format(config)
 if not os.path.exists(os.path.dirname(filename)):
     try:
         os.makedirs(os.path.dirname(filename))
