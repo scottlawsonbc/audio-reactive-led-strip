@@ -75,8 +75,8 @@ class ColorWheelEffect(Effect):
     def numOutputChannels(self):
         return 1
 
-    def update(self, dt):
-        super(ColorWheelEffect, self).update(dt)
+    async def update(self, dt):
+        await super(ColorWheelEffect, self).update(dt)
         self._color = self.get_color_array(self._t, self.num_pixels)
 
     def process(self):

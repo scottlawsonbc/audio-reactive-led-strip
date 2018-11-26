@@ -5,6 +5,7 @@ from __future__ import absolute_import
 import time
 import struct
 import colorsys
+import asyncio
 import numpy as np
 import audioled.dsp as dsp
 import audioled.filtergraph as filtergraph
@@ -65,7 +66,7 @@ class Effect(object):
         """
         raise NotImplementedError('process() was not implemented')
     
-    def update(self, dt):
+    async def update(self, dt):
         """
         Update timing, can be used to precalculate stuff that doesn't depend on input values
         """

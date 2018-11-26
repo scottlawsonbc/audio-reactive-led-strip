@@ -1,4 +1,6 @@
+import asyncio
 from timeit import default_timer as timer
+import numpy as np
 
 class Node(object):
 
@@ -18,8 +20,8 @@ class Node(object):
         # process
         self.effect.process()
     
-    def update(self, dt):
-        self.effect.update(dt)
+    async def update(self, dt):
+        await self.effect.update(dt)
 
 class Connection(object):
 
@@ -28,6 +30,25 @@ class Connection(object):
         self.fromNode = from_node
         self.toChannel = to_channel
         self.toNode = to_node
+
+class Timing(object):
+    def __init__(self):
+        self._max = None
+        self._min = None
+        self._avg = None
+        self._count = 0
+    
+    def update(self, timing):
+        if self._count == 0:
+            self._max = timing
+            self._min = timing
+            self._avg = timing
+        else:
+            self._max = max(self._max, timing)
+            self._min = min(self._min, timing)
+            self._avg = (self._avg * self._count + timing) / (self._count + 1)
+        self._count = self._count + 1
+        self._count = max(100, self._count)
 
 
 class FilterGraph(object):
@@ -41,22 +62,49 @@ class FilterGraph(object):
         self._processTimings = {}
 
     def update(self, dt):
-        time = None
-        for node in self._processOrder:
-            if self.recordTimings:
-                time = timer()
-            node.update(dt)
-            if self.recordTimings:
-                self._updateTimings[node] = timer() - time
+        time = timer()
+        loop = asyncio.get_event_loop()
+
+
+
+        #loop.run_until_complete(asyncio.wait(tasks))  
+        #loop.
+        # close()
+        all_tasks = asyncio.gather(*[asyncio.ensure_future(node.update(dt)) for node in self._processOrder])
+        results = loop.run_until_complete(all_tasks)
+
+        print("Update time: {}".format(timer() - time))
+
+        #loop.close()
+
+        # for node in self._processOrder:
+        #     if self.recordTimings:
+        #         time = timer()
+        #     node.update(dt)
+        #     if self.recordTimings:
+        #         self.updateUpdateTiming(node, timer() - time)
     
     def process(self):
         time = None
+
         for node in self._processOrder:
             if self.recordTimings:
                 time = timer()
             node.process()
             if self.recordTimings:
-                self._processTimings[node] = timer() - time
+                self.updateProcessTiming(node, timer() - time)
+
+    def updateProcessTiming(self,node,timing):
+        if not node in self._processTimings:
+            self._processTimings[node] = Timing()
+        
+        self._processTimings[node].update(timing)
+
+    def updateUpdateTiming(self,node,timing):
+        if not node in self._updateTimings:
+            self._updateTimings[node] = Timing()
+        
+        self._updateTimings[node].update(timing)
 
     def printUpdateTimings(self):
         if self._updateTimings is None:
@@ -64,7 +112,7 @@ class FilterGraph(object):
             return
         print("Update timings:")
         for key, val in self._updateTimings.items():
-            print("{}: {}".format(key.effect, val))
+            print("{0}: min {1:1.8f}, max {2:1.8f}, avg {3:1.8f}".format(key.effect, val._min, val._max, val._avg))
     
     def printProcessTimings(self):
         if self._processTimings is None:
@@ -72,7 +120,7 @@ class FilterGraph(object):
             return
         print("Process timings:")
         for key, val in self._processTimings.items():
-            print("{}: {}".format(key.effect, val))
+            print("{0:30s}: min {1:1.8f}, max {2:1.8f}, avg {3:1.8f}".format(str(key.effect)[0:30], val._min, val._max, val._avg))
 
 
     def addEffectNode(self, effect):

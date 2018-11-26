@@ -96,12 +96,14 @@ class AudioInput(Effect):
     1: Audio Channel 1...
     
     """
-    def __init__(self, device_index=None):
+    def __init__(self, device_index=None, chunk_rate=120):
         self.device_index = device_index
+        self.chunk_rate = chunk_rate
         self.__initstate__()
 
     def __initstate__(self):
-        self._audioStream, self._sampleRate = stream_audio()
+        self._audioStream, self._sampleRate = stream_audio(chunk_rate=self.chunk_rate)
+        self._buffer = None
         super(AudioInput, self).__initstate__()
 
     def numOutputChannels(self):
@@ -112,7 +114,10 @@ class AudioInput(Effect):
 
     def getSampleRate(self):
         return self._sampleRate
+    
+    async def update(self, dt):
+        await super(AudioInput, self).update(dt)
+        self._buffer = next(self._audioStream)
 
     def process(self):
-        chunks = next(self._audioStream)
-        self._outputBuffer[0] = chunks
+        self._outputBuffer[0] = self._buffer
