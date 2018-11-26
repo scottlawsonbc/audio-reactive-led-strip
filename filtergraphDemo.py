@@ -132,12 +132,20 @@ with open(filename,"w") as f:
 #fg = jsonpickle.decode(saveJson)
 
 current_time = timer()
+count = 0
+updateTiming = filtergraph.Timing()
 while True:
     last_time = current_time
     current_time = timer()
     dt = current_time - last_time
 
     fg.update(dt)
+    updateTiming.update(timer() - current_time)
+
     fg.process()
-    fg.printProcessTimings()
+    if count == 100:
+        fg.printProcessTimings()
+        print(updateTiming.__dict__)
+        count = 0
+    count = count + 1
     

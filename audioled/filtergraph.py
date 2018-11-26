@@ -48,7 +48,7 @@ class Timing(object):
             self._min = min(self._min, timing)
             self._avg = (self._avg * self._count + timing) / (self._count + 1)
         self._count = self._count + 1
-        self._count = max(100, self._count)
+        self._count = min(100, self._count)
 
 
 class FilterGraph(object):
@@ -73,7 +73,7 @@ class FilterGraph(object):
         all_tasks = asyncio.gather(*[asyncio.ensure_future(node.update(dt)) for node in self._processOrder])
         results = loop.run_until_complete(all_tasks)
 
-        print("Update time: {}".format(timer() - time))
+        #print("Update time: {}".format(timer() - time))
 
         #loop.close()
 

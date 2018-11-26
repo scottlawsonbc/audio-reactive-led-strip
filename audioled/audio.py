@@ -96,7 +96,7 @@ class AudioInput(Effect):
     1: Audio Channel 1...
     
     """
-    def __init__(self, device_index=None, chunk_rate=120):
+    def __init__(self, device_index=None, chunk_rate=60):
         self.device_index = device_index
         self.chunk_rate = chunk_rate
         self.__initstate__()
