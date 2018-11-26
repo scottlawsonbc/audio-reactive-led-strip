@@ -64,11 +64,15 @@ if config == movingLightConf:
     mirrorLower = effects.MirrorEffect(N_pixels,mirror_lower=True, recursion=0)
     fg.addEffectNode(mirrorLower)
 
+    afterglow = effects.AfterGlowEffect(N_pixels)
+    fg.addEffectNode(afterglow)
+
     fg.addConnection(audio_in,0,movingLight,0)
     fg.addConnection(color_wheel,0,movingLight,1)
     fg.addConnection(movingLight,0,mirrorLower,0)
-    fg.addConnection(mirrorLower,0,led_out,0)
-    
+    fg.addConnection(mirrorLower,0,afterglow,0)
+    fg.addConnection(afterglow,0,led_out,0)
+
 elif config == spectrumConf:
 
     color_wheel = colors.ColorWheelEffect(N_pixels)
