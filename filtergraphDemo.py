@@ -40,7 +40,7 @@ if args.device == deviceRasp:
 elif args.device == deviceCandy:
     device = devices.FadeCandy(args.device_candy_server)
 
-fg = filtergraph.FilterGraph()
+fg = filtergraph.FilterGraph(recordTimings=True)
 
 audio_in = audio.AudioInput()
 fg.addEffectNode(audio_in)
@@ -129,7 +129,7 @@ with open(filename,"w") as f:
     f.write(saveJson)
 
 # load filtergraph from json in case there are any issues with saving/loading
-fg = jsonpickle.decode(saveJson)
+#fg = jsonpickle.decode(saveJson)
 
 current_time = timer()
 while True:
@@ -139,4 +139,5 @@ while True:
 
     fg.update(dt)
     fg.process()
+    fg.printProcessTimings()
     

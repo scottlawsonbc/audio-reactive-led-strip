@@ -1,4 +1,4 @@
-
+from timeit import default_timer as timer
 
 class Node(object):
 
@@ -32,18 +32,48 @@ class Connection(object):
 
 class FilterGraph(object):
 
-    def __init__(self):
+    def __init__(self, recordTimings=False):
+        self.recordTimings=recordTimings
         self._filterConnections = []
         self._filterNodes = []
         self._processOrder = []
+        self._updateTimings = {}
+        self._processTimings = {}
 
     def update(self, dt):
+        time = None
         for node in self._processOrder:
+            if self.recordTimings:
+                time = timer()
             node.update(dt)
+            if self.recordTimings:
+                self._updateTimings[node] = timer() - time
     
     def process(self):
+        time = None
         for node in self._processOrder:
+            if self.recordTimings:
+                time = timer()
             node.process()
+            if self.recordTimings:
+                self._processTimings[node] = timer() - time
+
+    def printUpdateTimings(self):
+        if self._updateTimings is None:
+            print("No metrics collected")
+            return
+        print("Update timings:")
+        for key, val in self._updateTimings.items():
+            print("{}: {}".format(key.effect, val))
+    
+    def printProcessTimings(self):
+        if self._processTimings is None:
+            print("No metrics collected")
+            return
+        print("Process timings:")
+        for key, val in self._processTimings.items():
+            print("{}: {}".format(key.effect, val))
+
 
     def addEffectNode(self, effect):
         """Adds a filter node to the graph
