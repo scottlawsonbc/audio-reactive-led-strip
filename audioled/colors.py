@@ -46,8 +46,8 @@ class StaticColorEffect(Effect):
     def setOutputBuffer(self, buffer):
         self._outputBuffer = buffer
     
-    def update(self, dt):
-        super(StaticColorEffect, self).update(dt)
+    async def update(self, dt):
+        await super(StaticColorEffect, self).update(dt)
         if self._color is None:
             self._color = np.ones(self.num_pixels) * np.array([[self.r],[self.g],[self.b]])
 
@@ -121,8 +121,8 @@ class ColorWheel2_gen(Effect):
 
         return CArray
 
-    def update(self, dt):
-        super(ColorWheel2_gen, self).update(dt)
+    async def update(self, dt):
+        await super(ColorWheel2_gen, self).update(dt)
         self._color = self.get_color_array(self._t, self.num_pixels)
 
     def process(self):
@@ -153,8 +153,8 @@ class ColorDimEffect(Effect):
     def numOutputChannels(self):
         return 1
 
-    def update(self, dt):
-        super(ColorDimEffect, self).update(dt)
+    async def update(self, dt):
+        await super(ColorDimEffect, self).update(dt)
         self._color = self.get_color_array(self._t, self.num_pixels)
 
     def process(self):

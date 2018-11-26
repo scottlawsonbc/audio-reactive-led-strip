@@ -30,6 +30,7 @@ class Connection(object):
         self.fromNode = from_node
         self.toChannel = to_channel
         self.toNode = to_node
+        
 
 class Timing(object):
     def __init__(self):
@@ -60,29 +61,14 @@ class FilterGraph(object):
         self._processOrder = []
         self._updateTimings = {}
         self._processTimings = {}
+        self._asyncLoop = asyncio.get_event_loop()
 
     def update(self, dt):
         time = timer()
-        loop = asyncio.get_event_loop()
-
-
-
-        #loop.run_until_complete(asyncio.wait(tasks))  
-        #loop.
-        # close()
+        # gather all async updates
         all_tasks = asyncio.gather(*[asyncio.ensure_future(node.update(dt)) for node in self._processOrder])
-        results = loop.run_until_complete(all_tasks)
-
-        #print("Update time: {}".format(timer() - time))
-
-        #loop.close()
-
-        # for node in self._processOrder:
-        #     if self.recordTimings:
-        #         time = timer()
-        #     node.update(dt)
-        #     if self.recordTimings:
-        #         self.updateUpdateTiming(node, timer() - time)
+        # wait for completion
+        results = self._asyncLoop.run_until_complete(all_tasks)
     
     def process(self):
         time = None
