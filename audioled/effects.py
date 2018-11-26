@@ -439,23 +439,8 @@ class MirrorEffect(Effect):
                 #   h    n-h
                 if self.mirror_lower:
                     self._outputBuffer[0] = buffer[self._mirrorLower[:,:,0],self._mirrorLower[:,:,1]]
-                    # # take lower values
-                    # temp = y[:,0:h]
-                    # # reverse
-                    # temp = temp[:,::-1]
-                    # # assign reverse to upper part
-                    # y[:,h:n] = temp[:,0:h]
-                    # self._outputBuffer[0] = y
                 else:
                     self._outputBuffer[0] = buffer[self._mirrorUpper[:,:,0],self._mirrorUpper[:,:,1]]
-                    # # take higher values
-                    # temp = y[:,h:n] # lenght: n-h
-                    # # reverse
-                    # temp = temp[:,::-1]
-                    # # assign reverse to lower part
-                    # y[:,0:n-h] = temp[:,0:n-h]
-                    
-                    # self._outputBuffer[0] = y
 
     def _genMirrorLowerMap(self, n, recursion):
         h = int(n/2)
