@@ -191,7 +191,7 @@ class BlinkStick(LEDController):
 class RaspberryPi(LEDController):
 
     def __init__(self, pixels, pin=18, invert_logic=False,
-                 freq=800000, dma=10):
+                 freq=800000, dma=5):
         """Creates a Raspberry Pi output device
 
         Parameters
@@ -211,6 +211,16 @@ class RaspberryPi(LEDController):
             DMA (direct memory access) channel used to drive PWM signals.
             If you aren't sure, try 5.
         """
+        print('construct')
+        self.num_pixels = pixels
+        self.pin = pin
+        self.freq_hz = freq
+        self.dma = dma
+        self.invert = invert_logic
+        self.brightness=255
+        self.__initstate__()
+    
+    def __initstate__(self):
         try:
             import rpi_ws281x
         except ImportError as e:
@@ -218,8 +228,31 @@ class RaspberryPi(LEDController):
             print('Could not import the neopixel library')
             print('For installation instructions, see {}'.format(url))
             raise e
-        self.strip = rpi_ws281x.PixelStrip(num=pixels, pin=pin, freq_hz=freq, dma=dma,
-                                                invert=invert_logic, brightness=255)
+        print('init')
+        self._strip = rpi_ws281x.PixelStrip(num=self.num_pixels, pin=self.pin, freq_hz=self.freq_hz, dma=self.dma,
+                                                invert=self.invert, brightness=self.brightness)
+        self._strip.begin()
+    
+    def __cleanState__(self, stateDict):
+        """
+        Cleans given state dictionary from state objects beginning with __
+        """
+        for k in list(stateDict.keys()):
+            if k.startswith('_'):
+                stateDict.pop(k)
+        return stateDict
+        
+    def __getstate__(self):
+        """
+        Default implementation of __getstate__ that deletes buffer, call __cleanState__ when overloading
+        """
+        state = self.__dict__.copy()
+        self.__cleanState__(state)
+        return state
+
+    def __setstate__(self, state):
+        self.__dict__.update(state)
+        self.__initstate__()
 
     def show(self, pixels):
         """Writes new LED values to the Raspberry Pi's LED strip
@@ -227,6 +260,7 @@ class RaspberryPi(LEDController):
         Raspberry Pi uses the rpi_ws281x to control the LED strip directly.
         This function updates the LED strip with new values.
         """
+            
         # Truncate values and cast to integer
         n_pixels = pixels.shape[1]
         pixels = pixels.clip(0, 255).astype(int)
@@ -238,10 +272,10 @@ class RaspberryPi(LEDController):
         b = pixels[2][:].astype(int)
         rgb = np.bitwise_or(np.bitwise_or(r, g), b)
         # Update the pixels
-        self.strip.begin()
+        
         for i in range(n_pixels):
-            self.strip.setPixelColor(i,int(rgb[i]))
-        self.strip.show()
+            self._strip.setPixelColor(i,int(rgb[i]))
+        self._strip.show()
 
 
 class DotStar(LEDController):
@@ -263,17 +297,17 @@ class DotStar(LEDController):
             print('Could not import the apa102 library')
             print('For installation instructions, see {}'.format(url))
             raise e
-        self.strip = apa102.APA102(numLEDs=pixels, globalBrightness=brightness) # Initialize the strip
-        led_data = np.array(self.strip.leds, dtype=np.uint8)
+        self._strip = apa102.APA102(numLEDs=pixels, globalBrightness=brightness) # Initialize the strip
+        led_data = np.array(self._strip.leds, dtype=np.uint8)
         # memoryview preserving the first 8 bits of LED frames (w/ global brightness)
-        self.strip.leds = led_data.data
+        self._strip.leds = led_data.data
         # 2D view of led_data
         self.led_data = led_data.reshape((pixels, 4)) # or (-1, 4)
 
     def show(self, pixels):
         bgr = [2,1,0]
         self.led_data[0:,1:4] = pixels[bgr].T.clip(0,255)
-        self.strip.show()
+        self._strip.show()
 
 class LEDOutput(Effect):
     def __init__(self, controller):

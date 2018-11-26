@@ -433,7 +433,7 @@ class MirrorEffect(Effect):
             h = int(n/2)
             buffer = self._inputBuffer[0]
             if buffer is not None:
-                y = buffer.copy()
+                y = buffer
                 # 0 .. h .. n
                 #   h    n-h
                 if self.mirror_lower:

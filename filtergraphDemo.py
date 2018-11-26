@@ -142,7 +142,7 @@ with open(filename,"w") as f:
     f.write(saveJson)
 
 # load filtergraph from json in case there are any issues with saving/loading
-fg = jsonpickle.decode(saveJson)
+#fg = jsonpickle.decode(saveJson)
 
 current_time = timer()
 while True:
