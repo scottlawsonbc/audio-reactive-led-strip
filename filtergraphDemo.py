@@ -89,7 +89,7 @@ elif config == spectrumConf:
     fg.addConnection(spectrum,0,led_out,0)
 
 elif config == vu_peakConf:
-
+    N_pixels = int(N_pixels/2)
     color_wheel = colors.ColorWheelEffect(N_pixels)
     fg.addEffectNode(color_wheel)
 
@@ -102,11 +102,23 @@ elif config == vu_peakConf:
     vu_peak = effects.VUMeterPeakEffect(N_pixels)
     fg.addEffectNode(vu_peak)
 
+    vu_peak_R = effects.VUMeterPeakEffect(N_pixels)
+    fg.addEffectNode(vu_peak_R)
+
+    append = effects.Append(2*N_pixels, 2,[0,1])
+    fg.addEffectNode(append)
+
     fg.addConnection(audio_in,0,vu_peak,0)
     fg.addConnection(color_wheel,0,interpCol,0)
     fg.addConnection(color_wheel2,0,interpCol,1)
     fg.addConnection(interpCol,0,vu_peak,1)
-    fg.addConnection(vu_peak,0,led_out,0)
+
+    fg.addConnection(audio_in,1,vu_peak_R,0)
+    fg.addConnection(interpCol,0,vu_peak_R,1)
+
+    fg.addConnection(vu_peak,0,append,0)
+    fg.addConnection(vu_peak_R,0,append,1)
+    fg.addConnection(append,0,led_out,0)
 
 else:
     raise NotImplementedError("Config not implemented")

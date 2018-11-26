@@ -369,7 +369,30 @@ class MovingLightEffect(Effect):
                 self._pixel_state[2][0] = b * peak+ peak * 255.0
                 self._outputBuffer[0] = self._pixel_state.clip(0.0,255.0)
 
+class Append(Effect):
+    def __init__(self, num_pixels, num_channels, flipMask=None):
+        self.num_channels = num_channels
+        self.num_pixels = int(num_pixels)
+        self.flipMask = flipMask
+        self.__initstate__()
+    
+    def numInputChannels(self):
+        return self.num_channels
+    
+    def numOutputChannels(self):
+        return 1
+    
+    def process(self):
+        if self._inputBuffer is None or self._outputBuffer is None:
+            return
 
+        state = self._inputBuffer[0]
+        for i in range(1,self.num_channels):
+            if self.flipMask is not None and self.flipMask[i] > 0:
+                state = np.concatenate((state, self._inputBuffer[i][:,::-1]),axis=1)
+            else:
+                state = np.concatenate((state, self._inputBuffer[i]),axis=1)
+        self._outputBuffer[0] = state
 
 class AfterGlowEffect(Effect):
     """
