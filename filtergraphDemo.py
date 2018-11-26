@@ -20,6 +20,7 @@ device = None
 # define configs (add other configs here)
 movingLightConf = 'movingLight'
 spectrumConf = 'spectrum'
+vu_peakConf = 'vu_peak'
 
 deviceRasp = 'RaspberryPi'
 deviceCandy = 'FadeCandy'
@@ -29,7 +30,7 @@ parser = argparse.ArgumentParser(description='Audio Reactive LED Strip')
 parser.add_argument('-N', '--num_pixels',  dest='num_pixels', type=int, default=300, help = 'number of pixels (default: 300)')
 parser.add_argument('-D', '--device', dest='device', default=deviceCandy, choices=[deviceRasp,deviceCandy], help = 'device to send RGB to')
 parser.add_argument('--device_candy_server', dest='device_candy_server', default='127.0.0.1:7890', help = 'Server for device FadeCandy')
-parser.add_argument('-C', '--config', dest='config', default=movingLightConf, choices=[movingLightConf, spectrumConf], help = 'config to use')
+parser.add_argument('-C', '--config', dest='config', default=movingLightConf, choices=[movingLightConf, spectrumConf, vu_peakConf], help = 'config to use')
 args = parser.parse_args()
 
 N_pixels = args.num_pixels
@@ -67,7 +68,9 @@ if config == movingLightConf:
     fg.addConnection(color_wheel,0,movingLight,1)
     fg.addConnection(movingLight,0,mirrorLower,0)
     fg.addConnection(mirrorLower,0,led_out,0)
+    
 elif config == spectrumConf:
+
     color_wheel = colors.ColorWheelEffect(N_pixels)
     fg.addEffectNode(color_wheel)
     color_wheel2 = colors.ColorWheelEffect(N_pixels, cycle_time=15.0)
@@ -81,48 +84,28 @@ elif config == spectrumConf:
     fg.addConnection(color_wheel2,0,spectrum,2)
     fg.addConnection(spectrum,0,led_out,0)
 
-else:
-    # other -> remove when attached to config
-    vu_rms = effects.VUMeterPeakEffect(N_pixels)
-    fg.addEffectNode(vu_rms)
+elif config == vu_peakConf:
 
-    
+    color_wheel = colors.ColorWheelEffect(N_pixels)
+    fg.addEffectNode(color_wheel)
 
-    color_gen = colors.StaticColorEffect(N_pixels, 0, 255.0, 0)
-    fg.addEffectNode(color_gen)
-
-    color_wheel2 = colors.ColorWheel2_gen(N_pixels)
+    color_wheel2 = colors.ColorWheelEffect(N_pixels, cycle_time=5.0)
     fg.addEffectNode(color_wheel2)
-
-    color_gen3 = colors.ColorDimEffect(N_pixels,cycle_time=10)
-    fg.addEffectNode(color_gen3)
 
     interpCol = colors.InterpolateHSVEffect(N_pixels)
     fg.addEffectNode(interpCol)
 
-    afterGlow = effects.AfterGlowEffect(N_pixels)
-    fg.addEffectNode(afterGlow)
+    vu_peak = effects.VUMeterPeakEffect(N_pixels)
+    fg.addEffectNode(vu_peak)
 
-    shift = effects.ShiftEffect(N_pixels)
-    fg.addEffectNode(shift)
+    fg.addConnection(audio_in,0,vu_peak,0)
+    fg.addConnection(color_wheel,0,interpCol,0)
+    fg.addConnection(color_wheel2,0,interpCol,1)
+    fg.addConnection(interpCol,0,vu_peak,1)
+    fg.addConnection(vu_peak,0,led_out,0)
 
-    
-
-    #fg.addConnection(color_gen3,0,vu_rms,1)
-    #fg.addConnection(audio_in,0,vu_rms,0)
-    #fg.addConnection(vu_rms,0,led_out,0)
-    #fg.addConnection(color_gen,0,interpCol,1)
-    #fg.addConnection(color_gen2,0,interpCol,0)
-    #fg.addConnection(interpCol, 0, movingLight, 1)
-    #fg.addConnection(audio_in, 0, spectrum, 0)
-    #fg.addConnection(color_gen2,0,spectrum,1)
-    #fg.addConnection(color_gen3,0,spectrum,2)
-    fg.addConnection(audio_in,0,vu_rms,0)
-    fg.addConnection(color_wheel2,0,vu_rms,1)
-    #fg.addConnection(movingLight, 0, mirrorLower, 0)
-    fg.addConnection(vu_rms,0,shift,0)
-    fg.addConnection(shift,0,led_out,0)
-    #fg.addConnection(afterGlow,0,led_out,0)
+else:
+    raise NotImplementedError("Config not implemented")
 
 
 # save filtergraph to json
@@ -142,7 +125,7 @@ with open(filename,"w") as f:
     f.write(saveJson)
 
 # load filtergraph from json in case there are any issues with saving/loading
-#fg = jsonpickle.decode(saveJson)
+fg = jsonpickle.decode(saveJson)
 
 current_time = timer()
 while True:
