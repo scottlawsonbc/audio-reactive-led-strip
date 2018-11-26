@@ -96,18 +96,20 @@ class AudioInput(Effect):
     1: Audio Channel 1...
     
     """
-    def __init__(self, device_index=None, chunk_rate=60):
+    def __init__(self, device_index=None, chunk_rate=60, num_channels = 2):
         self.device_index = device_index
         self.chunk_rate = chunk_rate
+        self.num_channels = num_channels
         self.__initstate__()
 
     def __initstate__(self):
-        self._audioStream, self._sampleRate = stream_audio(chunk_rate=self.chunk_rate)
-        self._buffer = None
+        self._audioStream, self._sampleRate = stream_audio(chunk_rate=self.chunk_rate, channels=self.num_channels)
+        self._buffer = []
+        self._chunk_size = int(self._sampleRate / self.chunk_rate)
         super(AudioInput, self).__initstate__()
 
     def numOutputChannels(self):
-        return numInputChannels(self.device_index)
+        return self.num_channels
     
     def numInputChannels(self):
         return 0
@@ -120,4 +122,7 @@ class AudioInput(Effect):
         self._buffer = next(self._audioStream)
 
     def process(self):
-        self._outputBuffer[0] = self._buffer
+        for i in range(0,self.num_channels):
+            # layout for multiple channel is interleaved:
+            # 00 01 .. 0n 10 11 .. 1n
+            self._outputBuffer[i] = self._buffer[i::self.num_channels]
