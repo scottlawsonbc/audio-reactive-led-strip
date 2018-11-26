@@ -69,6 +69,17 @@ python -m unittest discover
 
 ## Install dependencies
 ```
+sudo apt-get remove python2.7
+sudo apt-get autoremove
 sudo apt-get update
-sudo apt-get install python-numpy python-scipy python-pyaudio python-matplotlib
+sudo apt-get install python3-numpy python3-scipy python3-pyaudio python3-matplotlib python3-jsonpickle
+```
+
+## Install rpi_ws281x
+```
+git clone https://github.com/rpi-ws281x/rpi-ws281x-python
+cd rpi-ws281x-python
+git submodule update --init --recursive
+cd library
+sudo python3.5 setup.py install
 ```
