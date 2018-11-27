@@ -108,21 +108,22 @@ class SpectrumEffect(Effect):
 
     """
 
-    def __init__(self, num_pixels, fs, fmax=6000, n_overlaps=8, chunk_rate=60):
+    def __init__(self, num_pixels, fs, fmax=6000, n_overlaps=4, chunk_rate=60, fft_bins=64):
         self.num_pixels = num_pixels
         self.fs = fs
         self.fmax = fmax
         self.n_overlaps = n_overlaps
         self.chunk_rate = chunk_rate
+        self.fft_bins = fft_bins
         self.__initstate__()
 
     def __initstate__(self):
         # state
         self._norm_dist = np.linspace(0, 1, self.num_pixels)
-        self._fft_bins = 64
-        self._fft_dist = np.linspace(0, 1, self._fft_bins)
+        self.fft_bins = 64
+        self._fft_dist = np.linspace(0, 1, self.fft_bins)
         self._max_filter = np.ones(8)
-        self._min_feature_win = np.hamming(4)
+        self._min_feature_win = np.hamming(8)
         self._fs_ds = 0.0
         self._bass_rms = None
         self._melody_rms = None
@@ -166,21 +167,29 @@ class SpectrumEffect(Effect):
                     self._gen = self._audio_gen(g)
                 self._lastAudioChunk = audio
                 y = next(self._gen)
-                bass = dsp.warped_psd(y, self._fft_bins, self._fs_ds, [32.7, 261.0], 'bark')
-                melody = dsp.warped_psd(y, self._fft_bins, self._fs_ds, [261.0, self.fmax], 'bark')
+                bass = dsp.warped_psd(y, self.fft_bins, self._fs_ds, [32.7, 261.0], 'bark')
+                melody = dsp.warped_psd(y, self.fft_bins, self._fs_ds, [261.0, self.fmax], 'bark')
                 bass = self.process_line(bass, self._bass_rms)
                 melody = self.process_line(melody, self._melody_rms)
                 pixels = 1./255.0 * np.multiply(bass, col_bass) + 1./255.0 * np.multiply(melody, col_melody)
                 self._outputBuffer[0] = pixels.clip(0,255).astype(int)
 
     def process_line(self, fft, fft_rms):
-        fft = np.convolve(fft, self._max_filter, 'same')
-        fft_rms[1:] = fft_rms[:-1]
-        fft_rms[0] = np.mean(fft)
-        fft = np.tanh(fft / np.max(fft_rms)) * 255
+        
+        #fft = np.convolve(fft, self._max_filter, 'same')
+
+        # Some kind of normalization?
+        #fft_rms[1:] = fft_rms[:-1]
+        #fft_rms[0] = np.mean(fft)
+        #fft = np.tanh(fft / np.max(fft_rms)) * 255
+
+        # Upsample to number of pixels
         fft = np.interp(self._norm_dist, self._fft_dist, fft)
+        
+        # 
         fft = np.convolve(fft, self._min_feature_win, 'same')
-        return fft
+        
+        return fft*255
 
 
 class ShiftEffect(Effect):
@@ -433,18 +442,20 @@ class AfterGlowEffect(Effect):
 
     
     def process(self):
-        if self._inputBuffer is not None and self._outputBuffer is not None:
-            y = self._inputBuffer[0]
-            if y is not None:
-                dt = self._t - self._last_t
-                self._last_t = self._t
-                
-                if dt > 0:
-                    self._pixel_state*= (1.0 - dt / self.glow_time)
-                    self._pixel_state = self._pixel_state.clip(0.0, 255.0)
-                self._pixel_state = np.maximum(self._pixel_state, y)
-                self._pixel_state = self._pixel_state.clip(0.0, 255.0)
-                self._outputBuffer[0] = self._pixel_state
+        if self._inputBuffer is None or self._outputBuffer is None:
+            return
+        y = self._inputBuffer[0]
+        if y is None:
+            return
+        dt = self._t - self._last_t
+        self._last_t = self._t
+        
+        if dt > 0:
+            self._pixel_state*= (1.0 - dt / self.glow_time)
+            self._pixel_state = self._pixel_state.clip(0.0, 255.0)
+        self._pixel_state = np.maximum(self._pixel_state, y)
+        self._pixel_state = self._pixel_state.clip(0.0, 255.0)
+        self._outputBuffer[0] = self._pixel_state
 
 class MirrorEffect(Effect):
 

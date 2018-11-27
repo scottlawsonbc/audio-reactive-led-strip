@@ -11,6 +11,9 @@ import math
 
 
 def rollwin(signal, n_overlaps):
+    """
+    Generates a rolling window of samples
+    """
     frame = next(signal)
     N = len(frame)
     window = np.zeros(N * n_overlaps)
@@ -192,11 +195,16 @@ def warped_psd(y, bins, fs, frange, scale):
 
 
 def preprocess(audio, fs, fmax, n_overlaps):
+    # Downsample if we don't need high frequencies
     audio, fs = downsample(audio, fs=fs, fmax=fmax)
+    # Create rolling window of last audio chunks
     audio = rollwin(audio, n_overlaps)
+    # Construct hanning window to smooth audio at the edges
     hanning_window = np.hanning(len(next(audio)))
+    # Apply hanning window
     audio = (x * hanning_window for x in audio)
-    audio = (x for x in audio if np.sqrt(np.mean(np.square(x))) > 1e-5)
+    # Don't know what this should do but breaks processing if no audio input present... 
+    #audio = (x for x in audio if np.sqrt(np.mean(np.square(x))) > 1e-5)
     audio = pad_zeros(audio)
     return audio, fs
 
