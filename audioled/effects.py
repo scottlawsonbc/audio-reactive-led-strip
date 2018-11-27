@@ -432,6 +432,7 @@ class AfterGlowEffect(Effect):
         # state
         self._pixel_state = np.zeros(self.num_pixels) * np.array([[0.0],[0.0],[0.0]])
         self._last_t = 0.0
+        self._all_zeros = np.zeros(self.num_pixels) * np.array([[0.0],[0.0],[0.0]])
         super(AfterGlowEffect, self).__initstate__()
 
     def numInputChannels(self):
@@ -451,11 +452,15 @@ class AfterGlowEffect(Effect):
         self._last_t = self._t
         
         if dt > 0:
-            self._pixel_state*= (1.0 - dt / self.glow_time)
-            self._pixel_state = self._pixel_state.clip(0.0, 255.0)
-        self._pixel_state = np.maximum(self._pixel_state, y)
-        self._pixel_state = self._pixel_state.clip(0.0, 255.0)
-        self._outputBuffer[0] = self._pixel_state
+            # Dim state
+            self._pixel_state = self._pixel_state * (1.0 - dt / self.glow_time)
+
+        mask = [np.linalg.norm(y[:,i]) < 100 for i in range(0,self.num_pixels)]
+        
+        y [:,mask]= self._pixel_state[:,mask]
+        self._pixel_state = y
+    
+        self._outputBuffer[0] = y
 
 class MirrorEffect(Effect):
 

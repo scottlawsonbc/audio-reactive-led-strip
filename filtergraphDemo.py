@@ -143,7 +143,7 @@ elif config == spectrumConf:
     append = effects.Append(2,flipMask=[1,0])
     fg.addEffectNode(append)
 
-    afterglow = effects.AfterGlowEffect(int(2*N_pixels), 1.0)
+    afterglow = effects.AfterGlowEffect(int(2*N_pixels), 2.0)
     fg.addEffectNode(afterglow)
 
     fg.addConnection(audio_in,0,spectrum,0)
@@ -171,10 +171,10 @@ elif config == vu_peakConf:
     vu_peak_R = effects.VUMeterPeakEffect(N_pixels)
     fg.addEffectNode(vu_peak_R)
 
-    append = effects.Append(2*N_pixels, 2,[0,1])
+    append = effects.Append(2,[0,1])
     fg.addEffectNode(append)
 
-    afterglow = effects.AfterGlowEffect(int(2*N_pixels), 0.2)
+    afterglow = effects.AfterGlowEffect(int(2*N_pixels), 0.5)
     fg.addEffectNode(afterglow)
 
     fg.addConnection(audio_in,0,vu_peak,0)
