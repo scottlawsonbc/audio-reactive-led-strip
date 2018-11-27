@@ -14,10 +14,11 @@ def rollwin(signal, n_overlaps):
     frame = next(signal)
     N = len(frame)
     window = np.zeros(N * n_overlaps)
-    window[-N:] = frame
+    window[-N:] = frame # last N points
     for data in signal:
-        window[:-N] = window[N:]
-        window[-N:] = data
+        S = len(data)
+        window[:-S] = window[S:]
+        window[-S:] = data[:S]
         yield window
 
 

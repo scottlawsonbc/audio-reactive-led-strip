@@ -108,20 +108,17 @@ class SpectrumEffect(Effect):
 
     """
 
-    def __init__(self, num_pixels, fs, fmax=6000, n_overlaps=8, chunk_rate=60, mirror_middle=True):
+    def __init__(self, num_pixels, fs, fmax=6000, n_overlaps=8, chunk_rate=60):
         self.num_pixels = num_pixels
         self.fs = fs
         self.fmax = fmax
         self.n_overlaps = n_overlaps
         self.chunk_rate = chunk_rate
-        self.mirror_middle = mirror_middle
         self.__initstate__()
 
     def __initstate__(self):
         # state
         self._norm_dist = np.linspace(0, 1, self.num_pixels)
-        if self.mirror_middle:
-            self._norm_dist = np.linspace(0, 1, self.num_pixels // 2)
         self._fft_bins = 64
         self._fft_dist = np.linspace(0, 1, self._fft_bins)
         self._max_filter = np.ones(8)
@@ -183,8 +180,6 @@ class SpectrumEffect(Effect):
         fft = np.tanh(fft / np.max(fft_rms)) * 255
         fft = np.interp(self._norm_dist, self._fft_dist, fft)
         fft = np.convolve(fft, self._min_feature_win, 'same')
-        if self.mirror_middle:
-            fft = np.r_[fft, fft[::-1]]
         return fft
 
 
@@ -361,7 +356,7 @@ class MovingLightEffect(Effect):
                 self._pixel_state = gaussian_filter1d(self._pixel_state, sigma=0.5)
                 self._pixel_state = gaussian_filter1d(self._pixel_state, sigma=0.5)
                 # new color at origin
-                peak = dsp.rms(y) * 2.0
+                peak = np.max(y) * 2.0
                 peak = peak**2
                 r,g,b = color[0,0], color[1,0], color[2,0]
                 self._pixel_state[0][0] = r * peak + peak * 255.0
@@ -370,9 +365,8 @@ class MovingLightEffect(Effect):
                 self._outputBuffer[0] = self._pixel_state.clip(0.0,255.0)
 
 class Append(Effect):
-    def __init__(self, num_pixels, num_channels, flipMask=None):
+    def __init__(self, num_channels, flipMask=None):
         self.num_channels = num_channels
-        self.num_pixels = int(num_pixels)
         self.flipMask = flipMask
         self.__initstate__()
     
@@ -386,13 +380,34 @@ class Append(Effect):
         if self._inputBuffer is None or self._outputBuffer is None:
             return
 
-        state = self._inputBuffer[0]
+        if self.flipMask is not None and self.flipMask[0] > 0:
+            state = self._inputBuffer[0][:,::-1]
+        else:
+            state = self._inputBuffer[0]
         for i in range(1,self.num_channels):
             if self.flipMask is not None and self.flipMask[i] > 0:
                 state = np.concatenate((state, self._inputBuffer[i][:,::-1]),axis=1)
             else:
                 state = np.concatenate((state, self._inputBuffer[i]),axis=1)
         self._outputBuffer[0] = state
+
+class Combine(Effect):
+    def __init__(self, mode=''):
+        self.mode = mode
+        self.__initstate__()
+    
+    def numInputChannels(self):
+        return 2
+    
+    def numOutputChannels(self):
+        return 1
+    
+    def process(self):
+        if self._inputBuffer is None or self._outputBuffer is None:
+            return
+        if self.mode == 'lightenOnly':
+            self._outputBuffer[0] = np.maximum(self._inputBuffer[0], self._inputBuffer[1])
+        
 
 class AfterGlowEffect(Effect):
     """
