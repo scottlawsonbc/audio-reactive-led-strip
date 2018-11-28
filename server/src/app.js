@@ -70,6 +70,29 @@ function createNetwork() {
     }
   };
   network = new Network(container, data, options);
+  network.on("selectNode", function (params) {
+    showNodeInfo(params.nodes[0]);
+  });
+  network.on("deselectNode", function () {
+    hideNodeInfo();
+  });
+}
+
+function showNodeInfo(uid) {
+  document.getElementById('infoPanel').style.display = 'block';
+  const fetchAndShow = async () => {
+    const response = await fetch('./node/'+uid);
+    const json = response.json();
+    json.then(values => { 
+      var effect = values["py/state"]["effect"];
+      document.getElementById('infoPanel').innerHTML = '<h2>Node Info:</h2>' + JSON.stringify(effect, null, 4);
+    }) ;
+  }
+  fetchAndShow();
+}
+
+function hideNodeInfo() {
+  document.getElementById('infoPanel').style.display = 'none';
 }
 
 function editNode(data, cancelAction, callback) {
