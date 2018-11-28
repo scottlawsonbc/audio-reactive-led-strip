@@ -56,3 +56,7 @@ Temporary Items
 .apdisk
 *.pyc
 *.pdf
+
+# node
+
+*node_modules

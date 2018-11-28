@@ -1,27 +1,53 @@
 import asyncio
 from timeit import default_timer as timer
 import numpy as np
+import uuid
 
 class Node(object):
 
     def __init__(self, effect):
         self.effect = effect
-        self.outputBuffer = [None for i in range(0, effect.numOutputChannels())]
-        self.inputBuffer = [None for i in range(0, effect.numInputChannels())]
-        self.incomingConnections = []
+        self.uid = None
+        self.__initstate__()
 
-        effect.setOutputBuffer(self.outputBuffer)
-        effect.setInputBuffer(self.inputBuffer)
+    def __initstate__(self):
+        self._outputBuffer = [None for i in range(0, self.effect.numOutputChannels())]
+        self._inputBuffer = [None for i in range(0, self.effect.numInputChannels())]
+        self._incomingConnections = []
+
+        self.effect.setOutputBuffer(self._outputBuffer)
+        self.effect.setInputBuffer(self._inputBuffer)
 
     def process(self):
         # propagate values
-        for con in self.incomingConnections:
-            self.inputBuffer[con.toChannel] = con.fromNode.outputBuffer[con.fromChannel]
+        for con in self._incomingConnections:
+            self._inputBuffer[con.toChannel] = con.fromNode._outputBuffer[con.fromChannel]
         # process
         self.effect.process()
     
     async def update(self, dt):
         await self.effect.update(dt)
+
+    def __cleanState__(self, stateDict):
+        """
+        Cleans given state dictionary from state objects beginning with __
+        """
+        for k in list(stateDict.keys()):
+            if k.startswith('_'):
+                stateDict.pop(k)
+        return stateDict
+        
+    def __getstate__(self):
+        """
+        Default implementation of __getstate__ that deletes buffer, call __cleanState__ when overloading
+        """
+        state = self.__dict__.copy()
+        self.__cleanState__(state)
+        return state
+
+    def __setstate__(self, state):
+        self.__dict__.update(state)
+        self.__initstate__()
 
 class Connection(object):
 
@@ -30,6 +56,14 @@ class Connection(object):
         self.fromNode = from_node
         self.toChannel = to_channel
         self.toNode = to_node
+
+    def __getstate__(self):
+        state = {}
+        state['from_node_uid'] = self.fromNode.uid
+        state['from_node_channel'] = self.fromChannel
+        state['to_node_uid'] = self.toNode.uid
+        state['to_node_channel'] = self.toChannel
+        return state
         
 
 class Timing(object):
@@ -117,6 +151,7 @@ class FilterGraph(object):
         filterNode: node to add
         """
         node = Node(effect)
+        node.uid = uuid.uuid4().hex
         self._filterNodes.append(node)
         self._updateProcessOrder()
         return node
@@ -149,9 +184,18 @@ class FilterGraph(object):
         # construct connection
         newConnection = Connection(fromNode, fromEffectChannel, toNode, toEffectChannel)
         self._filterConnections.append(newConnection)
-        toNode.incomingConnections.append(newConnection)
+        toNode._incomingConnections.append(newConnection)
         self._updateProcessOrder()
-        
+
+    def addNodeConnection(self, fromNodeUid, fromEffectChannel, toNodeUid, toEffectChannel):
+        """Adds a connection between two filters based on node uid
+        """
+        fromNode = next(node for node in self._filterNodes if node.uid == fromNodeUid)
+        toNode = next(node for node in self._filterNodes if node.uid == toNodeUid)
+        newConnection = Connection(fromNode, fromEffectChannel, toNode, toEffectChannel)
+        self._filterConnections.append(newConnection)
+        toNode._incomingConnections.append(newConnection)
+        self._updateProcessOrder()
     
     def removeConnection(self, fromEffect, fromEffectChannel, toEffect, toEffectChannel):
         """Removes a connection between two filters
@@ -160,7 +204,7 @@ class FilterGraph(object):
         con = next(con for con in self._filterConnections if con.fromNode.effect == fromEffect and con.toNode.effect == toEffect and con.fromChannel == fromEffectChannel and con.toChannel == toEffectChannel)
         if con != None:
             self._filterConnections.remove(con)
-            con.toNode.incomingConnections.remove(con)
+            con.toNode._incomingConnections.remove(con)
         None
     
     def _updateProcessOrder(self):
@@ -213,31 +257,24 @@ class FilterGraph(object):
 
     def __getstate__(self):
         state = {}
-        effects = [node.effect for node in self._filterNodes]
-        state['effects'] = effects
+        nodes = [node for node in self._filterNodes]
+        state['nodes'] = nodes
         connections = []
         for con in self._filterConnections:
-            conDict = {}
-            # find index of effect of fromNode in effects
-            conDict['from_effect_idx'] = effects.index(con.fromNode.effect)
-            conDict['from_channel'] = con.fromChannel
-            conDict['to_effect_idx'] = effects.index(con.toNode.effect)
-            conDict['to_channel'] = con.toChannel
-            connections.append(conDict)
+            connections.append(con.__getstate__)
         state['connections'] = connections
         return state
 
     def __setstate__(self, state):
         self.__init__()
-        effects = state['effects']
-        for effect in effects:
-            self.addEffectNode(effect)
+        nodes = state['nodes']
+        for node in nodes:
+            newnode = self.addEffectNode(node)
+            newnode.uid = node.uid
         connections = state['connections']
         for con in connections:
-            fromEffect = self._filterNodes[con['from_effect_idx']].effect
             fromChannel = con['from_channel']
-            toEffect = self._filterNodes[con['to_effect_idx']].effect
             toChannel = con['to_channel']
-            self.addConnection(fromEffect, fromChannel, toEffect, toChannel)
+            self.addNodeConnection(con['from_node_uid'], fromChannel, con['from_node_uid'], toChannel)
         
         
