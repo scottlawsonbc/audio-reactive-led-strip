@@ -143,7 +143,7 @@ elif config == spectrumConf:
     append = effects.Append(2,flipMask=[1,0])
     fg.addEffectNode(append)
 
-    afterglow = effects.AfterGlowEffect(int(2*N_pixels), 2.0)
+    afterglow = effects.AfterGlowEffect(int(2*N_pixels), glow_time=2.0)
     fg.addEffectNode(afterglow)
 
     fg.addConnection(audio_in,0,spectrum,0)

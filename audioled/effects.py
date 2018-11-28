@@ -432,7 +432,6 @@ class AfterGlowEffect(Effect):
         # state
         self._pixel_state = np.zeros(self.num_pixels) * np.array([[0.0],[0.0],[0.0]])
         self._last_t = 0.0
-        self._all_zeros = np.zeros(self.num_pixels) * np.array([[0.0],[0.0],[0.0]])
         super(AfterGlowEffect, self).__initstate__()
 
     def numInputChannels(self):
@@ -441,6 +440,14 @@ class AfterGlowEffect(Effect):
     def numOutputChannels(self):
         return 1
 
+    async def update(self, dt):
+        await super().update(dt)
+        dt = self._t - self._last_t
+        self._last_t = self._t
+        
+        if dt > 0:
+            # Dim state
+            self._pixel_state = self._pixel_state * (1.0 - dt / self.glow_time)
     
     def process(self):
         if self._inputBuffer is None or self._outputBuffer is None:
@@ -448,14 +455,9 @@ class AfterGlowEffect(Effect):
         y = self._inputBuffer[0]
         if y is None:
             return
-        dt = self._t - self._last_t
-        self._last_t = self._t
-        
-        if dt > 0:
-            # Dim state
-            self._pixel_state = self._pixel_state * (1.0 - dt / self.glow_time)
-
-        mask = [np.linalg.norm(y[:,i]) < 100 for i in range(0,self.num_pixels)]
+        # keep previous state if new color is too dark
+        diff = (y - self._pixel_state).max(axis=0)
+        mask = diff < 10
         
         y [:,mask]= self._pixel_state[:,mask]
         self._pixel_state = y
