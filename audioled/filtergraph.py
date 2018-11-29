@@ -8,7 +8,12 @@ class Node(object):
     def __init__(self, effect):
         self.effect = effect
         self.uid = None
+        # TODO: Improve consistency with numInputChannels and numOutputChannels
+        self.numInputChannels = 0
+        self.numOutputChannels = 0
         self.__initstate__()
+        self.numInputChannels = self.effect.numInputChannels()
+        self.numOutputChannels = self.effect.numOutputChannels()
 
     def __initstate__(self):
         self._outputBuffer = [None for i in range(0, self.effect.numOutputChannels())]

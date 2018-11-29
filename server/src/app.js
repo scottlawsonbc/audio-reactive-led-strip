@@ -74,11 +74,8 @@ function createNetwork() {
       },
       addEdge: function (data, callback) {
         if (data.from == data.to) {
-          var r = confirm("Do you want to connect the node to itself?");
-          if (r != true) {
-            callback(null);
-            return;
-          }
+          callback(null);
+          return;
         }
         document.getElementById('edge-operation').innerHTML = "Add Edge";
         editEdgeWithoutDrag(data, callback);
@@ -112,11 +109,11 @@ function hideNodeInfo() {
 }
 
 function editNode(data, cancelAction, callback) {
-  var list1 = document.getElementById('node-effectDropdown');
+  var effectDropdown = document.getElementById('node-effectDropdown');
   var i;
-  for(i = list1.options.length - 1 ; i >= 0 ; i--)
+  for(i = effectDropdown.options.length - 1 ; i >= 0 ; i--)
   {
-    list1.remove(i);
+    effectDropdown.remove(i);
   }
   const fetchEffects = async() => {
     const response = await fetch('./effects');
@@ -124,38 +121,43 @@ function editNode(data, cancelAction, callback) {
     json.then(values => {
       values.forEach(element => {
         console.log(element);
-        list1.add(new Option(element["py/type"]))
-      })
+        effectDropdown.add(new Option(element["py/type"]))
+      });
+      effectDropdown.selectedIndex = 0;
+      updateNodeArgs();
     })
   }
   fetchEffects();
 
-  document.getElementById('node-label').value = data.label;
+  document.getElementById('node-args').value = "";
   document.getElementById('node-saveButton').onclick = saveNodeData.bind(this, data, callback);
   document.getElementById('node-cancelButton').onclick = cancelAction.bind(this, callback);
   document.getElementById('node-popUp').style.display = 'block';
+  document.getElementById('node-effectDropdown').onchange = updateNodeArgs.bind(this);
+  updateNodeArgs();
 }
 
 async function saveNodeData(data, callback) {
   // gather data
   var effectDropdown = document.getElementById('node-effectDropdown')
   var selectedEffect = effectDropdown.options[effectDropdown.selectedIndex].value;
+  var options = document.getElementById('node-args').value;
 
   // Save node in backend
-  var createdNode = await fetch('./node', {
+  await fetch('./node', {
     method: 'POST', // or 'PUT'
-    body: JSON.stringify(selectedEffect), // data can be `string` or {object}!
+    body: JSON.stringify([selectedEffect, options]), // data can be `string` or {object}!
     headers:{
       'Content-Type': 'application/json'
     }
   }).then(res => res.json())
   .then(node => {
-    console.log('Success:', JSON.stringify(node));
+    console.debug('Create node successful:', JSON.stringify(node));
     updateVisNode(data, node);
     callback(data);
   })
   .catch(error => {
-    console.error('Error:', error);
+    console.error('Error on creating node:', error);
   })
   .finally(() => {
     clearNodePopUp();
@@ -163,12 +165,12 @@ async function saveNodeData(data, callback) {
 }
 
 async function deleteNodeData(id) {
-  var deleteNode = await fetch('./node/'+id, {
+  await fetch('./node/'+id, {
     method: 'DELETE'
   }).then(res => {
-    console.log('Success');
+    console.debug('Delete node successful:', id);
   }).catch(error => {
-    console.error('Error:', error)
+    console.error('Error on deleting node:', error)
   })
 }
 
@@ -183,9 +185,48 @@ function clearNodePopUp() {
   document.getElementById('node-popUp').style.display = 'none';
 }
 
+async function fetchNode(uid) {
+  return fetch('./node/'+uid).then(response => response.json())
+}
+
 function editEdgeWithoutDrag(data, callback) {
+  // clean up
+  var fromChannelDropdown = document.getElementById('edge-fromChannelDropdown');
+  var i;
+  for(i = fromChannelDropdown.options.length - 1 ; i >= 0 ; i--)
+  {
+    fromChannelDropdown.remove(i);
+  }
+  var toChannelDropdown = document.getElementById('edge-toChannelDropdown');
+  var i;
+  for(i = toChannelDropdown.options.length - 1 ; i >= 0 ; i--)
+  {
+    toChannelDropdown.remove(i);
+  }
+
+  var fromNodeUid = data.from;
+  var toNodeUid = data.to;
+
+  const fetchFromNode = async() => {
+    var node = await fetchNode(fromNodeUid);
+    var numFromChannels = node['py/state']['numOutputChannels'];
+    console.log(numFromChannels);
+    for(var i=0; i<numFromChannels; i++) {
+      fromChannelDropdown.add(new Option(i));
+    }
+  }
+  fetchFromNode();
+  const fetchToNode = async() => {
+    var node = await fetchNode(toNodeUid);
+    var numToChannels = node['py/state']['numInputChannels'];
+    console.log(numToChannels);
+    for(var i=0; i<numToChannels; i++) {
+      toChannelDropdown.add(new Option(i));
+    }
+  }
+  fetchToNode();
+
   // filling in the popup DOM elements
-  document.getElementById('edge-label').value = data.label;
   document.getElementById('edge-saveButton').onclick = saveEdgeData.bind(this, data, callback);
   document.getElementById('edge-cancelButton').onclick = cancelEdgeEdit.bind(this,callback);
   document.getElementById('edge-popUp').style.display = 'block';
@@ -200,25 +241,50 @@ function cancelEdgeEdit(callback) {
   clearEdgePopUp();
   callback(null);
 }
-function saveEdgeData(data, callback) {
-  if (typeof data.to === 'object')
+async function saveEdgeData(data, callback) {
+  if (typeof data.to === 'object') {
     data.to = data.to.id
-  if (typeof data.from === 'object')
+  }
+  if (typeof data.from === 'object') {
     data.from = data.from.id
-  data.label = document.getElementById('edge-label').value;
-  clearEdgePopUp();
-  callback(data);
+  }
+
+  var fromChannelDropdown = document.getElementById('edge-fromChannelDropdown');
+  var from_node_channel = fromChannelDropdown.options[fromChannelDropdown.selectedIndex].value;
+  var toChannelDropdown = document.getElementById('edge-toChannelDropdown');
+  var to_node_channel = toChannelDropdown.options[toChannelDropdown.selectedIndex].value;
+
+  var postData = {from_node_uid: data.from, from_node_channel: from_node_channel, to_node_uid: data.to, to_node_channel: to_node_channel};
+
+  // Save node in backend
+  await fetch('./connection', {
+    method: 'POST', // or 'PUT'
+    body: JSON.stringify(postData), // data can be `string` or {object}!
+    headers:{
+      'Content-Type': 'application/json'
+    }
+  }).then(callback(data))
+  .catch(error => {
+    console.error('Error on creating connection:', error);
+  })
+  .finally(() => {
+    clearEdgePopUp();
+  });
+  
 }
 
-function updateNodeArgs() {
-  console.log("nodeargs")
+async function updateNodeArgs() {
+  var effectDropdown = document.getElementById('node-effectDropdown');
+  var selectedEffect = effectDropdown.options[effectDropdown.selectedIndex].value;
+  await fetch('./effect/'+selectedEffect+'/args')
+    .then(response => response.json())
+    .then(json => {
+      console.debug('NodeArgs:',json);
+      document.getElementById('node-args').value = JSON.stringify(json, null, 4);
+    });
+  console.log(selectedEffect);
 }
 
 createNetwork();
 createNodesFromBackend();
 createEdgesFromBackend();
-
-module.exports = {
-  createNetwork: createNetwork,
-  updateNodeArgs: updateNodeArgs
-};

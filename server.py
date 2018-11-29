@@ -34,10 +34,7 @@ def nodes_get():
     nodes = [node for node in fg._filterNodes]
     return jsonpickle.encode(nodes)
 
-@app.route('/connections', methods=['GET'])
-def connections_get():
-    connections = [con for con in fg._filterConnections]
-    return jsonpickle.encode(connections)
+
 
 @app.route('/node/<nodeUid>', methods=['GET'])
 def node_uid_get(nodeUid):
@@ -60,15 +57,32 @@ def node_uid_delete(nodeUid):
 def node_post():
     if not request.json:
         abort(400)
-    print("TODO: Add effect {}".format(request.json))
-    full_class_name = request.json
-    module_name, class_name = full_class_name.rsplit(".", 1)
-    if module_name != "audioled.audio" and module_name != "audioled.effects" and module_name != "audioled.devices":
+    full_class_name = request.json[0]
+    parameters = jsonpickle.decode(request.json[1])
+    print(parameters)
+    module_name, class_name = None, None
+    try:
+        module_name, class_name = getModuleAndClassName(full_class_name)
+    except RuntimeError:
         abort(403)
     class_ = getattr(importlib.import_module(module_name), class_name)
-    instance = class_()
+    instance = class_(**parameters)
     node = fg.addEffectNode(instance)
     return jsonpickle.encode(node)
+
+@app.route('/connections', methods=['GET'])
+def connections_get():
+    connections = [con for con in fg._filterConnections]
+    return jsonpickle.encode(connections)
+
+@app.route('/connection', methods=['POST'])
+def connection_post():
+    if not request.json:
+        abort(400)
+    connection = request.json
+    fg.addNodeConnection(connection['from_node_uid'], int(connection['from_node_channel']), connection['to_node_uid'], int(connection['to_node_channel']))
+    
+    return "OK"
 
 @app.route('/effects', methods=['GET'])
 def effects_get():
@@ -77,15 +91,24 @@ def effects_get():
 
 @app.route('/effect/<full_class_name>/args', methods=['GET'])
 def effect_effectname_args_get(full_class_name):
-    print(full_class_name)
-    module_name, class_name = full_class_name.rsplit(".", 1)
-    if module_name != "audioled.audio" and module_name != "audioled.effects" and module_name != "audioled.devices":
+    module_name, class_name = None, None
+    try:
+        module_name, class_name = getModuleAndClassName(full_class_name)
+    except RuntimeError:
         abort(403)
     class_ = getattr(importlib.import_module(module_name),class_name)
     argspec = inspect.getargspec(class_.__init__)
-    result = {"args": argspec.args[1:]}
+    argsWithDefaults = dict(zip(argspec.args[-len(argspec.defaults):],argspec.defaults))
+    result = argsWithDefaults.copy()
+    result.update({key : None for key in argspec.args[1:len(argspec.args)-len(argspec.defaults)]}) # 1 removes self
+    print(result)
     return jsonify(result)
 
+def getModuleAndClassName(full_class_name):
+    module_name, class_name = full_class_name.rsplit(".", 1)
+    if module_name != "audioled.audio" and module_name != "audioled.effects" and module_name != "audioled.devices" and module_name != "audioled.colors":
+        raise RuntimeError("Not allowed")
+    return module_name, class_name
 
 def inheritors(klass):
     subclasses = set()
