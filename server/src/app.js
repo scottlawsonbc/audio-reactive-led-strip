@@ -7,7 +7,7 @@ const createNodesFromBackend = async() => {
   const response = await fetch('./nodes');
   const json = response.json();
   json.then(values => values.forEach(element => {
-    addNode(element);
+    addVisNode(element);
   }));
 }
 
@@ -15,19 +15,27 @@ const createEdgesFromBackend = async() => {
   const response = await fetch('./connections');
   const json = response.json();
   json.then(values => values.forEach(element => {
-    addConnection(element);
+    addVisConnection(element);
   }));
 }
 
-function addNode(node) {
+function addVisNode(node) {
   var uid = node["py/state"]["uid"];
   var name = node["py/state"]["effect"]["py/object"];
   nodes.add({id: uid, label: name, shape: 'box'});
 }
 
-function addConnection(con) {
+function updateVisNode(node, json) {
+  console.log(json["py/state"]);
+  var uid = json["py/state"]["uid"];
+  var name = json["py/state"]["effect"]["py/object"];
+  node.id = uid;
+  node.label = name;
+  node.shape = 'box';
+}
+
+function addVisConnection(con) {
   var state = con["py/state"];
-  console.log(state);
   edges.add({from: state["from_node_uid"], from_channel: state["from_node_channel"], to: state["to_node_uid"], to_channel: state["to_node_channel"], arrows:'to'});
 }
 
@@ -55,6 +63,14 @@ function createNetwork() {
         // filling in the popup DOM elements
         document.getElementById('node-operation').innerHTML = "Add Node";
         editNode(data, clearNodePopUp, callback);
+      },
+      deleteNode: function(data, callback) {
+        data.nodes.forEach(id => {
+          deleteNodeData(id, callback);
+        });
+        console.log("deleted");
+        callback(data);
+        
       },
       addEdge: function (data, callback) {
         if (data.from == data.to) {
@@ -96,20 +112,64 @@ function hideNodeInfo() {
 }
 
 function editNode(data, cancelAction, callback) {
+  var list1 = document.getElementById('node-effectDropdown');
+  var i;
+  for(i = list1.options.length - 1 ; i >= 0 ; i--)
+  {
+    list1.remove(i);
+  }
+  const fetchEffects = async() => {
+    const response = await fetch('./effects');
+    const json = response.json();
+    json.then(values => {
+      values.forEach(element => {
+        console.log(element);
+        list1.add(new Option(element["py/type"]))
+      })
+    })
+  }
+  fetchEffects();
+
   document.getElementById('node-label').value = data.label;
   document.getElementById('node-saveButton').onclick = saveNodeData.bind(this, data, callback);
   document.getElementById('node-cancelButton').onclick = cancelAction.bind(this, callback);
   document.getElementById('node-popUp').style.display = 'block';
 }
 
-function saveNodeData(data, callback) {
-  data.label = document.getElementById('node-label').value;
-  // TODO: Save node in backend
-  // TODO: Error handling
-  // TODO: Apply default style
-  console.log(data);
-  clearNodePopUp();
-  callback(data);
+async function saveNodeData(data, callback) {
+  // gather data
+  var effectDropdown = document.getElementById('node-effectDropdown')
+  var selectedEffect = effectDropdown.options[effectDropdown.selectedIndex].value;
+
+  // Save node in backend
+  var createdNode = await fetch('./node', {
+    method: 'POST', // or 'PUT'
+    body: JSON.stringify(selectedEffect), // data can be `string` or {object}!
+    headers:{
+      'Content-Type': 'application/json'
+    }
+  }).then(res => res.json())
+  .then(node => {
+    console.log('Success:', JSON.stringify(node));
+    updateVisNode(data, node);
+    callback(data);
+  })
+  .catch(error => {
+    console.error('Error:', error);
+  })
+  .finally(() => {
+    clearNodePopUp();
+  });
+}
+
+async function deleteNodeData(id) {
+  var deleteNode = await fetch('./node/'+id, {
+    method: 'DELETE'
+  }).then(res => {
+    console.log('Success');
+  }).catch(error => {
+    console.error('Error:', error)
+  })
 }
 
 function cancelNodeEdit(callback) {
@@ -150,6 +210,15 @@ function saveEdgeData(data, callback) {
   callback(data);
 }
 
+function updateNodeArgs() {
+  console.log("nodeargs")
+}
+
 createNetwork();
 createNodesFromBackend();
 createEdgesFromBackend();
+
+module.exports = {
+  createNetwork: createNetwork,
+  updateNodeArgs: updateNodeArgs
+};

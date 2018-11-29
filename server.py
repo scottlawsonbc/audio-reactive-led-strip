@@ -1,8 +1,11 @@
 #!flask/bin/python
-from flask import Flask, jsonify, abort, send_from_directory
+import importlib
+import inspect
+from flask import Flask, jsonify, abort, send_from_directory, request
 from audioled import filtergraph
 from audioled import audio
 from audioled import effects
+from audioled import colors
 import jsonpickle
 
 num_pixels = 300
@@ -43,6 +46,58 @@ def node_uid_get(nodeUid):
         return jsonpickle.encode(node)
     except StopIteration:
         abort(404,"Node not found")
+
+@app.route('/node/<nodeUid>', methods=['DELETE'])
+def node_uid_delete(nodeUid):
+    try:
+        node = next(node for node in fg._filterNodes if node.uid == nodeUid)
+        fg.removeEffectNode(node.effect)
+        return "OK"
+    except StopIteration:
+        abort(404, "Node not found")
+
+@app.route('/node', methods=['POST'])
+def node_post():
+    if not request.json:
+        abort(400)
+    print("TODO: Add effect {}".format(request.json))
+    full_class_name = request.json
+    module_name, class_name = full_class_name.rsplit(".", 1)
+    if module_name != "audioled.audio" and module_name != "audioled.effects" and module_name != "audioled.devices":
+        abort(403)
+    class_ = getattr(importlib.import_module(module_name), class_name)
+    instance = class_()
+    node = fg.addEffectNode(instance)
+    return jsonpickle.encode(node)
+
+@app.route('/effects', methods=['GET'])
+def effects_get():
+    childclasses = inheritors(effects.Effect)
+    return jsonpickle.encode([child for child in childclasses])
+
+@app.route('/effect/<full_class_name>/args', methods=['GET'])
+def effect_effectname_args_get(full_class_name):
+    print(full_class_name)
+    module_name, class_name = full_class_name.rsplit(".", 1)
+    if module_name != "audioled.audio" and module_name != "audioled.effects" and module_name != "audioled.devices":
+        abort(403)
+    class_ = getattr(importlib.import_module(module_name),class_name)
+    argspec = inspect.getargspec(class_.__init__)
+    result = {"args": argspec.args[1:]}
+    return jsonify(result)
+
+
+def inheritors(klass):
+    subclasses = set()
+    work = [klass]
+    while work:
+        parent = work.pop()
+        for child in parent.__subclasses__():
+            if child not in subclasses:
+                subclasses.add(child)
+                work.append(child)
+    return subclasses
+
 
 if __name__ == '__main__':
 

@@ -7,6 +7,8 @@ module.exports = {
     path: path.join(__dirname,'../resources'),
     filename: 'bundle.js',
     publicPath: "/",
+    libraryTarget: 'var',
+    library: 'VisServer'
   },
   mode: process.env.NODE_ENV || 'development',
   resolve: {
