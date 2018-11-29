@@ -20,13 +20,13 @@ const createEdgesFromBackend = async() => {
 }
 
 function addVisNode(node) {
-  var uid = node["py/state"]["uid"];
-  var name = node["py/state"]["effect"]["py/object"];
-  nodes.add({id: uid, label: name, shape: 'box'});
+  var visNode = {};
+  updateVisNode(visNode, node);
+  nodes.add(visNode);
 }
 
 function updateVisNode(node, json) {
-  console.log(json["py/state"]);
+  console.debug('Update Vis Node:', json["py/state"]);
   var uid = json["py/state"]["uid"];
   var name = json["py/state"]["effect"]["py/object"];
   node.id = uid;
@@ -35,8 +35,20 @@ function updateVisNode(node, json) {
 }
 
 function addVisConnection(con) {
-  var state = con["py/state"];
-  edges.add({from: state["from_node_uid"], from_channel: state["from_node_channel"], to: state["to_node_uid"], to_channel: state["to_node_channel"], arrows:'to'});
+  var edge = {};
+  updateVisConnection(edge, con);
+  edges.add(edge);
+}
+
+function updateVisConnection(edge, json) {
+  console.debug('Update Vis Connection:',json["py/state"]);
+  var state = json["py/state"];
+  edge.id = state["uid"];
+  edge.from = state["from_node_uid"];
+  edge.from_channel = state["from_node_channel"];
+  edge.to = state["to_node_uid"];
+  edge.to_channel = state["to_node_channel"];
+  edge.arrows = 'to'
 }
 
 function createNetwork() {
@@ -66,9 +78,9 @@ function createNetwork() {
       },
       deleteNode: function(data, callback) {
         data.nodes.forEach(id => {
-          deleteNodeData(id, callback);
+          deleteNodeData(id);
+          console.debug("Deleted node",id);
         });
-        console.log("deleted");
         callback(data);
         
       },
@@ -80,6 +92,13 @@ function createNetwork() {
         document.getElementById('edge-operation').innerHTML = "Add Edge";
         editEdgeWithoutDrag(data, callback);
       },
+      deleteEdge: function(data, callback) {
+        data.edges.forEach(data => {
+          deleteEdgeData(data);
+          console.debug("Deleted edge",data);
+        });
+        callback(data);
+      }
     }
   };
   network = new Network(container, data, options);
@@ -135,6 +154,7 @@ function editNode(data, cancelAction, callback) {
   document.getElementById('node-popUp').style.display = 'block';
   document.getElementById('node-effectDropdown').onchange = updateNodeArgs.bind(this);
   updateNodeArgs();
+
 }
 
 async function saveNodeData(data, callback) {
@@ -210,7 +230,6 @@ function editEdgeWithoutDrag(data, callback) {
   const fetchFromNode = async() => {
     var node = await fetchNode(fromNodeUid);
     var numFromChannels = node['py/state']['numOutputChannels'];
-    console.log(numFromChannels);
     for(var i=0; i<numFromChannels; i++) {
       fromChannelDropdown.add(new Option(i));
     }
@@ -219,7 +238,6 @@ function editEdgeWithoutDrag(data, callback) {
   const fetchToNode = async() => {
     var node = await fetchNode(toNodeUid);
     var numToChannels = node['py/state']['numInputChannels'];
-    console.log(numToChannels);
     for(var i=0; i<numToChannels; i++) {
       toChannelDropdown.add(new Option(i));
     }
@@ -263,14 +281,32 @@ async function saveEdgeData(data, callback) {
     headers:{
       'Content-Type': 'application/json'
     }
-  }).then(callback(data))
+  })
+  .then(res => res.json())
+  .then(
+    connection => {
+      console.debug('Create connection successful:',data);
+      updateVisConnection(data, connection)
+      callback(data);
+    })
   .catch(error => {
     console.error('Error on creating connection:', error);
   })
   .finally(() => {
     clearEdgePopUp();
   });
-  
+}
+
+async function deleteEdgeData(data) {
+  var edge = edges.get(data);
+  var id = edge.id;
+  await fetch('./connection/'+id, {
+    method: 'DELETE'
+  }).then(res => {
+    console.debug('Delete connection successful:', id);
+  }).catch(error => {
+    console.error('Error on deleting connection:', error)
+  })
 }
 
 async function updateNodeArgs() {

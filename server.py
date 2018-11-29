@@ -1,25 +1,26 @@
 #!flask/bin/python
 import importlib
 import inspect
+import time
 from flask import Flask, jsonify, abort, send_from_directory, request
 from audioled import filtergraph
 from audioled import audio
 from audioled import effects
 from audioled import colors
+from audioled import devices
 import jsonpickle
 
 num_pixels = 300
 
 app = Flask(__name__,  static_url_path='/')
-fg = filtergraph.FilterGraph()
+fg = filtergraph.FilterGraph(recordTimings=True)
 
-audio_in = audio.AudioInput()
+audio_in = audio.AudioInput(num_channels=2)
 fg.addEffectNode(audio_in)
 
-movingLights = effects.MovingLightEffect(num_pixels, audio_in.getSampleRate())
-fg.addEffectNode(movingLights)
-
-fg.addConnection(audio_in,0,movingLights,0)
+device = devices.FadeCandy('192.168.9.241:7890')
+led_out = devices.LEDOutput(device)
+fg.addEffectNode(led_out)
 
 # @app.route('/', methods=['GET'])
 # def home():
@@ -79,10 +80,19 @@ def connections_get():
 def connection_post():
     if not request.json:
         abort(400)
-    connection = request.json
-    fg.addNodeConnection(connection['from_node_uid'], int(connection['from_node_channel']), connection['to_node_uid'], int(connection['to_node_channel']))
+    json = request.json
+    connection = fg.addNodeConnection(json['from_node_uid'], int(json['from_node_channel']), json['to_node_uid'], int(json['to_node_channel']))
     
-    return "OK"
+    return jsonpickle.encode(connection)
+
+@app.route('/connection/<connectionUid>', methods=['DELETE'])
+def connection_uid_delete(connectionUid):
+    try:
+        connection = next(connection for connection in fg._filterConnections if connection.uid == connectionUid)
+        fg.removeConnection(connection.fromNode.effect, connection.fromChannel, connection.toNode.effect, connection.toChannel)
+        return "OK"
+    except StopIteration:
+        abort(404, "Node not found")
 
 @app.route('/effects', methods=['GET'])
 def effects_get():
@@ -123,5 +133,4 @@ def inheritors(klass):
 
 
 if __name__ == '__main__':
-
     app.run(debug=True)

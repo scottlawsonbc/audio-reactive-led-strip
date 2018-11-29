@@ -61,6 +61,7 @@ class Connection(object):
         self.fromNode = from_node
         self.toChannel = to_channel
         self.toNode = to_node
+        self.uid = None
 
     def __getstate__(self):
         state = {}
@@ -68,6 +69,7 @@ class Connection(object):
         state['from_node_channel'] = self.fromChannel
         state['to_node_uid'] = self.toNode.uid
         state['to_node_channel'] = self.toChannel
+        state['uid'] = self.uid
         return state
         
 
@@ -188,9 +190,11 @@ class FilterGraph(object):
         toNode = next(node for node in self._filterNodes if node.effect == toEffect)
         # construct connection
         newConnection = Connection(fromNode, fromEffectChannel, toNode, toEffectChannel)
+        newConnection.uid = uuid.uuid4().hex
         self._filterConnections.append(newConnection)
         toNode._incomingConnections.append(newConnection)
         self._updateProcessOrder()
+        return newConnection
 
     def addNodeConnection(self, fromNodeUid, fromEffectChannel, toNodeUid, toEffectChannel):
         """Adds a connection between two filters based on node uid
@@ -198,9 +202,11 @@ class FilterGraph(object):
         fromNode = next(node for node in self._filterNodes if node.uid == fromNodeUid)
         toNode = next(node for node in self._filterNodes if node.uid == toNodeUid)
         newConnection = Connection(fromNode, fromEffectChannel, toNode, toEffectChannel)
+        newConnection.uid = uuid.uuid4().hex
         self._filterConnections.append(newConnection)
         toNode._incomingConnections.append(newConnection)
         self._updateProcessOrder()
+        return newConnection
     
     def removeConnection(self, fromEffect, fromEffectChannel, toEffect, toEffectChannel):
         """Removes a connection between two filters
