@@ -2,6 +2,7 @@ import asyncio
 from timeit import default_timer as timer
 import numpy as np
 import uuid
+import jsonpickle
 
 class Node(object):
 
@@ -160,6 +161,7 @@ class FilterGraph(object):
         ----------
         filterNode: node to add
         """
+        print("add node {}".format(effect))
         node = Node(effect)
         node.uid = uuid.uuid4().hex
         self._filterNodes.append(node)
@@ -202,6 +204,7 @@ class FilterGraph(object):
     def addNodeConnection(self, fromNodeUid, fromEffectChannel, toNodeUid, toEffectChannel):
         """Adds a connection between two filters based on node uid
         """
+        print("add node connection from {} channel {} to {} channel {}".format(fromNodeUid,fromEffectChannel, toNodeUid, toEffectChannel))
         fromNode = next(node for node in self._filterNodes if node.uid == fromNodeUid)
         toNode = next(node for node in self._filterNodes if node.uid == toNodeUid)
         newConnection = Connection(fromNode, fromEffectChannel, toNode, toEffectChannel)
@@ -275,20 +278,22 @@ class FilterGraph(object):
         state['nodes'] = nodes
         connections = []
         for con in self._filterConnections:
-            connections.append(con.__getstate__)
+            connections.append(con.__getstate__())
         state['connections'] = connections
+        state['recordTimings'] = self.recordTimings
         return state
 
     def __setstate__(self, state):
         self.__init__()
+        self.recordTimings = state['recordTimings']
         nodes = state['nodes']
         for node in nodes:
-            newnode = self.addEffectNode(node)
+            newnode = self.addEffectNode(node.effect)
             newnode.uid = node.uid
         connections = state['connections']
         for con in connections:
-            fromChannel = con['from_channel']
-            toChannel = con['to_channel']
-            self.addNodeConnection(con['from_node_uid'], fromChannel, con['from_node_uid'], toChannel)
+            fromChannel = con['from_node_channel']
+            toChannel = con['to_node_channel']
+            self.addNodeConnection(con['from_node_uid'], fromChannel, con['to_node_uid'], toChannel)
         
         
