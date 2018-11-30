@@ -102,15 +102,18 @@ class FilterGraph(object):
         self._processOrder = []
         self._updateTimings = {}
         self._processTimings = {}
-        self._asyncLoop = asyncio.get_event_loop()
+        #self._asyncLoop = asyncio.get_event_loop()
+        #self._asyncLoop = asyncio.new_event_loop()
+        #asyncio.set_event_loop(self._asyncLoop)
 
-    def update(self, dt):
+    def update(self, dt, event_loop = asyncio.get_event_loop()):
         time = timer()
         # gather all async updates
+        asyncio.set_event_loop(event_loop)
         all_tasks = asyncio.gather(*[asyncio.ensure_future(node.update(dt)) for node in self._processOrder])
         # wait for completion
-        results = self._asyncLoop.run_until_complete(all_tasks)
-    
+        results = event_loop.run_until_complete(all_tasks)
+
     def process(self):
         time = None
 
