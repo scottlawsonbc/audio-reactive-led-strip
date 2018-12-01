@@ -18,6 +18,8 @@ from timeit import default_timer as timer
 from werkzeug.serving import is_running_from_reloader
 
 num_pixels = 300
+device = devices.FadeCandy('192.168.9.241:7890')
+default_values = {}
 
 POOL_TIME = 0.001 #Seconds
 
@@ -30,13 +32,21 @@ event_loop = None
 fg = filtergraph.FilterGraph(recordTimings=True)
 
 audio_in = audio.AudioInput(num_channels=2)
+
+fs = audio_in.getSampleRate()
+
 fg.addEffectNode(audio_in)
 
-device = devices.FadeCandy('192.168.9.241:7890')
 led_out = devices.LEDOutput(device)
 fg.addEffectNode(led_out)
 
+
+
 fg = configs.createSpectrumGraph(num_pixels, device)
+
+default_values['fs'] = fs
+default_values['num_pixels'] = num_pixels/2 # specific for spectrum
+
 
 # @app.route('/', methods=['GET'])
 # def home():
@@ -144,6 +154,8 @@ def create_app():
         argsWithDefaults = dict(zip(argspec.args[-len(argspec.defaults):],argspec.defaults))
         result = argsWithDefaults.copy()
         result.update({key : None for key in argspec.args[1:len(argspec.args)-len(argspec.defaults)]}) # 1 removes self
+        
+        result.update({key : default_values[key] for key in default_values})
         print(result)
         return jsonify(result)
 
