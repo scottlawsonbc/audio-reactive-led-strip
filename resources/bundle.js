@@ -105,7 +105,7 @@ eval("module.exports = __webpack_require__.p + \"dfbcced84a50fad9aa48529261b8453
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
-eval("module.exports = __webpack_require__.p + \"5f585dc82f0601ccd1e221bb325e60ec.png\";\n\n//# sourceURL=webpack://VisServer/./img/audioled.colors.ColorWheelEffect.png?");
+eval("module.exports = __webpack_require__.p + \"5448eadee1719c98e9d82404af6f1990.png\";\n\n//# sourceURL=webpack://VisServer/./img/audioled.colors.ColorWheelEffect.png?");
 
 /***/ }),
 
