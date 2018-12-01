@@ -401,7 +401,7 @@ class Append(Effect):
         self._outputBuffer[0] = state
 
 class Combine(Effect):
-    def __init__(self, mode=''):
+    def __init__(self, mode='lightenOnly'):
         self.mode = mode
         self.__initstate__()
     

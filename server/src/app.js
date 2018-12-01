@@ -1,5 +1,14 @@
 import { DataSet, Network } from 'vis/index-network';
 import 'vis/dist/vis-network.min.css';
+import colorWheelIcon from '../img/audioled.colors.ColorWheelEffect.png'
+import audioInputIcon from '../img/audioled.audio.AudioInput.png'
+import spectrumIcon from '../img/audioled.effects.SpectrumEffect.png'
+
+var icons = {
+  'audioled.colors.ColorWheelEffect': colorWheelIcon,
+  'audioled.audio.AudioInput':audioInputIcon,
+  'audioled.effects.SpectrumEffect':spectrumIcon,
+}
 
 var nodes, edges, data, options, network;
 
@@ -31,7 +40,9 @@ function updateVisNode(node, json) {
   var name = json["py/state"]["effect"]["py/object"];
   node.id = uid;
   node.label = name;
-  node.shape = 'box';
+  node.shape = 'circularImage';
+  var icon = icons[name];
+  node.image = icon ? icon : '';
 }
 
 function addVisConnection(con) {
@@ -65,6 +76,22 @@ function createNetwork() {
     edges: edges
   };
   options = {
+    layout: {
+      hierarchical: {
+        enabled: true,
+        levelSeparation: -150,
+        direction: "UD",
+        nodeSpacing: 300,
+      },
+    },
+    physics: {
+      hierarchicalRepulsion: {
+        "centralGravity": 0,
+        "nodeDistance": 250
+      },
+      minVelocity: 0.75,
+      solver: "hierarchicalRepulsion"
+    },
     interaction: {
       navigationButtons: false,
       hover:true
@@ -99,6 +126,18 @@ function createNetwork() {
         });
         callback(data);
       }
+    },
+    nodes: {
+      borderWidth:4,
+      size:64,
+      color: {
+        border: '#222222',
+        background: '#666666'
+      },
+      font:{color:'#eeeeee'}
+    },
+    edges: {
+      color: 'lightgray'
     }
   };
   network = new Network(container, data, options);
