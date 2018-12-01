@@ -30,8 +30,14 @@ class Effect(object):
 
     def __initstate__(self):
         self._t = 0.0
-        self._inputBuffer = None
-        self._outputBuffer = None
+        try:
+            self._inputBuffer
+        except AttributeError:
+            self._inputBuffer = None
+        try:
+            self._outputBuffer
+        except AttributeError:
+            self._outputBuffer = None
 
     def numOutputChannels(self):
         """
@@ -92,6 +98,9 @@ class Effect(object):
     def __setstate__(self, state):
         self.__dict__.update(state)
         self.__initstate__()
+    
+    def updateParameter(self, stateDict):
+        self.__setstate__(stateDict)
 
 
 class SpectrumEffect(Effect):
@@ -388,7 +397,6 @@ class Append(Effect):
     def process(self):
         if self._inputBuffer is None or self._outputBuffer is None:
             return
-
         if self.flipMask is not None and self.flipMask[0] > 0:
             state = self._inputBuffer[0][:,::-1]
         else:

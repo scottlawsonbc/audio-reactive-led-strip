@@ -101,7 +101,7 @@ function createNetwork() {
       addNode: function (data, callback) {
         // filling in the popup DOM elements
         document.getElementById('node-operation').innerHTML = "Add Node";
-        editNode(data, clearNodePopUp, callback);
+        addNode(data, clearNodePopUp, callback);
       },
       deleteNode: function(data, callback) {
         data.nodes.forEach(id => {
@@ -143,9 +143,12 @@ function createNetwork() {
   network = new Network(container, data, options);
   network.on("selectNode", function (params) {
     showNodeInfo(params.nodes[0]);
+    document.getElementById('node-operation').innerHTML = "Edit Node";
+    editNode(params.nodes[0], clearNodePopUp, clearNodePopUp);
   });
   network.on("deselectNode", function () {
     hideNodeInfo();
+    clearNodePopUp();
   });
 }
 
@@ -166,8 +169,9 @@ function hideNodeInfo() {
   document.getElementById('infoPanel').style.display = 'none';
 }
 
-function editNode(data, cancelAction, callback) {
+function addNode(data, cancelAction, callback) {
   var effectDropdown = document.getElementById('node-effectDropdown');
+  effectDropdown.style.display = 'inherit';
   var i;
   for(i = effectDropdown.options.length - 1 ; i >= 0 ; i--)
   {
@@ -194,6 +198,27 @@ function editNode(data, cancelAction, callback) {
   document.getElementById('node-popUp').style.display = 'block';
   document.getElementById('node-effectDropdown').onchange = updateNodeArgs.bind(this);
   updateNodeArgs();
+
+}
+
+function editNode(uid, cancelAction, callback) {
+  var effectDropdown = document.getElementById('node-effectDropdown');
+  effectDropdown.style.display = 'none';
+  
+  const fetchAndShow = async () => {
+    const response = await fetch('./node/'+uid);
+    const json = response.json();
+    json.then(values => { 
+      var effect = values["py/state"]["effect"];
+      document.getElementById('node-args').value = JSON.stringify(effect, null, 4);
+      console.log(effect);
+    }) ;
+  }
+  fetchAndShow();
+  document.getElementById('node-saveButton').onclick = updateNodeData.bind(this, uid, callback);
+  document.getElementById('node-cancelButton').onclick = cancelAction.bind(this, callback);
+  document.getElementById('node-effectDropdown').onchange = null;
+  document.getElementById('node-popUp').style.display = 'block';
 
 }
 
@@ -242,6 +267,29 @@ async function saveNodeData(data, callback) {
   });
 }
 
+async function updateNodeData(data, callback) {
+  var options = document.getElementById('node-args').value;
+  // Save node in backend
+  await fetch('./node/'+data, {
+    method: 'UPDATE', // or 'PUT'
+    body: JSON.stringify(options), // data can be `string` or {object}!
+    headers:{
+      'Content-Type': 'application/json'
+    }
+  }).then(res => res.json())
+  .then(node => {
+    console.debug('Update node successful:', JSON.stringify(node));
+    // updateVisNode(data, node); // TODO: Needed?
+    callback(data);
+  })
+  .catch(error => {
+    console.error('Error on updating node:', error);
+  })
+  .finally(() => {
+    clearNodePopUp();
+  });
+}
+
 async function deleteNodeData(id) {
   await fetch('./node/'+id, {
     method: 'DELETE'
@@ -258,6 +306,7 @@ function cancelNodeEdit(callback) {
 }
 
 function clearNodePopUp() {
+  
   document.getElementById('node-saveButton').onclick = null;
   document.getElementById('node-cancelButton').onclick = null;
   document.getElementById('node-popUp').style.display = 'none';

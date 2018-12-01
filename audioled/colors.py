@@ -86,7 +86,11 @@ class ColorWheelEffect(Effect):
             self._outputBuffer[0] = self._color
 
     def get_color(self, t, pixel):
-        h = (t + self.offset % self.cycle_time) / self.cycle_time
+        h = 0.0
+        if self.cycle_time > 0:
+            h = (t + self.offset % self.cycle_time) / self.cycle_time
+        else:
+            h = self.offset
         r, g, b = colorsys.hls_to_rgb(h, self.L, self.S) 
         
         return np.array([[r* 255.0], [g* 255.0], [b* 255.0]])

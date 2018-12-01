@@ -6,6 +6,7 @@ import random
 import threading
 import atexit
 import asyncio
+import json
 from flask import Flask, jsonify, abort, send_from_directory, request
 from audioled import filtergraph
 from audioled import audio
@@ -90,6 +91,19 @@ def create_app():
             node = next(node for node in fg._filterNodes if node.uid == nodeUid)
             fg.removeEffectNode(node.effect)
             return "OK"
+        except StopIteration:
+            abort(404, "Node not found")
+
+    @app.route('/node/<nodeUid>', methods=['UPDATE'])
+    def node_uid_update(nodeUid):
+        global fg
+        if not request.json:
+            abort(400)
+        try:
+            node = next(node for node in fg._filterNodes if node.uid == nodeUid)
+            data =  json.loads(request.json)["py/state"]
+            node.effect.updateParameter(data)
+            return jsonpickle.encode(node)
         except StopIteration:
             abort(404, "Node not found")
 
