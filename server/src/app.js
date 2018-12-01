@@ -137,11 +137,12 @@ function editNode(data, cancelAction, callback) {
   const fetchEffects = async() => {
     const response = await fetch('./effects');
     const json = response.json();
+
     json.then(values => {
       values.forEach(element => {
-        console.log(element);
         effectDropdown.add(new Option(element["py/type"]))
       });
+      sortSelect(effectDropdown);
       effectDropdown.selectedIndex = 0;
       updateNodeArgs();
     })
@@ -155,6 +156,24 @@ function editNode(data, cancelAction, callback) {
   document.getElementById('node-effectDropdown').onchange = updateNodeArgs.bind(this);
   updateNodeArgs();
 
+}
+
+function sortSelect(selElem) {
+  var tmpAry = new Array();
+  for (var i=0;i<selElem.options.length;i++) {
+      tmpAry[i] = new Array();
+      tmpAry[i][0] = selElem.options[i].text;
+      tmpAry[i][1] = selElem.options[i].value;
+  }
+  tmpAry.sort();
+  while (selElem.options.length > 0) {
+      selElem.options[0] = null;
+  }
+  for (var i=0;i<tmpAry.length;i++) {
+      var op = new Option(tmpAry[i][0], tmpAry[i][1]);
+      selElem.options[i] = op;
+  }
+  return;
 }
 
 async function saveNodeData(data, callback) {

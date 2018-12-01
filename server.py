@@ -12,13 +12,14 @@ from audioled import audio
 from audioled import effects
 from audioled import colors
 from audioled import devices
+from audioled import configs
 import jsonpickle
 from timeit import default_timer as timer
 from werkzeug.serving import is_running_from_reloader
 
 num_pixels = 300
 
-POOL_TIME = 0.01 #Seconds
+POOL_TIME = 0.001 #Seconds
 
 # lock to control access to variable
 dataLock = threading.Lock()
@@ -34,6 +35,8 @@ fg.addEffectNode(audio_in)
 device = devices.FadeCandy('192.168.9.241:7890')
 led_out = devices.LEDOutput(device)
 fg.addEffectNode(led_out)
+
+fg = configs.createSpectrumGraph(num_pixels, device)
 
 # @app.route('/', methods=['GET'])
 # def home():
@@ -86,7 +89,7 @@ def create_app():
         if not request.json:
             abort(400)
         full_class_name = request.json[0]
-        parameters = jsonpickle.decode(request.json[1])
+        parameters = jsonpickle.decode(request.json[1]) # TODO: Don't pickle!
         print(parameters)
         module_name, class_name = None, None
         try:
@@ -185,6 +188,12 @@ def create_app():
         print('starting LED thread')
         ledThread.start()
 
+    def loadConfig(json):
+        global fg
+        fg = jsonpickle.decode(json)
+
+    
+
     # Initiate
     if is_running_from_reloader() == False: 
         startLEDThread()
@@ -193,6 +202,10 @@ def create_app():
     return app
 
 
+
+    
+
 if __name__ == '__main__':
+    
     app = create_app()
     app.run(debug=False)

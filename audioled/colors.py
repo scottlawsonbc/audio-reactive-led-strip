@@ -58,10 +58,12 @@ class ColorWheelEffect(Effect):
     """ Generates colors
     """
 
-    def __init__(self, num_pixels = 1, cycle_time = 30.0, offset = 0.0):
+    def __init__(self, num_pixels = 1, cycle_time = 30.0, offset = 0.0, luminocity = 0.5, saturation = 1.0):
         self.cycle_time = cycle_time
         self.offset = offset
         self.num_pixels = num_pixels
+        self.L = luminocity
+        self.S = saturation
         self.__initstate__()
 
     def __initstate__(self):
@@ -84,10 +86,8 @@ class ColorWheelEffect(Effect):
             self._outputBuffer[0] = self._color
 
     def get_color(self, t, pixel):
-        L=0.5
-        S=1
         h = (t + self.offset % self.cycle_time) / self.cycle_time
-        r, g, b = colorsys.hls_to_rgb(h, L, S) 
+        r, g, b = colorsys.hls_to_rgb(h, self.L, self.S) 
         
         return np.array([[r* 255.0], [g* 255.0], [b* 255.0]])
     
