@@ -187,7 +187,7 @@ def createSwimmingPoolGraph(N_pixels, device):
     led_out = devices.LEDOutput(device)
     fg.addEffectNode(led_out)
 
-    color = colors.StaticColorEffect(N_pixels,55.0,150.0,236.0)
+    color = colors.StaticRGBColorEffect(N_pixels,55.0,150.0,236.0)
     fg.addEffectNode(color)
 
     SwimmingPool = effects.SwimmingpoolEffect(N_pixels)
