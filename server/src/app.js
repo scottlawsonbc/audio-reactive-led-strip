@@ -1,6 +1,7 @@
 import { DataSet, Network } from 'vis/index-network';
 import 'vis/dist/vis-network.min.css';
 var Configurator = require("vis/lib/shared/Configurator").default;
+let util = require('vis/lib/util');
 import colorWheelIcon from '../img/audioled.colors.ColorWheelEffect.png'
 import audioInputIcon from '../img/audioled.audio.AudioInput.png'
 import spectrumIcon from '../img/audioled.effects.SpectrumEffect.png'
@@ -26,15 +27,24 @@ class Body {
 }
 
 class ConfigurationWrapper {
-  constructor(nodeUid) {
+  constructor(nodeUid, body, parameters, state) {
     this.nodeUid = nodeUid;
     this.body = new Body(this.emit);
+    this.configurator = configurator;
+    this.configurator = new Configurator(this, body, parameters);
+    this.configurator.setOptions(true);
+    this.configurator.setModuleOptions(state);
   }
 
   async emit(identifier, data) {
     
   }
 
+  clear() {
+    util.recursiveDOMDelete(this.configurator.wrapper);
+  }
+
+  // is called by Configurator once values change
   async setOptions(data) {
     console.log("emitting", data['parameters']);
     await fetch('./node/'+this.nodeUid, {
@@ -256,18 +266,8 @@ function editNode(uid, cancelAction, callback) {
     Promise.all([stateJson, json]).then(result => { 
       var effect = result[0]["py/state"]["effect"]["py/state"];
       var values = result[1];
-      //document.getElementById('node-args').value = JSON.stringify(effect, null, 4);
-      console.log(values);
-      var options = {
-        test: {
-          val: [0,0,10,1]
-        }
-      }
-      console.log(options);
-      configurator = new ConfigurationWrapper(uid);
-      var configurer = new Configurator(configurator, document.getElementById('node-popUp'), values, 1);
-      configurer.setOptions(true);
-      configurer.setModuleOptions(effect);
+      configurator = new ConfigurationWrapper(uid, document.getElementById('node-popUp'), values, effect, 1);
+      
     }) ;
   }
   fetchAndShow();
@@ -368,7 +368,9 @@ function cancelNodeEdit(callback) {
 }
 
 function clearNodePopUp() {
-  
+  if(configurator) {
+    configurator.clear();
+  }
   document.getElementById('node-saveButton').onclick = null;
   document.getElementById('node-cancelButton').onclick = null;
   document.getElementById('node-popUp').style.display = 'none';
@@ -481,6 +483,7 @@ async function deleteEdgeData(data) {
 async function updateNodeArgs() {
   var effectDropdown = document.getElementById('node-effectDropdown');
   var selectedEffect = effectDropdown.options[effectDropdown.selectedIndex].value;
+  // TODO: Bind to /effect/effect/parameter
   await fetch('./effect/'+selectedEffect+'/args')
     .then(response => response.json())
     .then(json => {

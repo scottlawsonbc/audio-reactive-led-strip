@@ -113,7 +113,7 @@ def create_app():
         global fg
         try:
             node = next(node for node in fg._filterNodes if node.uid == nodeUid)
-            return json.dumps(node.effect.getParameterDefinition())
+            return json.dumps(node.effect.getParameter())
         except StopIteration:
             abort(404, "Node not found")
 
@@ -182,6 +182,16 @@ def create_app():
         result.update({key : default_values[key] for key in default_values})
         print(result)
         return jsonify(result)
+    
+    @app.route('/effect/<full_class_name>/parameter', methods=['GET'])
+    def effect_effectname_parameters_get(full_class_name):
+        module_name, class_name = None, None
+        try:
+            module_name, class_name = getModuleAndClassName(full_class_name)
+        except RuntimeError:
+            abort(403)
+        class_ = getattr(importlib.import_module(module_name),class_name)
+        return json.dumps(class_.getParameterDefinition())
 
     def getModuleAndClassName(full_class_name):
         module_name, class_name = full_class_name.rsplit(".", 1)

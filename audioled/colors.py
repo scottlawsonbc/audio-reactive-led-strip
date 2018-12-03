@@ -20,8 +20,8 @@ from audioled.effects import Effect
 
 # New Filtergraph Style effects
 
-class StaticColorEffect(Effect):
-    def __init__(self, num_pixels, r, g, b):
+class StaticRGBColorEffect(Effect):
+    def __init__(self, num_pixels, r=255.0, g=255.0, b=255.0):
         self.num_pixels = num_pixels
         self.r = r
         self.g = g
@@ -31,7 +31,7 @@ class StaticColorEffect(Effect):
     def __initstate__(self):
         # state 
         self._color = None
-        super(StaticColorEffect, self).__initstate__()
+        super(StaticRGBColorEffect, self).__initstate__()
     
 
     def numInputChannels(self):
@@ -39,7 +39,27 @@ class StaticColorEffect(Effect):
 
     def numOutputChannels(self):
         return 1
+
+
+    @staticmethod
+    def getParameterDefinition():
+        definition = {
+            "parameters": {
+                # default, min, max, stepsize
+                "r": [255.0, 0.0, 255.0, 1.0],
+                "g": [255.0, 0.0, 255.0, 1.0],
+                "b": [255.0, 0.0, 255.0, 1.0],
+            }
+        }
+        return definition
     
+    def getParameter(self):
+        definition = self.getParameterDefinition()       
+        definition['parameters']['r'][0] = self.r
+        definition['parameters']['g'][0] = self.g
+        definition['parameters']['b'][0] = self.b
+        return definition
+
     def setInputBuffer(self, buffer):
         self._inputBuffer = buffer
 
@@ -47,7 +67,7 @@ class StaticColorEffect(Effect):
         self._outputBuffer = buffer
     
     async def update(self, dt):
-        await super(StaticColorEffect, self).update(dt)
+        await super(StaticRGBColorEffect, self).update(dt)
         if self._color is None:
             self._color = np.ones(self.num_pixels) * np.array([[self.r],[self.g],[self.b]])
 
@@ -62,8 +82,8 @@ class ColorWheelEffect(Effect):
         self.cycle_time = cycle_time
         self.offset = offset
         self.num_pixels = num_pixels
-        self.L = luminocity
-        self.S = saturation
+        self.luminocity = luminocity
+        self.saturation = saturation
         self.__initstate__()
 
     def __initstate__(self):
@@ -77,15 +97,25 @@ class ColorWheelEffect(Effect):
     def numOutputChannels(self):
         return 1
 
-    def getParameterDefinition(self):
+    @staticmethod
+    def getParameterDefinition():
         definition = {
             "parameters": {
-                "cycle_time": [self.cycle_time, 0, 100, 0.1],
-                "offset": [self.offset, 0,100,0.1],
-                "luminocity": [self.L, 0, 1, 0.01],
-                "saturation": [self.S, 0, 1, 0.01]
+                # default, min, max, stepsize
+                "cycle_time": [30.0, 0, 100, 0.1],
+                "offset": [0.0, 0,100,0.1],
+                "luminocity": [0.5, 0, 1, 0.01],
+                "saturation": [1.0, 0, 1, 0.01]
             }
         }
+        return definition
+    
+    def getParameter(self):
+        definition = self.getParameterDefinition()       
+        definition['parameters']['cycle_time'][0] = self.cycle_time
+        definition['parameters']['offset'][0] = self.offset
+        definition['parameters']['luminocity'][0] = self.luminocity
+        definition['parameters']['saturation'][0] = self.saturation
         return definition
 
     async def update(self, dt):
@@ -102,7 +132,7 @@ class ColorWheelEffect(Effect):
             h = (t + self.offset % self.cycle_time) / self.cycle_time
         else:
             h = self.offset
-        r, g, b = colorsys.hls_to_rgb(h, self.L, self.S) 
+        r, g, b = colorsys.hls_to_rgb(h, self.luminocity, self.saturation) 
         
         return np.array([[r* 255.0], [g* 255.0], [b* 255.0]])
     
