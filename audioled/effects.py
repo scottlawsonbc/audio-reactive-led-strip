@@ -10,8 +10,10 @@ import numpy as np
 import audioled.dsp as dsp
 import audioled.filtergraph as filtergraph
 import math
+import random
 from scipy.ndimage.filters import gaussian_filter1d
 from scipy.signal import lfilter
+
 
 SHORT_NORMALIZE = 1.0 / 32768.0
 
@@ -559,4 +561,62 @@ class MirrorEffect(Effect):
             mapMask[:,0:h,:] = self._genMirrorUpper(mapMask[:,0:h,:], recurse-1)
             mapMask[:,h:n,:] = self._genMirrorLower(mapMask[:,h:n,:], recurse-1)
         return mapMask
-    
+
+
+
+class SwimmingpoolEffect(Effect):
+
+    def __init__(self, num_pixels, num_waves=30, scale=0.2, wavespread_low=30, wavespread_high=70, max_speed=30):
+        self.num_pixels = num_pixels
+        self.num_waves = num_waves
+        self.scale = scale
+        self.wavespread_low = wavespread_low
+        self.wavespread_high = wavespread_high
+        self.max_speed = max_speed
+        self.__initstate__()
+
+    def __initstate__(self):
+        # state
+        self._pixel_state = np.zeros(self.num_pixels) * np.array([[0.0], [0.0], [0.0]])
+        self._last_t = 0.0
+        self._output = np.copy(self._pixel_state)
+        self._Wave, self._WaveSpecSpeed = self._CreateWaves(self.num_waves, self.scale, self.wavespread_low, self.wavespread_high, self.max_speed)
+        super(SwimmingpoolEffect, self).__initstate__()
+
+    def _SinArray(self, _spread, _scale, _wavehight):
+        _CArray = []
+        _offset = random.randint(0,300)
+        for i in range(-_spread, _spread+1):
+            _CArray.append(math.sin((math.pi/_spread) * i) * _scale * _wavehight * 255)
+            _output = np.copy(self._pixel_state)
+            _output[0][:len(_CArray)] += _CArray
+            _output[1][:len(_CArray)] += _CArray
+            _output[2][:len(_CArray)] += _CArray
+        return _output.clip(0.0,255.0)
+
+    def _CreateWaves(self, num_waves, scale, wavespread_low=10, wavespread_high=50, max_speed=30):
+        _WaveArray = []
+        _WaveArraySpec = []
+        _wavespread = np.random.randint(wavespread_low,wavespread_high,num_waves)
+        _WaveArraySpecSpeed = np.random.randint(-max_speed,max_speed,num_waves)
+        _WaveArraySpecHeight = np.random.rand(num_waves)
+        for i in range(0, num_waves):
+            _WaveArray.append(self._SinArray(_wavespread[i], scale, _WaveArraySpecHeight[i]))
+        return _WaveArray, _WaveArraySpecSpeed;
+
+    def numInputChannels(self):
+        return 1
+
+    def numOutputChannels(self):
+        return 1
+
+    def process(self):
+        if self._outputBuffer is not None:
+            color = self._inputBuffer[0]
+            self._output = 0.5 * np.ones(self.num_pixels) * color
+
+            for i in range(0,self.num_waves):
+                step = np.roll(self._Wave[i], int(self._t * self._WaveSpecSpeed[i]), axis=1)
+                self._output += step
+
+            self._outputBuffer[0] = self._output.clip(0.0,255.0)
