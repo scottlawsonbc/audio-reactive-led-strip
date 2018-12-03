@@ -77,6 +77,17 @@ class ColorWheelEffect(Effect):
     def numOutputChannels(self):
         return 1
 
+    def getParameterDefinition(self):
+        definition = {
+            "parameters": {
+                "cycle_time": [self.cycle_time, 0, 100, 0.1],
+                "offset": [self.offset, 0,100,0.1],
+                "luminocity": [self.L, 0, 1, 0.01],
+                "saturation": [self.S, 0, 1, 0.01]
+            }
+        }
+        return definition
+
     async def update(self, dt):
         await super(ColorWheelEffect, self).update(dt)
         self._color = self.get_color_array(self._t, self.num_pixels)

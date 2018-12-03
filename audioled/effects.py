@@ -102,6 +102,9 @@ class Effect(object):
     def updateParameter(self, stateDict):
         self.__setstate__(stateDict)
 
+    def getParameterDefinition(self):
+        return {}
+
 
 class SpectrumEffect(Effect):
     """
@@ -117,13 +120,14 @@ class SpectrumEffect(Effect):
 
     """
 
-    def __init__(self, num_pixels, fs, fmax=6000, n_overlaps=4, chunk_rate=60, fft_bins=64):
+    def __init__(self, num_pixels, fs, fmax=6000, n_overlaps=4, chunk_rate=60, fft_bins=64, col_blend = 'lightenOnly'):
         self.num_pixels = num_pixels
         self.fs = fs
         self.fmax = fmax
         self.n_overlaps = n_overlaps
         self.chunk_rate = chunk_rate
         self.fft_bins = fft_bins
+        self.col_blend = col_blend
         self.__initstate__()
 
     def __initstate__(self):
@@ -180,7 +184,10 @@ class SpectrumEffect(Effect):
                 melody = dsp.warped_psd(y, self.fft_bins, self._fs_ds, [261.0, self.fmax], 'bark')
                 bass = self.process_line(bass, self._bass_rms)
                 melody = self.process_line(melody, self._melody_rms)
-                pixels = 1./255.0 * np.multiply(bass, col_bass) + 1./255.0 * np.multiply(melody, col_melody)
+                if self.col_blend == 'lightenOnly':
+                    pixels = np.maximum(1./255.0 * np.multiply(col_bass, bass), 1./255. * np.multiply(col_melody, melody))
+                else:
+                    pixels = 1./255.0 * np.multiply(col_bass, bass) + 1./255. * np.multiply(col_melody, melody)
                 self._outputBuffer[0] = pixels.clip(0,255).astype(int)
 
     def process_line(self, fft, fft_rms):

@@ -101,9 +101,19 @@ def create_app():
             abort(400)
         try:
             node = next(node for node in fg._filterNodes if node.uid == nodeUid)
-            data =  json.loads(request.json)["py/state"]
-            node.effect.updateParameter(data)
+            #data =  json.loads(request.json)
+            print(request.json)
+            node.effect.updateParameter(request.json)
             return jsonpickle.encode(node)
+        except StopIteration:
+            abort(404, "Node not found")
+
+    @app.route('/node/<nodeUid>/parameter', methods=['GET'])
+    def node_uid_parameter_get(nodeUid):
+        global fg
+        try:
+            node = next(node for node in fg._filterNodes if node.uid == nodeUid)
+            return json.dumps(node.effect.getParameterDefinition())
         except StopIteration:
             abort(404, "Node not found")
 

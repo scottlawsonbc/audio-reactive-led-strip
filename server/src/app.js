@@ -1,5 +1,6 @@
 import { DataSet, Network } from 'vis/index-network';
 import 'vis/dist/vis-network.min.css';
+var Configurator = require("vis/lib/shared/Configurator").default;
 import colorWheelIcon from '../img/audioled.colors.ColorWheelEffect.png'
 import audioInputIcon from '../img/audioled.audio.AudioInput.png'
 import spectrumIcon from '../img/audioled.effects.SpectrumEffect.png'
@@ -10,7 +11,49 @@ var icons = {
   'audioled.effects.SpectrumEffect':spectrumIcon,
 }
 
-var nodes, edges, data, options, network;
+var nodes, edges, data, options, network, configurator;
+
+class Emitter {
+  constructor(emit) {
+    this.emit = emit
+  }
+}
+
+class Body {
+  constructor(emit) {
+    this.emitter = new Emitter(emit);
+  }
+}
+
+class ConfigurationWrapper {
+  constructor(nodeUid) {
+    this.nodeUid = nodeUid;
+    this.body = new Body(this.emit);
+  }
+
+  async emit(identifier, data) {
+    
+  }
+
+  async setOptions(data) {
+    console.log("emitting", data['parameters']);
+    await fetch('./node/'+this.nodeUid, {
+      method: 'UPDATE', // or 'PUT'
+      body: JSON.stringify(data['parameters']), // data can be `string` or {object}!
+      headers:{
+        'Content-Type': 'application/json'
+      }
+    }).then(res => res.json())
+    .then(node => {
+      console.debug('Update node successful:', JSON.stringify(node));
+      // updateVisNode(data, node); // TODO: Needed?
+    })
+    .catch(error => {
+      console.error('Error on updating node:', error);
+    })
+  }
+
+}
 
 const createNodesFromBackend = async() => {
   const response = await fetch('./nodes');
@@ -138,7 +181,7 @@ function createNetwork() {
     },
     edges: {
       color: 'lightgray'
-    }
+    },
   };
   network = new Network(container, data, options);
   network.on("selectNode", function (params) {
@@ -206,12 +249,25 @@ function editNode(uid, cancelAction, callback) {
   effectDropdown.style.display = 'none';
   
   const fetchAndShow = async () => {
-    const response = await fetch('./node/'+uid);
+    const stateResponse = await fetch('/node/'+uid);
+    const stateJson = stateResponse.json();
+    const response = await fetch('./node/'+uid+'/parameter');
     const json = response.json();
-    json.then(values => { 
-      var effect = values["py/state"]["effect"];
-      document.getElementById('node-args').value = JSON.stringify(effect, null, 4);
-      console.log(effect);
+    Promise.all([stateJson, json]).then(result => { 
+      var effect = result[0]["py/state"]["effect"]["py/state"];
+      var values = result[1];
+      //document.getElementById('node-args').value = JSON.stringify(effect, null, 4);
+      console.log(values);
+      var options = {
+        test: {
+          val: [0,0,10,1]
+        }
+      }
+      console.log(options);
+      configurator = new ConfigurationWrapper(uid);
+      var configurer = new Configurator(configurator, document.getElementById('node-popUp'), values, 1);
+      configurer.setOptions(true);
+      configurer.setModuleOptions(effect);
     }) ;
   }
   fetchAndShow();
@@ -219,7 +275,13 @@ function editNode(uid, cancelAction, callback) {
   document.getElementById('node-cancelButton').onclick = cancelAction.bind(this, callback);
   document.getElementById('node-effectDropdown').onchange = null;
   document.getElementById('node-popUp').style.display = 'block';
+  
 
+}
+
+function updateNodeConfig(config) {
+  console.log("config changed");
+  console.log(config);
 }
 
 function sortSelect(selElem) {
