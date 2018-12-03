@@ -104,7 +104,11 @@ class Effect(object):
     def updateParameter(self, stateDict):
         self.__setstate__(stateDict)
 
-    def getParameterDefinition(self):
+    def getParameter(self):
+        return {}
+
+    @staticmethod
+    def getParameterDefinition():
         return {}
 
 
@@ -355,6 +359,27 @@ class MovingLightEffect(Effect):
     
     def numOutputChannels(self):
         return 1
+
+    @staticmethod
+    def getParameterDefinition():
+        definition = {
+            "parameters": {
+                # default, min, max, stepsize
+                "speed": [10.0, 1.0, 100.0, 1.0],
+                "dim_time": [20.0, 0.0, 100.0, 1.0],
+                "lowcut_hz": [50.0, 0.0, 8000.0, 1.0],
+                "highcut_hz": [100.0, 0.0, 8000.0, 1.0],
+            }
+        }
+        return definition
+    
+    def getParameter(self):
+        definition = self.getParameterDefinition()       
+        definition['parameters']['speed'][0] = self.speed
+        definition['parameters']['dim_time'][0] = self.dim_time
+        definition['parameters']['lowcut_hz'][0] = self.lowcut_hz
+        definition['parameters']['highcut_hz'][0] = self.highcut_hz
+        return definition
     
     def process(self):
         if self._inputBuffer != None and self._outputBuffer != None:
@@ -390,6 +415,8 @@ class MovingLightEffect(Effect):
                 self._pixel_state[1][0] = g * peak+ peak * 255.0
                 self._pixel_state[2][0] = b * peak+ peak * 255.0
                 self._outputBuffer[0] = self._pixel_state.clip(0.0,255.0)
+
+
 
 class Append(Effect):
     def __init__(self, num_channels, flipMask=None):
