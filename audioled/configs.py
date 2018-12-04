@@ -19,7 +19,7 @@ def createMovingLightGraph(N_pixels, device):
     mirrorLower = effects.MirrorEffect(N_pixels,mirror_lower=True, recursion=0)
     fg.addEffectNode(mirrorLower)
 
-    afterglow = effects.AfterGlowEffect(N_pixels)
+    afterglow = effects.AfterGlowEffect()
     fg.addEffectNode(afterglow)
 
     append = effects.Append(2,flip0=True)
@@ -51,7 +51,7 @@ def createMovingLightsGraph(N_pixels, device):
     movingLight1 = effects.MovingLightEffect(N_pixels, audio_in.getSampleRate(),speed=150.0, dim_time=.5,highcut_hz=200)
     fg.addEffectNode(movingLight1)
 
-    afterglow1 = effects.AfterGlowEffect(N_pixels)
+    afterglow1 = effects.AfterGlowEffect()
     fg.addEffectNode(afterglow1)
 
     append1 = effects.Append(2,flip0=True)
@@ -71,7 +71,7 @@ def createMovingLightsGraph(N_pixels, device):
     movingLight2 = effects.MovingLightEffect(N_pixels, audio_in.getSampleRate(),speed=150.0, dim_time=1.0, highcut_hz=500)
     fg.addEffectNode(movingLight2)
 
-    afterglow2 = effects.AfterGlowEffect(N_pixels)
+    afterglow2 = effects.AfterGlowEffect()
     fg.addEffectNode(afterglow2)
 
     append2 = effects.Append(2,flip1=True)
@@ -118,7 +118,7 @@ def createSpectrumGraph(N_pixels, device):
     append = effects.Append(2,flip0=True)
     fg.addEffectNode(append)
 
-    afterglow = effects.AfterGlowEffect(int(2*N_pixels), glow_time=2.0)
+    afterglow = effects.AfterGlowEffect(glow_time=2.0)
     fg.addEffectNode(afterglow)
 
     fg.addConnection(audio_in,0,spectrum,0)
@@ -162,7 +162,7 @@ def createVUPeakGraph(N_pixels, device):
     append = effects.Append(2,flip1=True)
     fg.addEffectNode(append)
 
-    afterglow = effects.AfterGlowEffect(int(2*N_pixels), 0.5)
+    afterglow = effects.AfterGlowEffect(0.5)
     fg.addEffectNode(afterglow)
 
     fg.addConnection(audio_in,0,vu_peak,0)

@@ -513,14 +513,13 @@ class AfterGlowEffect(Effect):
     Effect that 
     """
 
-    def __init__(self, num_pixels, glow_time=1.0):
-        self.num_pixels = num_pixels
+    def __init__(self, glow_time=1.0):
         self.glow_time = glow_time
         self.__initstate__()
 
     def __initstate__(self):
         # state
-        self._pixel_state = np.zeros(self.num_pixels) * np.array([[0.0],[0.0],[0.0]])
+        self._pixel_state = None
         self._last_t = 0.0
         super(AfterGlowEffect, self).__initstate__()
 
@@ -530,6 +529,21 @@ class AfterGlowEffect(Effect):
     def numOutputChannels(self):
         return 1
 
+    @staticmethod
+    def getParameterDefinition():
+        definition = {
+            "parameters": {
+                # default, min, max, stepsize
+                "glow_time": [1.0, 0.0, 10.0, 0.01],
+            }
+        }
+        return definition
+    
+    def getParameter(self):
+        definition = self.getParameterDefinition()       
+        definition['parameters']['glow_time'][0] = self.glow_time
+        return definition
+
     async def update(self, dt):
         await super().update(dt)
         dt = self._t - self._last_t
@@ -537,19 +551,27 @@ class AfterGlowEffect(Effect):
         
         if dt > 0:
             # Dim state
-            self._pixel_state = self._pixel_state * (1.0 - dt / self.glow_time)
+            if self.glow_time > 0 and self._pixel_state is not None:
+                self._pixel_state = self._pixel_state * (1.0 - dt / self.glow_time)
+            else:
+                self._pixel_state = None
     
     def process(self):
         if self._inputBuffer is None or self._outputBuffer is None:
+            self._outputBuffer[0] = None
             return
         y = self._inputBuffer[0]
         if y is None:
+            self._outputBuffer[0] = None
             return
-        # keep previous state if new color is too dark
-        diff = (y - self._pixel_state).max(axis=0)
-        mask = diff < 10
         
-        y [:,mask]= self._pixel_state[:,mask]
+        if self._pixel_state is not None and np.size(self._pixel_state) == np.size(y):
+            # keep previous state if new color is too dark
+            diff = (y - self._pixel_state).max(axis=0)
+            mask = diff < 10
+            
+            y [:,mask]= self._pixel_state[:,mask]
+
         self._pixel_state = y
     
         self._outputBuffer[0] = y
