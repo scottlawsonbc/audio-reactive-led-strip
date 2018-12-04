@@ -421,31 +421,70 @@ class MovingLightEffect(Effect):
 
 
 class Append(Effect):
-    def __init__(self, num_pixels, num_channels, flipMask=None):
+    def __init__(self, num_channels, flip0=False, flip1=False, flip2=False, flip3=False, flip4=False, flip5=False, flip6=False, flip7=False):
         self.num_channels = num_channels
-        self.num_pixels = num_pixels
-        self.flipMask = flipMask
+        self.flip0 = flip0
+        self.flip1 = flip1
+        self.flip2 = flip2
+        self.flip3 = flip3
+        self.flip4 = flip4
+        self.flip5 = flip5
+        self.flip6 = flip6
+        self.flip7 = flip7
         self.__initstate__()
     
+    def __initstate__(self):
+        super().__initstate__()
+        self._flipMask = [self.flip0,self.flip1,self.flip2,self.flip3,self.flip4,self.flip5,self.flip6,self.flip7]
+
     def numInputChannels(self):
         return self.num_channels
     
     def numOutputChannels(self):
         return 1
+
+    @staticmethod
+    def getParameterDefinition():
+        definition = {
+            "parameters": {
+                # default, min, max, stepsize
+                "num_channels": [2, 1, 8, 1],
+                "flip0": False,
+                "flip1": False,
+                "flip2": False,
+                "flip3": False,
+                "flip4": False,
+                "flip5": False,
+                "flip6": False,
+                "flip7": False,
+            }
+        }
+        return definition
     
+    def getParameter(self):
+        definition = self.getParameterDefinition()
+        del definition['parameters']['num_channels'] # not editable at runtime
+        definition['parameters']['flip0'] = self.flip0
+        definition['parameters']['flip1'] = self.flip1
+        definition['parameters']['flip2'] = self.flip2
+        definition['parameters']['flip3'] = self.flip3
+        definition['parameters']['flip4'] = self.flip4
+        definition['parameters']['flip5'] = self.flip5
+        definition['parameters']['flip6'] = self.flip6
+        definition['parameters']['flip7'] = self.flip7
+        return definition
+
     def process(self):
         if self._inputBuffer is None or self._outputBuffer is None:
+            self._outputBuffer[0] = None
             return
         if self._inputBuffer[0] is None:
+            self._outputBuffer[0] = None
             return
-        state = np.zeros(self.num_pixels) * np.array([[0],[0], [0]])
-        if self.flipMask is not None and self.flipMask[0] > 0:
-            state = self._inputBuffer[0][:,::-1]
-        else:
-            state = self._inputBuffer[0]
-        for i in range(1,self.num_channels):
+        state = np.zeros((3,0))
+        for i in range(0,self.num_channels):
             if self._inputBuffer[i] is not None:
-                if self.flipMask is not None and self.flipMask[i] > 0:
+                if self._flipMask is not None and self._flipMask[i] > 0:
                     state = np.concatenate((state, self._inputBuffer[i][:,::-1]),axis=1)
                 else:
                     state = np.concatenate((state, self._inputBuffer[i]),axis=1)    
