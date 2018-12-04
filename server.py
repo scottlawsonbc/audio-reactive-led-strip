@@ -52,6 +52,7 @@ fg.addEffectNode(led_out)
 fg = configs.createMovingLightGraph(num_pixels, device)
 #fg = configs.createVUPeakGraph(num_pixels, device)
 #fg = configs.createSwimmingPoolGraph(num_pixels, device)
+#fg = configs.createDefenceGraph(num_pixels, device)
 
 default_values['fs'] = fs
 default_values['num_pixels'] = num_pixels/2 # specific for spectrum

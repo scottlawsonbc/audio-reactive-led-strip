@@ -517,6 +517,11 @@ function showError(message) {
   errorInfo.innerHTML = "<strong>Danger!</strong> "+ message;
 }
 
+function hideError() {
+  var error = document.getElementById('alert');
+  error.style.display='none';
+}
+
 window.setInterval(function(){
   /// call your function here
   const fetchErrors = async() => fetch('./errors').then(response => response.json()).then(json => {
@@ -527,15 +532,21 @@ window.setInterval(function(){
         nodes.update(node);
       }
     }
+    var hasErrors = false;
     for (var key in json) {
       // check if the property/key is defined in the object itself, not in parent
+      
       if (json.hasOwnProperty(key)) {           
           var node = nodes.get(key);
           node.group = 'error';
           nodes.update(node);
           console.log(json[key])
           showError(json[key])
-      }
+          hasErrors = true;
+      } 
+    }
+    if (!hasErrors) {
+      hideError();
     }
   });
   fetchErrors();
