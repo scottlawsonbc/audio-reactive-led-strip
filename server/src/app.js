@@ -87,6 +87,7 @@ function updateVisNode(node, json) {
   node.id = uid;
   node.label = name;
   node.shape = 'circularImage';
+  node.group = 'ok';
   var icon = icons[name];
   node.image = icon ? icon : '';
 }
@@ -185,6 +186,19 @@ function createNetwork() {
     edges: {
       color: 'lightgray'
     },
+    groups: {
+      ok: {
+        color: {
+          border: '#222222',
+          background: '#666666'
+        },
+      }, error: {
+        color: {
+          border: '#ee0000',
+          background: '#666666'
+        },
+      }
+    }
   };
   network = new Network(container, data, options);
   network.on("selectNode", function (params) {
@@ -490,3 +504,25 @@ async function updateNodeArgs() {
 createNetwork();
 createNodesFromBackend();
 createEdgesFromBackend();
+
+window.setInterval(function(){
+  /// call your function here
+  const fetchErrors = async() => fetch('./errors').then(response => response.json()).then(json => {
+    for (var entry in nodes) {
+      var node = nodes.get(entry.id);
+      if(node.group !== 'ok') {
+        node.group = 'ok';
+        nodes.update(node);
+      }
+    }
+    for (var key in json) {
+      // check if the property/key is defined in the object itself, not in parent
+      if (json.hasOwnProperty(key)) {           
+          var node = nodes.get(key);
+          node.group = 'error';
+          nodes.update(node);
+      }
+    }
+  });
+  fetchErrors();
+}, 5000);

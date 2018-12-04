@@ -29,8 +29,11 @@ dataLock = threading.Lock()
 # thread handler
 ledThread = threading.Thread()
 event_loop = None
+# timing
 current_time = None
 last_time = None
+# errors
+errors = []
 
 fg = filtergraph.FilterGraph(recordTimings=True)
 
@@ -215,26 +218,43 @@ def create_app():
                     work.append(child)
         return subclasses
     
+    @app.route('/errors', methods=['GET'])
+    def errors_get():
+        result = {}
+        for error in errors:
+            result[error.node.uid] = error.message
+        
+        return json.dumps(result)
+
+    
     def processLED():
         global fg
         global ledThread
         global event_loop
         global last_time
         global current_time
-        with dataLock:
-            last_time = current_time
-            current_time = timer()
-            dt = current_time - last_time
-            if event_loop is None:
-                event_loop = asyncio.new_event_loop()
-                asyncio.set_event_loop(event_loop)
-            
-            fg.update(dt, event_loop)
-            fg.process()
+        global errors
+        try:
+            with dataLock:
+                last_time = current_time
+                current_time = timer()
+                dt = current_time - last_time
+                if event_loop is None:
+                    event_loop = asyncio.new_event_loop()
+                    asyncio.set_event_loop(event_loop)
+                
+                fg.update(dt, event_loop)
+                fg.process()
+        except filtergraph.NodeException as ne:
+            errors.clear()
+            errors.append(ne)
+        except Exception as e:
+            print(e)
+        finally:
             #fg.printProcessTimings()
-        # Set the next thread to happen
-        ledThread = threading.Timer(POOL_TIME, processLED, ())
-        ledThread.start()   
+            # Set the next thread to happen
+            ledThread = threading.Timer(POOL_TIME, processLED, ())
+            ledThread.start()   
 
     def startLEDThread():
         # Do initialisation stuff here

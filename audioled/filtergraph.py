@@ -4,6 +4,13 @@ import numpy as np
 import uuid
 import jsonpickle
 
+class NodeException(Exception):
+    def __init__(self, message, node, error):
+        self.node = node
+        self.error = error
+        self.message = message
+        super(NodeException, self).__init__(message)
+
 class Node(object):
 
     def __init__(self, effect):
@@ -119,11 +126,14 @@ class FilterGraph(object):
         time = None
 
         for node in self._processOrder:
-            if self.recordTimings:
-                time = timer()
-            node.process()
-            if self.recordTimings:
-                self.updateProcessTiming(node, timer() - time)
+            try:
+                if self.recordTimings:
+                    time = timer()
+                node.process()
+                if self.recordTimings:
+                    self.updateProcessTiming(node, timer() - time)
+            except Exception as e:
+                raise NodeException("{}".format(e), node, e)
 
     def updateProcessTiming(self,node,timing):
         if not node in self._processTimings:
