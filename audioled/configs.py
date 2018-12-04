@@ -178,3 +178,21 @@ def createVUPeakGraph(N_pixels, device):
     fg.addConnection(append,0,afterglow,0)
     fg.addConnection(afterglow,0,led_out,0)
     return fg
+
+
+def createSwimmingPoolGraph(N_pixels, device):
+
+    fg = filtergraph.FilterGraph(recordTimings=True)
+
+    led_out = devices.LEDOutput(device)
+    fg.addEffectNode(led_out)
+
+    color = colors.StaticRGBColorEffect(N_pixels,55.0,150.0,236.0)
+    fg.addEffectNode(color)
+
+    SwimmingPool = effects.SwimmingpoolEffect(N_pixels)
+    fg.addEffectNode(SwimmingPool)
+
+    fg.addConnection(color,0,SwimmingPool,0)
+    fg.addConnection(SwimmingPool,0,led_out,0)
+    return fg
