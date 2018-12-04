@@ -50,8 +50,8 @@ fg.addEffectNode(led_out)
 
 #fg = configs.createSpectrumGraph(num_pixels, device)
 #fg = configs.createMovingLightGraph(num_pixels, device)
-fg = configs.createVUPeakGraph(num_pixels, device)
-#fg = configs.createSwimmingPoolGraph(num_pixels, device)
+#fg = configs.createVUPeakGraph(num_pixels, device)
+fg = configs.createSwimmingPoolGraph(num_pixels, device)
 
 default_values['fs'] = fs
 default_values['num_pixels'] = num_pixels/2 # specific for spectrum
@@ -234,6 +234,7 @@ def create_app():
         global last_time
         global current_time
         global errors
+        dt = 0
         try:
             with dataLock:
                 last_time = current_time
@@ -245,7 +246,9 @@ def create_app():
                 
                 fg.update(dt, event_loop)
                 fg.process()
+                
         except filtergraph.NodeException as ne:
+            print(ne)
             errors.clear()
             errors.append(ne)
         except Exception as e:
@@ -253,7 +256,9 @@ def create_app():
         finally:
             #fg.printProcessTimings()
             # Set the next thread to happen
-            ledThread = threading.Timer(POOL_TIME, processLED, ())
+            real_process_time = timer() - current_time
+            timeToWait = max(POOL_TIME, 0.015-real_process_time)
+            ledThread = threading.Timer(timeToWait, processLED, ())
             ledThread.start()   
 
     def startLEDThread():

@@ -102,6 +102,7 @@ class ColorWheelEffect(Effect):
         definition = {
             "parameters": {
                 # default, min, max, stepsize
+                "num_pixels": [1, 1, 1000, 1],
                 "cycle_time": [30.0, 0, 100, 0.1],
                 "offset": [0.0, 0,100,0.1],
                 "luminocity": [0.5, 0, 1, 0.01],
@@ -112,6 +113,7 @@ class ColorWheelEffect(Effect):
     
     def getParameter(self):
         definition = self.getParameterDefinition()       
+        del definition['parameters']['num_pixels']
         definition['parameters']['cycle_time'][0] = self.cycle_time
         definition['parameters']['offset'][0] = self.offset
         definition['parameters']['luminocity'][0] = self.luminocity
