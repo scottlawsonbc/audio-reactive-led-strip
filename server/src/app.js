@@ -5,11 +5,13 @@ let util = require('vis/lib/util');
 import colorWheelIcon from '../img/audioled.colors.ColorWheelEffect.png'
 import audioInputIcon from '../img/audioled.audio.AudioInput.png'
 import spectrumIcon from '../img/audioled.effects.SpectrumEffect.png'
+import ledIcon from '../img/audioled.devices.LEDOutput.png'
 
 var icons = {
   'audioled.colors.ColorWheelEffect': colorWheelIcon,
   'audioled.audio.AudioInput':audioInputIcon,
   'audioled.effects.SpectrumEffect':spectrumIcon,
+  'audioled.devices.LEDOutput':ledIcon,
 }
 
 var nodes, edges, data, options, network, configurator;
@@ -135,6 +137,7 @@ function createNetwork() {
       hierarchicalRepulsion: {
         "centralGravity": 0,
         "nodeDistance": 250
+
       },
       minVelocity: 0.75,
       solver: "hierarchicalRepulsion"
@@ -216,6 +219,8 @@ function addNode(data, cancelAction, callback) {
   effectDropdown.style.display = 'inherit';
   var effectTable = document.getElementById('node-effectTable');
   effectTable.style.display = 'inherit';
+  var saveBtn = document.getElementById('node-saveButton');
+  saveBtn.style.display='inherit';
   var i;
   for(i = effectDropdown.options.length - 1 ; i >= 0 ; i--)
   {
@@ -508,9 +513,9 @@ createEdgesFromBackend();
 window.setInterval(function(){
   /// call your function here
   const fetchErrors = async() => fetch('./errors').then(response => response.json()).then(json => {
-    for (var entry in nodes) {
-      var node = nodes.get(entry.id);
-      if(node.group !== 'ok') {
+    for (var entry in nodes.get()) {
+      var node = nodes.get()[entry];
+      if(node.group != 'ok') {
         node.group = 'ok';
         nodes.update(node);
       }
@@ -521,6 +526,7 @@ window.setInterval(function(){
           var node = nodes.get(key);
           node.group = 'error';
           nodes.update(node);
+          console.log(json[key])
       }
     }
   });
