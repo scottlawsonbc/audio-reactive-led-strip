@@ -124,4 +124,7 @@ while True:
         print(updateTiming.__dict__)
         count = 0
     count = count + 1
+    if dt < 0.015:
+        sleeptime = 0.015-dt
+        time.sleep(sleeptime)
     
