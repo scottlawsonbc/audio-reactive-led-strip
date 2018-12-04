@@ -270,6 +270,24 @@ class VUMeterRMSEffect(Effect):
     def numOutputChannels(self):
         return 1
 
+    @staticmethod
+    def getParameterDefinition():
+        definition = {
+            "parameters": {
+                # default, min, max, stepsize
+                "num_pixels": [300, 1, 1000, 1],
+                "db_range": [60.0, 20.0, 100.0, 1.0],
+            }
+        }
+        return definition
+    
+    def getParameter(self):
+        definition = self.getParameterDefinition()       
+        #definition['parameters']['num_pixels'][0] = self.num_pixels
+        del definition['parameters']['num_pixels'] # disable edit
+        definition['parameters']['db_range'][0] = self.db_range
+        return definition
+
     def process(self):
         if self._inputBuffer != None and self._outputBuffer != None:
             buffer = self._inputBuffer[0]
