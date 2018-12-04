@@ -252,6 +252,7 @@ class ShiftEffect(Effect):
                 self._outputBuffer[0] = self._pixel_state.clip(0.0,255.0)
 
 
+
 class VUMeterRMSEffect(Effect):
     """ VU Meter style effect
     Inputs:

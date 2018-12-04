@@ -188,36 +188,20 @@ function createNetwork() {
   };
   network = new Network(container, data, options);
   network.on("selectNode", function (params) {
-    showNodeInfo(params.nodes[0]);
     document.getElementById('node-operation').innerHTML = "Edit Node";
     editNode(params.nodes[0], clearNodePopUp, clearNodePopUp);
   });
   network.on("deselectNode", function () {
-    hideNodeInfo();
     clearNodePopUp();
   });
 }
 
-function showNodeInfo(uid) {
-  document.getElementById('infoPanel').style.display = 'block';
-  const fetchAndShow = async () => {
-    const response = await fetch('./node/'+uid);
-    const json = response.json();
-    json.then(values => { 
-      var effect = values["py/state"]["effect"];
-      document.getElementById('infoPanel').innerHTML = '<h2>Node Info:</h2>' + JSON.stringify(effect, null, 4);
-    }) ;
-  }
-  fetchAndShow();
-}
-
-function hideNodeInfo() {
-  document.getElementById('infoPanel').style.display = 'none';
-}
 
 function addNode(data, cancelAction, callback) {
   var effectDropdown = document.getElementById('node-effectDropdown');
   effectDropdown.style.display = 'inherit';
+  var effectTable = document.getElementById('node-effectTable');
+  effectTable.style.display = 'inherit';
   var i;
   for(i = effectDropdown.options.length - 1 ; i >= 0 ; i--)
   {
@@ -238,7 +222,6 @@ function addNode(data, cancelAction, callback) {
   }
   fetchEffects();
 
-  document.getElementById('node-args').value = "";
   document.getElementById('node-saveButton').onclick = saveNodeData.bind(this, data, callback);
   document.getElementById('node-cancelButton').onclick = cancelAction.bind(this, callback);
   document.getElementById('node-popUp').style.display = 'block';
@@ -250,6 +233,10 @@ function addNode(data, cancelAction, callback) {
 function editNode(uid, cancelAction, callback) {
   var effectDropdown = document.getElementById('node-effectDropdown');
   effectDropdown.style.display = 'none';
+  var effectTable = document.getElementById('node-effectTable');
+  effectTable.style.display = 'none';
+  var saveBtn = document.getElementById('node-saveButton');
+  saveBtn.style.display='none';
   
   const fetchAndShow = async () => {
     const stateResponse = await fetch('/node/'+uid);
@@ -259,7 +246,7 @@ function editNode(uid, cancelAction, callback) {
     Promise.all([stateJson, json]).then(result => { 
       var effect = result[0]["py/state"]["effect"]["py/state"];
       var values = result[1];
-      configurator = new ConfigurationWrapper(uid, document.getElementById('node-popUp'), values, effect, async (nodeUid, data) => {
+      configurator = new ConfigurationWrapper(uid, document.getElementById('node-configuration'), values, effect, async (nodeUid, data) => {
         console.log("emitting", data['parameters']);
         await fetch('./node/'+nodeUid, {
           method: 'UPDATE', // or 'PUT'
@@ -280,17 +267,9 @@ function editNode(uid, cancelAction, callback) {
     }) ;
   }
   fetchAndShow();
-  document.getElementById('node-saveButton').onclick = updateNodeData.bind(this, uid, callback);
   document.getElementById('node-cancelButton').onclick = cancelAction.bind(this, callback);
   document.getElementById('node-effectDropdown').onchange = null;
   document.getElementById('node-popUp').style.display = 'block';
-  
-
-}
-
-function updateNodeConfig(config) {
-  console.log("config changed");
-  console.log(config);
 }
 
 function sortSelect(selElem) {
@@ -502,20 +481,10 @@ async function updateNodeArgs() {
     var defaults = result[1];
     console.log(parameters);
     console.log(defaults);
-    configurator = new ConfigurationWrapper(selectedEffect, document.getElementById('node-popUp'), parameters, defaults, async (nodeUid, data) => {
+    configurator = new ConfigurationWrapper(selectedEffect, document.getElementById('node-configuration'), parameters, defaults, async (nodeUid, data) => {
       // do nothing
     });
-    
   }) ;
-
-  // TODO: Bind to /effect/effect/parameter
-  // await fetch('./effect/'+selectedEffect+'/args')
-  //   .then(response => response.json())
-  //   .then(json => {
-  //     console.debug('NodeArgs:',json);
-  //     document.getElementById('node-args').value = JSON.stringify(json, null, 4);
-  //   });
-  // console.log(selectedEffect);
 }
 
 createNetwork();

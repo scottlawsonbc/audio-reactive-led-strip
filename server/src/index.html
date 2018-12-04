@@ -5,8 +5,11 @@
   <title>Audio Reactive LED Strip Configuration</title>
   <style>
     #network {
-      width: 100%;
-      height: 800px;
+      position: absolute;
+      top: 100px; /* Header Height */
+      bottom: 0px; /* Footer Height */
+      left: 0px;
+      right: 0px;
       border: 0.5px solid lightgray;
       background-color:#333333;
     }
@@ -24,6 +27,7 @@
       border-color: darkgrey;
       padding:10px;
       text-align: center;
+      color: white;
     }
     #edge-popUp {
       display:none;
@@ -31,14 +35,15 @@
       top:350px;
       left:170px;
       z-index:299;
-      width:250px;
-      height:90px;
-      background-color: #f9f9f9;
+      width:525px;
+      overflow:auto;
+      background-color: #333333;
       border-style:solid;
       border-width:3px;
-      border-color: #5394ed;
+      border-color: darkgrey;
       padding:10px;
       text-align: center;
+      color: white;
     }
     #text-area {
       max-width: 50% !important;
@@ -56,6 +61,24 @@
     div.vis-configuration.vis-config-option-container {
       display:none !important;
     }
+    div.vis-configuration.vis-config-item.vis-config-s2{
+    left:10px;
+    background-color: #333333 !important;
+    padding-left:5px;
+    border-radius:3px;
+    }
+    div.vis-configuration.vis-config-item.vis-config-s3{
+        left:20px;
+        background-color: #333333 !important;
+        padding-left:5px;
+        border-radius:3px;
+    }
+    div.vis-configuration.vis-config-item.vis-config-s4{
+        left:30px;
+        background-color: #333333 !important;
+        padding-left:5px;
+        border-radius:3px;
+    }
   </style>
 
 </head>
@@ -64,39 +87,34 @@
 <body>
   <h1>FilterGraph:</h1>
   <div id="network"></div>
-  <pre id="infoPanel"></pre>
 
   <div id="node-popUp">
-    <span id="node-operation">node</span> <br>
+    <h2 id="node-operation">node</h2> <br>
+    <div id="node-effectTable">
+      <div class="vis-configuration vis-config-header">effect</div>
+      <div class="vis-configuration vis-config-item vis-config-s2"><select class="form-control" id='node-effectDropdown' name='node-effectDropdown'></select></div>
+    </div>
+    <div id="node-configuration"></div>
     <table style="margin:auto;">
-      <tr>
-        <td>effect</td>
-        <td><select class="form-control" id='node-effectDropdown' name='node-effectDropdown'></select></td>
-      </tr>
-      <tr>
-        <td>args</td>
-        <td><textarea id="node-args" value=""></textarea></td>
-      </tr>
       <tr>
         <td><input type="button" value="save" id="node-saveButton" /></td>
         <td><input type="button" value="cancel" id="node-cancelButton" /></td>
       </tr>
     </table>
   </div>
+
   <div id="edge-popUp">
-    <span id="edge-operation">edge</span> <br>
+    <h2 id="edge-operation">edge</h2> <br>
+    <div class="vis-configuration vis-config-header">from channel</div>
+    <div class="vis-configuration vis-config-item vis-config-s2"><select class="form-control" id='edge-fromChannelDropdown' name='edge-fromChannelDropdown'></select></div>
+    <div class="vis-configuration vis-config-header">to channel</div>
+    <div class="vis-configuration vis-config-item vis-config-s2"><select class="form-control" id='edge-toChannelDropdown' name='edge-toChannelDropdown'></select></div>
     <table style="margin:auto;">
       <tr>
-        <td>label</td>
-        <td><input id="edge-label" value="new value" /></td>
-      </tr>
-      <tr>
-        <td><select class="form-control" id='edge-fromChannelDropdown' name='edge-fromChannelDropdown'></select></td>
-        <td><select class="form-control" id='edge-toChannelDropdown' name='edge-toChannelDropdown'></select></td>
+        <td><input type="button" value="save" id="edge-saveButton" /></td>
+        <td><input type="button" value="cancel" id="edge-cancelButton" /></td>
       </tr>
     </table>
-    <input type="button" value="save" id="edge-saveButton" />
-    <input type="button" value="cancel" id="edge-cancelButton" />
   </div>
 
 </body>
