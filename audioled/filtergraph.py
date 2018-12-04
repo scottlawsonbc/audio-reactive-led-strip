@@ -115,12 +115,17 @@ class FilterGraph(object):
         #asyncio.set_event_loop(self._asyncLoop)
 
     def update(self, dt, event_loop = asyncio.get_event_loop()):
-        time = timer()
         # gather all async updates
         asyncio.set_event_loop(event_loop)
-        all_tasks = asyncio.gather(*[asyncio.ensure_future(node.update(dt)) for node in self._processOrder])
+        async def handle_async_exception(node, func, param):
+            try:
+                await func(param)
+            except Exception as e:
+                raise NodeException("{}".format(e), node, e)
+        all_tasks = asyncio.gather(*[asyncio.ensure_future(handle_async_exception(node, node.update, dt)) for node in self._processOrder])
         # wait for completion
-        results = event_loop.run_until_complete(all_tasks)
+        event_loop.run_until_complete(all_tasks)
+    
 
     def process(self):
         time = None

@@ -130,7 +130,7 @@ class ColorWheelEffect(Effect):
 
     def get_color(self, t, pixel):
         h = 0.0
-        if self.cycle_time > 0:
+        if self.cycle_time >= 0:
             h = (t + self.offset % self.cycle_time) / self.cycle_time
         else:
             h = self.offset
