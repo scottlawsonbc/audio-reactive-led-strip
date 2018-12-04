@@ -805,11 +805,11 @@ class DefenceMode(Effect):
 
     def process(self):
         if self._outputBuffer is not None:
-            color = self._inputBuffer[0]
-            A = random.choice([True,False])
+            #color = self._inputBuffer[0]
+            A = random.choice([True,False,False])
             if A == True:
-                self._output = np.ones(self.num_pixels) * color
+                self._output = np.ones(self.num_pixels) * np.array([[random.randint(0.0,255.0)], [random.randint(0.0,255.0)], [random.randint(0.0,255.0)]])
             else:
-                self._output = np.zeros(self.num_pixels) * color
+                self._output = np.zeros(self.num_pixels) * np.array([[0.0], [0.0], [0.0]])
 
             self._outputBuffer[0] = self._output.clip(0.0,255.0)

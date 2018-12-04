@@ -203,12 +203,8 @@ def createDefenceGraph(N_pixels, device):
     led_out = devices.LEDOutput(device)
     fg.addEffectNode(led_out)
 
-    color = colors.StaticRGBColorEffect(N_pixels, 55.0, 150.0, 236.0)
-    fg.addEffectNode(color)
-
     Defence = effects.DefenceMode(N_pixels)
     fg.addEffectNode(Defence)
 
-    fg.addConnection(color, 0, Defence, 0)
     fg.addConnection(Defence, 0, led_out, 0)
     return fg
