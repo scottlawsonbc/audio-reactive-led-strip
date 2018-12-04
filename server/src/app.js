@@ -510,6 +510,13 @@ createNetwork();
 createNodesFromBackend();
 createEdgesFromBackend();
 
+function showError(message) {
+  var error = document.getElementById('alert');
+  var errorInfo = document.getElementById('alert-info');
+  error.style.display='inherit';
+  errorInfo.innerHTML = "<strong>Danger!</strong> "+ message;
+}
+
 window.setInterval(function(){
   /// call your function here
   const fetchErrors = async() => fetch('./errors').then(response => response.json()).then(json => {
@@ -527,8 +534,9 @@ window.setInterval(function(){
           node.group = 'error';
           nodes.update(node);
           console.log(json[key])
+          showError(json[key])
       }
     }
   });
   fetchErrors();
-}, 5000);
+}, 2000);

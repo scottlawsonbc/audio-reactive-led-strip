@@ -79,6 +79,31 @@
         padding-left:5px;
         border-radius:3px;
     }
+.alert {
+    display:none;
+    padding: 20px;
+    background-color: #f44336;
+    color: white;
+    position:absolute;
+      left: 0px;
+      right: 0px;
+      top: 0px;
+}
+
+.closebtn {
+    margin-left: 15px;
+    color: white;
+    font-weight: bold;
+    float: right;
+    font-size: 22px;
+    line-height: 20px;
+    cursor: pointer;
+    transition: 0.3s;
+}
+
+.closebtn:hover {
+    color: black;
+}
   </style>
 
 </head>
@@ -87,7 +112,10 @@
 <body>
   <h1>FilterGraph:</h1>
   <div id="network"></div>
-
+  <div class="alert" id="alert">
+    <span class="closebtn" onclick="this.parentElement.style.display='none';">&times;</span> 
+    <div id="alert-info"><strong>Danger!</strong> Indicates a dangerous or potentially negative action.</div>
+  </div>
   <div id="node-popUp">
     <h2 id="node-operation">node</h2> <br>
     <div id="node-effectTable">
