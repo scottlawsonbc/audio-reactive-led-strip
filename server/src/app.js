@@ -27,13 +27,15 @@ class Body {
 }
 
 class ConfigurationWrapper {
-  constructor(nodeUid, body, parameters, state) {
+  constructor(nodeUid, body, parameters, state, callback) {
     this.nodeUid = nodeUid;
     this.body = new Body(this.emit);
     this.configurator = configurator;
     this.configurator = new Configurator(this, body, parameters);
     this.configurator.setOptions(true);
     this.configurator.setModuleOptions(state);
+    this.state = state;
+    this.callback = callback;
   }
 
   async emit(identifier, data) {
@@ -44,23 +46,14 @@ class ConfigurationWrapper {
     util.recursiveDOMDelete(this.configurator.wrapper);
   }
 
+  getState() {
+    return this.state;
+  }
+
   // is called by Configurator once values change
   async setOptions(data) {
-    console.log("emitting", data['parameters']);
-    await fetch('./node/'+this.nodeUid, {
-      method: 'UPDATE', // or 'PUT'
-      body: JSON.stringify(data['parameters']), // data can be `string` or {object}!
-      headers:{
-        'Content-Type': 'application/json'
-      }
-    }).then(res => res.json())
-    .then(node => {
-      console.debug('Update node successful:', JSON.stringify(node));
-      // updateVisNode(data, node); // TODO: Needed?
-    })
-    .catch(error => {
-      console.error('Error on updating node:', error);
-    })
+    util.deepExtend(this.state, data['parameters']);
+    this.callback(this.nodeUid, data);
   }
 
 }
@@ -266,7 +259,23 @@ function editNode(uid, cancelAction, callback) {
     Promise.all([stateJson, json]).then(result => { 
       var effect = result[0]["py/state"]["effect"]["py/state"];
       var values = result[1];
-      configurator = new ConfigurationWrapper(uid, document.getElementById('node-popUp'), values, effect, 1);
+      configurator = new ConfigurationWrapper(uid, document.getElementById('node-popUp'), values, effect, async (nodeUid, data) => {
+        console.log("emitting", data['parameters']);
+        await fetch('./node/'+nodeUid, {
+          method: 'UPDATE', // or 'PUT'
+          body: JSON.stringify(data['parameters']), // data can be `string` or {object}!
+          headers:{
+            'Content-Type': 'application/json'
+          }
+        }).then(res => res.json())
+        .then(node => {
+          console.debug('Update node successful:', JSON.stringify(node));
+          // updateVisNode(data, node); // TODO: Needed?
+        })
+        .catch(error => {
+          console.error('Error on updating node:', error);
+        })
+      });
       
     }) ;
   }
@@ -306,8 +315,8 @@ async function saveNodeData(data, callback) {
   // gather data
   var effectDropdown = document.getElementById('node-effectDropdown')
   var selectedEffect = effectDropdown.options[effectDropdown.selectedIndex].value;
-  var options = document.getElementById('node-args').value;
-
+  var options = configurator.getState();
+  console.log(options);
   // Save node in backend
   await fetch('./node', {
     method: 'POST', // or 'PUT'
@@ -483,14 +492,30 @@ async function deleteEdgeData(data) {
 async function updateNodeArgs() {
   var effectDropdown = document.getElementById('node-effectDropdown');
   var selectedEffect = effectDropdown.options[effectDropdown.selectedIndex].value;
-  // TODO: Bind to /effect/effect/parameter
-  await fetch('./effect/'+selectedEffect+'/args')
-    .then(response => response.json())
-    .then(json => {
-      console.debug('NodeArgs:',json);
-      document.getElementById('node-args').value = JSON.stringify(json, null, 4);
+
+  const response = await fetch('./effect/'+selectedEffect+'/parameter');
+  const json = response.json();
+  const defaultReponse = await fetch('./effect/'+selectedEffect+'/args');
+  const defaultJson = defaultReponse.json();
+  Promise.all([json,defaultJson]).then(result => { 
+    var parameters = result[0];
+    var defaults = result[1];
+    console.log(parameters);
+    console.log(defaults);
+    configurator = new ConfigurationWrapper(selectedEffect, document.getElementById('node-popUp'), parameters, defaults, async (nodeUid, data) => {
+      // do nothing
     });
-  console.log(selectedEffect);
+    
+  }) ;
+
+  // TODO: Bind to /effect/effect/parameter
+  // await fetch('./effect/'+selectedEffect+'/args')
+  //   .then(response => response.json())
+  //   .then(json => {
+  //     console.debug('NodeArgs:',json);
+  //     document.getElementById('node-args').value = JSON.stringify(json, null, 4);
+  //   });
+  // console.log(selectedEffect);
 }
 
 createNetwork();

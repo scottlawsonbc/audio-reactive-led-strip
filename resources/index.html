@@ -50,12 +50,13 @@
     div.vis-configuration-wrapper {
       width: 500px !important;
     }
-    div.vis-configuration.vis-config-button {
+    {% comment %} div.vis-configuration.vis-config-button {
       display:none !important;
     }
     div.vis-configuration.vis-config-option-container {
       display:none !important;
-    }
+    } {% endcomment %}
+    
     
   </style>
 
@@ -83,8 +84,6 @@
         <td><input type="button" value="cancel" id="node-cancelButton" /></td>
       </tr>
     </table>
-
-
   </div>
   <div id="edge-popUp">
     <span id="edge-operation">edge</span> <br>

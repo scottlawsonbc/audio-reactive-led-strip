@@ -29,6 +29,8 @@ dataLock = threading.Lock()
 # thread handler
 ledThread = threading.Thread()
 event_loop = None
+current_time = None
+last_time = None
 
 fg = filtergraph.FilterGraph(recordTimings=True)
 
@@ -44,6 +46,8 @@ fg.addEffectNode(led_out)
 
 
 fg = configs.createSpectrumGraph(num_pixels, device)
+#fg = configs.createMovingLightGraph(num_pixels, device)
+#fg = configs.createVUPeakGraph(num_pixels, device)  
 
 default_values['fs'] = fs
 default_values['num_pixels'] = num_pixels/2 # specific for spectrum
@@ -123,7 +127,7 @@ def create_app():
         if not request.json:
             abort(400)
         full_class_name = request.json[0]
-        parameters = jsonpickle.decode(request.json[1]) # TODO: Don't pickle!
+        parameters = request.json[1] # TODO: Don't pickle!
         print(parameters)
         module_name, class_name = None, None
         try:
@@ -179,7 +183,7 @@ def create_app():
         result = argsWithDefaults.copy()
         result.update({key : None for key in argspec.args[1:len(argspec.args)-len(argspec.defaults)]}) # 1 removes self
         
-        result.update({key : default_values[key] for key in default_values})
+        result.update({key : default_values[key] for key in default_values if key in result})
         print(result)
         return jsonify(result)
     
@@ -214,12 +218,17 @@ def create_app():
         global fg
         global ledThread
         global event_loop
+        global last_time
+        global current_time
         with dataLock:
-        # Do your stuff with commonDataStruct Here
+            last_time = current_time
+            current_time = timer()
+            dt = current_time - last_time
             if event_loop is None:
                 event_loop = asyncio.new_event_loop()
                 asyncio.set_event_loop(event_loop)
-            fg.update(1.0, event_loop)
+            
+            fg.update(dt, event_loop)
             fg.process()
             #fg.printProcessTimings()
         # Set the next thread to happen
@@ -229,7 +238,10 @@ def create_app():
     def startLEDThread():
         # Do initialisation stuff here
         global ledThread
+        global last_time
+        global current_time
         # Create your thread
+        current_time = timer()
         ledThread = threading.Timer(POOL_TIME, processLED, ())
         print('starting LED thread')
         ledThread.start()
@@ -241,6 +253,7 @@ def create_app():
     
 
     # Initiate
+    
     if is_running_from_reloader() == False: 
         startLEDThread()
     # When you kill Flask (SIGTERM), clear the trigger for the next thread

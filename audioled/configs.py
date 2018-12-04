@@ -13,7 +13,7 @@ def createMovingLightGraph(N_pixels, device):
     color_wheel = colors.ColorWheelEffect(N_pixels)
     fg.addEffectNode(color_wheel)
 
-    movingLight = effects.MovingLightEffect(N_pixels, audio_in.getSampleRate(),speed=150.0, dim_time=2.0)
+    movingLight = effects.MovingLightEffect(num_pixels=N_pixels, fs=audio_in.getSampleRate())
     fg.addEffectNode(movingLight)
 
     mirrorLower = effects.MirrorEffect(N_pixels,mirror_lower=True, recursion=0)
@@ -22,7 +22,7 @@ def createMovingLightGraph(N_pixels, device):
     afterglow = effects.AfterGlowEffect(N_pixels)
     fg.addEffectNode(afterglow)
 
-    append = effects.Append(2,[1,0])
+    append = effects.Append(int(N_pixels * 2), 2,[1,0])
     fg.addEffectNode(append)
 
     fg.addConnection(audio_in,0,movingLight,0)
@@ -54,7 +54,7 @@ def createMovingLightsGraph(N_pixels, device):
     afterglow1 = effects.AfterGlowEffect(N_pixels)
     fg.addEffectNode(afterglow1)
 
-    append1 = effects.Append(2,[1,0])
+    append1 = effects.Append(int(N_pixels * 2), 2,[1,0])
     fg.addEffectNode(append1)
 
     fg.addConnection(audio_in,0,movingLight1,0)
@@ -74,7 +74,7 @@ def createMovingLightsGraph(N_pixels, device):
     afterglow2 = effects.AfterGlowEffect(N_pixels)
     fg.addEffectNode(afterglow2)
 
-    append2 = effects.Append(2,[0,1])
+    append2 = effects.Append(int(N_pixels * 2), 2,[0,1])
     fg.addEffectNode(append2)
 
     fg.addConnection(audio_in,0,movingLight2,0)
@@ -115,7 +115,7 @@ def createSpectrumGraph(N_pixels, device):
     spectrum = effects.SpectrumEffect(num_pixels=N_pixels, fs=audio_in.getSampleRate(), chunk_rate=60)
     fg.addEffectNode(spectrum)
 
-    append = effects.Append(2,flipMask=[1,0])
+    append = effects.Append(int(N_pixels * 2), 2,flipMask=[1,0])
     fg.addEffectNode(append)
 
     afterglow = effects.AfterGlowEffect(int(2*N_pixels), glow_time=2.0)
@@ -159,7 +159,7 @@ def createVUPeakGraph(N_pixels, device):
     vu_peak_R = effects.VUMeterPeakEffect(N_pixels)
     fg.addEffectNode(vu_peak_R)
 
-    append = effects.Append(2,[0,1])
+    append = effects.Append(int(N_pixels * 2), 2,[0,1])
     fg.addEffectNode(append)
 
     afterglow = effects.AfterGlowEffect(int(2*N_pixels), 0.5)

@@ -335,7 +335,7 @@ class MovingLightEffect(Effect):
     - 1: Color
     """
 
-    def __init__(self, num_pixels, fs, speed=10.0, dim_time=20.0, lowcut_hz=50.0, highcut_hz=300.0):
+    def __init__(self, num_pixels, fs, speed=100.0, dim_time=2.0, lowcut_hz=50.0, highcut_hz=300.0):
         self.num_pixels = num_pixels
         self.speed = speed
         self.dim_time = dim_time
@@ -363,8 +363,8 @@ class MovingLightEffect(Effect):
         definition = {
             "parameters": {
                 # default, min, max, stepsize
-                "speed": [10.0, 1.0, 100.0, 1.0],
-                "dim_time": [20.0, 0.0, 100.0, 1.0],
+                "speed": [10.0, 1.0, 200.0, 1.0],
+                "dim_time": [2.0, 0.0, 100.0, 1.0],
                 "lowcut_hz": [50.0, 0.0, 8000.0, 1.0],
                 "highcut_hz": [100.0, 0.0, 8000.0, 1.0],
             }
@@ -380,45 +380,48 @@ class MovingLightEffect(Effect):
         return definition
     
     def process(self):
-        if self._inputBuffer != None and self._outputBuffer != None:
-            buffer = self._inputBuffer[0]
-            color = self._inputBuffer[1]
-            if color is None:
-                # default color: all white
-                color = np.ones(self.num_pixels) * np.array([[255.0],[255.0],[255.0]])
-            if buffer is not None:
-                audio = self._inputBuffer[0]
-                # apply bandpass to audio
-                y, self._filter_zi = lfilter(b=self._filter_b, a=self._filter_a, x=np.array(audio), zi=self._filter_zi)
-                # move in speed
-                dt_move = self._t - self._last_move_t
-                if dt_move * self.speed > 1:
-                    shift_pixels = int(dt_move * self.speed)
-                    self._pixel_state[:, shift_pixels:] = self._pixel_state[:, :-shift_pixels]
-                    self._pixel_state[:, 0:shift_pixels] = self._pixel_state[:, shift_pixels:shift_pixels+1]
-                    # convolve to smooth edges
-                    self._pixel_state[:, 0:2*shift_pixels] = gaussian_filter1d(self._pixel_state[:,0:2*shift_pixels],0.5)
-                    self._last_move_t = self._t
-                # dim with time
-                dt = self._t - self._last_t
-                self._last_t = self._t
-                self._pixel_state*= (1.0 - dt / self.dim_time)
-                self._pixel_state = gaussian_filter1d(self._pixel_state, sigma=0.5)
-                self._pixel_state = gaussian_filter1d(self._pixel_state, sigma=0.5)
-                # new color at origin
-                peak = np.max(y) * 2.0
-                peak = peak**2
-                r,g,b = color[0,0], color[1,0], color[2,0]
-                self._pixel_state[0][0] = r * peak + peak * 255.0
-                self._pixel_state[1][0] = g * peak+ peak * 255.0
-                self._pixel_state[2][0] = b * peak+ peak * 255.0
-                self._outputBuffer[0] = self._pixel_state.clip(0.0,255.0)
+        if self._inputBuffer is None or self._outputBuffer is None:
+            return
+        buffer = self._inputBuffer[0]
+        color = self._inputBuffer[1]
+        if color is None:
+            # default color: all white
+            color = np.ones(self.num_pixels) * np.array([[255.0],[255.0],[255.0]])
+        if buffer is not None:
+            audio = self._inputBuffer[0]
+            # apply bandpass to audio
+            y, self._filter_zi = lfilter(b=self._filter_b, a=self._filter_a, x=np.array(audio), zi=self._filter_zi)
+            # move in speed
+            dt_move = self._t - self._last_move_t
+            if dt_move * self.speed > 1:
+                shift_pixels = int(dt_move * self.speed)
+                shift_pixels = np.clip(shift_pixels, 1, self.num_pixels-1)
+                self._pixel_state[:, shift_pixels:] = self._pixel_state[:, :-shift_pixels]
+                self._pixel_state[:, 0:shift_pixels] = self._pixel_state[:, shift_pixels:shift_pixels+1]
+                # convolve to smooth edges
+                self._pixel_state[:, 0:2*shift_pixels] = gaussian_filter1d(self._pixel_state[:,0:2*shift_pixels],0.5)
+                self._last_move_t = self._t
+            # dim with time
+            dt = self._t - self._last_t
+            self._last_t = self._t
+            self._pixel_state*= (1.0 - dt / self.dim_time)
+            self._pixel_state = gaussian_filter1d(self._pixel_state, sigma=0.5)
+            self._pixel_state = gaussian_filter1d(self._pixel_state, sigma=0.5)
+            # new color at origin
+            peak = np.max(y) * 2.0
+            peak = peak**2
+            r,g,b = color[0,0], color[1,0], color[2,0]
+            self._pixel_state[0][0] = r * peak + peak * 255.0
+            self._pixel_state[1][0] = g * peak+ peak * 255.0
+            self._pixel_state[2][0] = b * peak+ peak * 255.0
+            self._outputBuffer[0] = self._pixel_state.clip(0.0,255.0)
 
 
 
 class Append(Effect):
-    def __init__(self, num_channels, flipMask=None):
+    def __init__(self, num_pixels, num_channels, flipMask=None):
         self.num_channels = num_channels
+        self.num_pixels = num_pixels
         self.flipMask = flipMask
         self.__initstate__()
     
@@ -431,15 +434,19 @@ class Append(Effect):
     def process(self):
         if self._inputBuffer is None or self._outputBuffer is None:
             return
+        if self._inputBuffer[0] is None:
+            return
+        state = np.zeros(self.num_pixels) * np.array([[0],[0], [0]])
         if self.flipMask is not None and self.flipMask[0] > 0:
             state = self._inputBuffer[0][:,::-1]
         else:
             state = self._inputBuffer[0]
         for i in range(1,self.num_channels):
-            if self.flipMask is not None and self.flipMask[i] > 0:
-                state = np.concatenate((state, self._inputBuffer[i][:,::-1]),axis=1)
-            else:
-                state = np.concatenate((state, self._inputBuffer[i]),axis=1)
+            if self._inputBuffer[i] is not None:
+                if self.flipMask is not None and self.flipMask[i] > 0:
+                    state = np.concatenate((state, self._inputBuffer[i][:,::-1]),axis=1)
+                else:
+                    state = np.concatenate((state, self._inputBuffer[i]),axis=1)    
         self._outputBuffer[0] = state
 
 class Combine(Effect):
