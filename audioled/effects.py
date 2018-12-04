@@ -718,6 +718,32 @@ class SwimmingpoolEffect(Effect):
         self._Wave, self._WaveSpecSpeed = self._CreateWaves(self.num_waves, self.scale, self.wavespread_low, self.wavespread_high, self.max_speed)
         super(SwimmingpoolEffect, self).__initstate__()
 
+    @staticmethod
+    def getParameterDefinition():
+        definition = {
+            "parameters": {
+                # default, min, max, stepsize
+                "num_pixels": [300, 1, 1000, 1],
+                "num_waves": [30, 1, 100, 1],
+                "scale": [0.2, 0.01, 1.0, 0.01],
+                "wavespread_low": [30, 1, 100, 1],
+                "wavespread_high": [70, 50, 150, 1],
+                "max_speed": [30, 1, 200, 1],
+
+            }
+        }
+        return definition
+    
+    def getParameter(self):
+        definition = self.getParameterDefinition()       
+        del definition['parameters']['num_pixels']
+        definition['parameters']['num_waves'][0] = self.num_waves
+        definition['parameters']['scale'][0] = self.scale
+        definition['parameters']['wavespread_low'][0] = self.wavespread_low
+        definition['parameters']['wavespread_high'][0] = self.wavespread_high
+        definition['parameters']['max_speed'][0] = self.max_speed
+        return definition
+
     def _SinArray(self, _spread, _scale, _wavehight):
         _CArray = []
         _offset = random.randint(0,300)
@@ -740,7 +766,7 @@ class SwimmingpoolEffect(Effect):
         return _WaveArray, _WaveArraySpecSpeed;
 
     def numInputChannels(self):
-        return 1
+        return 2
 
     def numOutputChannels(self):
         return 1
@@ -753,5 +779,6 @@ class SwimmingpoolEffect(Effect):
             for i in range(0,self.num_waves):
                 step = np.roll(self._Wave[i], int(self._t * self._WaveSpecSpeed[i]), axis=1)
                 self._output += step
-
-            self._outputBuffer[0] = self._output.clip(0.0,255.0)
+            
+            
+            self._outputBuffer[0] = self._output.clip(0,255).astype(int)
