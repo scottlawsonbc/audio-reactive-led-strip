@@ -755,3 +755,35 @@ class SwimmingpoolEffect(Effect):
                 self._output += step
 
             self._outputBuffer[0] = self._output.clip(0.0,255.0)
+
+
+
+class DefenceMode(Effect):
+
+    def __init__(self, num_pixels, scale=0.2):
+        self.num_pixels = num_pixels
+        self.scale = scale
+        self.__initstate__()
+
+    def __initstate__(self):
+        # state
+        self._pixel_state = np.zeros(self.num_pixels) * np.array([[0.0], [0.0], [0.0]])
+        self._last_t = 0.0
+        super(DefenceMode, self).__initstate__()
+
+    def numInputChannels(self):
+        return 1
+
+    def numOutputChannels(self):
+        return 1
+
+    def process(self):
+        if self._outputBuffer is not None:
+            color = self._inputBuffer[0]
+            A = random.choice([True,False])
+            if A == True:
+                self._output = np.ones(self.num_pixels) * color
+            else:
+                self._output = np.zeros(self.num_pixels) * color
+
+            self._outputBuffer[0] = self._output.clip(0.0,255.0)
