@@ -73,7 +73,7 @@ class Effect(object):
         - Write output data to self._outputBuffer
         """
         raise NotImplementedError('process() was not implemented')
-    
+
     async def update(self, dt):
         """
         Update timing, can be used to precalculate stuff that doesn't depend on input values
@@ -88,7 +88,7 @@ class Effect(object):
             if k.startswith('_'):
                 stateDict.pop(k)
         return stateDict
-        
+
     def __getstate__(self):
         """
         Default implementation of __getstate__ that deletes buffer, call __cleanState__ when overloading
@@ -100,7 +100,7 @@ class Effect(object):
     def __setstate__(self, state):
         self.__dict__.update(state)
         self.__initstate__()
-    
+
     def updateParameter(self, stateDict):
         self.__setstate__(stateDict)
 
@@ -164,10 +164,10 @@ class SpectrumEffect(Effect):
 
     def buffer_coroutine(self):
         while True:
-            yield self._lastAudioChunk    
+            yield self._lastAudioChunk
 
     def process(self):
-        
+
         if self._inputBuffer is not None and self._outputBuffer is not None:
             audio = self._inputBuffer[0]
             col_melody = self._inputBuffer[1]
@@ -178,7 +178,7 @@ class SpectrumEffect(Effect):
             if col_bass is None:
                 # default color: all white
                 col_bass = np.ones(self.num_pixels) * np.array([[255.0],[255.0],[255.0]])
-            if audio is not None:        
+            if audio is not None:
                 if self._gen is None:
                     g = self.buffer_coroutine()
                     next(g)
@@ -197,7 +197,7 @@ class SpectrumEffect(Effect):
                 self._outputBuffer[0] = pixels.clip(0,255).astype(int)
 
     def process_line(self, fft, fft_rms):
-        
+
         #fft = np.convolve(fft, self._max_filter, 'same')
 
         # Some kind of normalization?
@@ -207,15 +207,15 @@ class SpectrumEffect(Effect):
 
         # Upsample to number of pixels
         fft = np.interp(self._norm_dist, self._fft_dist, fft)
-        
-        # 
+
+        #
         fft = np.convolve(fft, self._min_feature_win, 'same')
-        
+
         return fft*255
 
 
 class ShiftEffect(Effect):
-    
+
     def __init__(self, num_pixels, speed=2.0, dim_time=.1):
         self.num_pixels = num_pixels
         self.speed = speed
@@ -233,7 +233,7 @@ class ShiftEffect(Effect):
 
     def numOutputChannels(self):
         return 1
-    
+
     def process(self):
         if self._inputBuffer is not None and self._outputBuffer is not None:
             pixels = self._inputBuffer[0]
@@ -258,13 +258,13 @@ class VUMeterRMSEffect(Effect):
     Inputs:
     - 0: Audio
     - 1: Color
-    """ 
+    """
 
     def __init__(self, num_pixels, db_range = 60.0):
         self.num_pixels = num_pixels
         self.db_range = db_range
         self.__initstate__()
-        
+
 
     def numInputChannels(self):
         return 2
@@ -281,9 +281,9 @@ class VUMeterRMSEffect(Effect):
             }
         }
         return definition
-    
+
     def getParameter(self):
-        definition = self.getParameterDefinition()       
+        definition = self.getParameterDefinition()
         #definition['parameters']['num_pixels'][0] = self.num_pixels
         del definition['parameters']['num_pixels'] # disable edit
         definition['parameters']['db_range'][0] = self.db_range
@@ -301,7 +301,7 @@ class VUMeterRMSEffect(Effect):
                 N = len(y) # blocksize
                 rms = dsp.rms(y)
                 db = 20 * math.log10(max(rms, 1e-16))
-                
+
                 bar = np.zeros(self.num_pixels) * np.array([[0],[0],[0]])
                 index = int(self.num_pixels * rms)
                 index = np.clip(index, 0, self.num_pixels-1)
@@ -315,7 +315,7 @@ class VUMeterPeakEffect(Effect):
     Inputs:
     - 0: Audio
     - 1: Color
-    """ 
+    """
 
     def __init__(self, num_pixels, db_range = 60.0):
         self.num_pixels = num_pixels
@@ -338,9 +338,9 @@ class VUMeterPeakEffect(Effect):
             }
         }
         return definition
-    
+
     def getParameter(self):
-        definition = self.getParameterDefinition()       
+        definition = self.getParameterDefinition()
         #definition['parameters']['num_pixels'][0] = self.num_pixels
         del definition['parameters']['num_pixels'] # disable edit
         definition['parameters']['db_range'][0] = self.db_range
@@ -355,7 +355,7 @@ class VUMeterPeakEffect(Effect):
                 color = np.ones(self.num_pixels) * np.array([[255.0],[255.0],[255.0]])
             if buffer is not None:
                 y = self._inputBuffer[0]
-        
+
                 N = len(y) # blocksize
                 peak = np.max(y)
                 db = (20*(math.log10(max(peak, 1e-16))))
@@ -396,7 +396,7 @@ class MovingLightEffect(Effect):
 
     def numInputChannels(self):
         return 2
-    
+
     def numOutputChannels(self):
         return 1
 
@@ -412,15 +412,15 @@ class MovingLightEffect(Effect):
             }
         }
         return definition
-    
+
     def getParameter(self):
-        definition = self.getParameterDefinition()       
+        definition = self.getParameterDefinition()
         definition['parameters']['speed'][0] = self.speed
         definition['parameters']['dim_time'][0] = self.dim_time
         definition['parameters']['lowcut_hz'][0] = self.lowcut_hz
         definition['parameters']['highcut_hz'][0] = self.highcut_hz
         return definition
-    
+
     def process(self):
         if self._inputBuffer is None or self._outputBuffer is None:
             return
@@ -472,14 +472,14 @@ class Append(Effect):
         self.flip6 = flip6
         self.flip7 = flip7
         self.__initstate__()
-    
+
     def __initstate__(self):
         super().__initstate__()
         self._flipMask = [self.flip0,self.flip1,self.flip2,self.flip3,self.flip4,self.flip5,self.flip6,self.flip7]
 
     def numInputChannels(self):
         return self.num_channels
-    
+
     def numOutputChannels(self):
         return 1
 
@@ -500,7 +500,7 @@ class Append(Effect):
             }
         }
         return definition
-    
+
     def getParameter(self):
         definition = self.getParameterDefinition()
         del definition['parameters']['num_channels'] # not editable at runtime
@@ -527,30 +527,30 @@ class Append(Effect):
                 if self._flipMask is not None and self._flipMask[i] > 0:
                     state = np.concatenate((state, self._inputBuffer[i][:,::-1]),axis=1)
                 else:
-                    state = np.concatenate((state, self._inputBuffer[i]),axis=1)    
+                    state = np.concatenate((state, self._inputBuffer[i]),axis=1)
         self._outputBuffer[0] = state
 
 class Combine(Effect):
     def __init__(self, mode='lightenOnly'):
         self.mode = mode
         self.__initstate__()
-    
+
     def numInputChannels(self):
         return 2
-    
+
     def numOutputChannels(self):
         return 1
-    
+
     def process(self):
         if self._inputBuffer is None or self._outputBuffer is None:
             return
         if self.mode == 'lightenOnly':
             self._outputBuffer[0] = np.maximum(self._inputBuffer[0], self._inputBuffer[1])
-        
+
 
 class AfterGlowEffect(Effect):
     """
-    Effect that 
+    Effect that
     """
 
     def __init__(self, glow_time=1.0):
@@ -565,7 +565,7 @@ class AfterGlowEffect(Effect):
 
     def numInputChannels(self):
         return 1
-    
+
     def numOutputChannels(self):
         return 1
 
@@ -578,9 +578,9 @@ class AfterGlowEffect(Effect):
             }
         }
         return definition
-    
+
     def getParameter(self):
-        definition = self.getParameterDefinition()       
+        definition = self.getParameterDefinition()
         definition['parameters']['glow_time'][0] = self.glow_time
         return definition
 
@@ -588,14 +588,14 @@ class AfterGlowEffect(Effect):
         await super().update(dt)
         dt = self._t - self._last_t
         self._last_t = self._t
-        
+
         if dt > 0:
             # Dim state
             if self.glow_time > 0 and self._pixel_state is not None:
                 self._pixel_state = self._pixel_state * (1.0 - dt / self.glow_time)
             else:
                 self._pixel_state = None
-    
+
     def process(self):
         if self._inputBuffer is None or self._outputBuffer is None:
             self._outputBuffer[0] = None
@@ -604,16 +604,16 @@ class AfterGlowEffect(Effect):
         if y is None:
             self._outputBuffer[0] = None
             return
-        
+
         if self._pixel_state is not None and np.size(self._pixel_state) == np.size(y):
             # keep previous state if new color is too dark
             diff = (y - self._pixel_state).max(axis=0)
             mask = diff < 10
-            
+
             y [:,mask]= self._pixel_state[:,mask]
 
         self._pixel_state = y
-    
+
         self._outputBuffer[0] = y
 
 class MirrorEffect(Effect):
@@ -632,7 +632,7 @@ class MirrorEffect(Effect):
 
     def numInputChannels(self):
         return 1
-    
+
     def numOutputChannels(self):
         return 1
 
@@ -733,9 +733,9 @@ class SwimmingpoolEffect(Effect):
             }
         }
         return definition
-    
+
     def getParameter(self):
-        definition = self.getParameterDefinition()       
+        definition = self.getParameterDefinition()
         del definition['parameters']['num_pixels']
         definition['parameters']['num_waves'][0] = self.num_waves
         definition['parameters']['scale'][0] = self.scale
@@ -779,6 +779,37 @@ class SwimmingpoolEffect(Effect):
             for i in range(0,self.num_waves):
                 step = np.roll(self._Wave[i], int(self._t * self._WaveSpecSpeed[i]), axis=1)
                 self._output += step
-            
-            
-            self._outputBuffer[0] = self._output.clip(0,255).astype(int)
+
+            self._outputBuffer[0] = self._output.clip(0.0,255.0)
+
+
+
+class DefenceMode(Effect):
+
+    def __init__(self, num_pixels, scale=0.2):
+        self.num_pixels = num_pixels
+        self.scale = scale
+        self.__initstate__()
+
+    def __initstate__(self):
+        # state
+        self._pixel_state = np.zeros(self.num_pixels) * np.array([[0.0], [0.0], [0.0]])
+        self._last_t = 0.0
+        super(DefenceMode, self).__initstate__()
+
+    def numInputChannels(self):
+        return 1
+
+    def numOutputChannels(self):
+        return 1
+
+    def process(self):
+        if self._outputBuffer is not None:
+            color = self._inputBuffer[0]
+            A = random.choice([True,False])
+            if A == True:
+                self._output = np.ones(self.num_pixels) * color
+            else:
+                self._output = np.zeros(self.num_pixels) * color
+
+            self._outputBuffer[0] = self._output.clip(0.0,255.0)
