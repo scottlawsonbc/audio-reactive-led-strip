@@ -204,7 +204,7 @@ def create_app():
 
     def getModuleAndClassName(full_class_name):
         module_name, class_name = full_class_name.rsplit(".", 1)
-        if module_name != "audioled.audio" and module_name != "audioled.effects" and module_name != "audioled.devices" and module_name != "audioled.colors":
+        if module_name != "audioled.audio" and module_name != "audioled.effects" and module_name != "audioled.devices" and module_name != "audioled.colors" and module_name != "audioled.audioreactive" and module_name != "audioled.generative":
             raise RuntimeError("Not allowed")
         return module_name, class_name
 
