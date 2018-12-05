@@ -73,6 +73,7 @@ def createFilterGraph(config, num_pixels, device):
     else:
         raise NotImplementedError("Config not implemented")
 
+def saveAndLoad(config, fg):
     if(args.save_config):
         # save filtergraph to json
         filename = "configs/{}.json".format(config)
@@ -116,6 +117,7 @@ while True:
         print('---switching configuration---')
         config_idx = (config_idx) % len(configChoices)
         cur_graph = createFilterGraph(configChoices[config_idx], num_pixels, device)
+        cur_graph = saveAndLoad(configChoices[config_idx], cur_graph)
         config_idx = config_idx + 1
         last_switch_time = current_time
 

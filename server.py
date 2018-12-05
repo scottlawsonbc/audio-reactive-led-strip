@@ -48,8 +48,8 @@ fg.addEffectNode(led_out)
 
 
 
-#fg = configs.createSpectrumGraph(num_pixels, device)
-fg = configs.createMovingLightGraph(num_pixels, device)
+fg = configs.createSpectrumGraph(num_pixels, device)
+#fg = configs.createMovingLightGraph(num_pixels, device)
 #fg = configs.createVUPeakGraph(num_pixels, device)
 #fg = configs.createSwimmingPoolGraph(num_pixels, device)
 #fg = configs.createDefenceGraph(num_pixels, device)
@@ -225,6 +225,19 @@ def create_app():
         for error in errors:
             result[error.node.uid] = error.message
         return json.dumps(result)
+
+    @app.route('/configuration', methods=['GET'])
+    def configuration_get():
+        config = jsonpickle.encode(fg)
+        return config
+    
+    @app.route('/configuration', methods=['POST'])
+    def configuration_post():
+        global fg
+        if not request.json:
+            abort(400)
+        fg = jsonpickle.decode(request.json)
+        return "OK"
 
     
     def processLED():

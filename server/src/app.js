@@ -2,6 +2,7 @@ import { DataSet, Network } from 'vis/index-network';
 import 'vis/dist/vis-network.min.css';
 var Configurator = require("vis/lib/shared/Configurator").default;
 let util = require('vis/lib/util');
+import { saveAs } from 'file-saver';
 import colorWheelIcon from '../img/audioled.colors.ColorWheelEffect.png'
 import audioInputIcon from '../img/audioled.audio.AudioInput.png'
 import spectrumIcon from '../img/audioled.effects.SpectrumEffect.png'
@@ -509,6 +510,63 @@ async function updateNodeArgs() {
 createNetwork();
 createNodesFromBackend();
 createEdgesFromBackend();
+createOther();
+
+
+
+function createOther() {
+  document.getElementById('config-saveButton').onclick = saveConfig.bind(this);
+  document.getElementById('file-input').addEventListener('change', readSingleFile, false);
+}
+
+function readSingleFile(e) {
+  var file = e.target.files[0];
+  if (!file) {
+    return;
+  }
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    var contents = e.target.result;
+    displayContents(contents);
+  };
+  reader.readAsText(file);
+}
+
+async function saveConfig() {
+  try {
+    var isFileSaverSupported = !!new Blob;
+  } catch (e) {
+    console.error("FileSaver not supported")
+  }
+  await fetch('./configuration').then(response => response.json()).then(json => {
+    var blob = new Blob([JSON.stringify(json, null, 4)], {type: "text/plain;charset=utf-8"});
+    saveAs(blob, "configuration.json");
+  })
+}
+
+function displayContents(contents) {
+  console.log(contents);
+  const postData = async () => fetch('./configuration', {
+    method: 'POST', // or 'PUT'
+    body: JSON.stringify(contents), // data can be `string` or {object}!
+    headers:{
+      'Content-Type': 'application/json'
+    }
+  })
+  .then(
+    () => {
+      console.log("Successfully loaded");
+      location.reload();
+    })
+  .catch(error => {
+    console.error('Error on loading configuration:', error);
+  })
+  postData();
+}
+
+async function loadConfig() {
+  await fetch()
+}
 
 function showError(message) {
   var error = document.getElementById('alert');
