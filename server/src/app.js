@@ -129,19 +129,32 @@ function createNetwork() {
     layout: {
       hierarchical: {
         enabled: true,
-        levelSeparation: -150,
+        levelSeparation: 200,
         direction: "UD",
         nodeSpacing: 300,
+        sortMethod: 'directed',
+
       },
     },
     physics: {
+      enabled: true,
+      barnesHut: {
+        gravitationalConstant: -2000,
+        centralGravity: 0.3,
+        springLength: 200,
+        springConstant: 0.04,
+        damping: 0.09,
+        avoidOverlap: 1
+      },
       hierarchicalRepulsion: {
-        "centralGravity": 0,
-        "nodeDistance": 250
-
+        centralGravity: 10.0,
+        nodeDistance: 200,
+        springLength: 200,
+        springConstant: 0.01,
+        damping: 0.09,
       },
       minVelocity: 0.75,
-      solver: "hierarchicalRepulsion"
+      solver: "barnesHut"
     },
     interaction: {
       navigationButtons: false,
