@@ -310,9 +310,20 @@ class DotStar(LEDController):
         self._strip.show()
 
 class LEDOutput(Effect):
+    overrideDevice = None
+
     def __init__(self, controller):
         self.controller = controller
         self.__initstate__()
+
+    def __setstate__(self, state):
+        # override __setstate__ from Effect:
+        # We want to be able to inject another device with class variable
+        if self.overrideDevice is not None:
+            del state['controller']
+            self.controller = self.overrideDevice
+        super().__setstate__(state)    
+
     
     def numInputChannels(self):
         return 1

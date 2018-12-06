@@ -7,6 +7,7 @@ import threading
 import atexit
 import asyncio
 import json
+import argparse
 from flask import Flask, jsonify, abort, send_from_directory, request
 from audioled import filtergraph
 from audioled import audio
@@ -19,7 +20,8 @@ from timeit import default_timer as timer
 from werkzeug.serving import is_running_from_reloader
 
 num_pixels = 300
-device = devices.FadeCandy('192.168.9.241:7890')
+device = None 
+fg = None
 default_values = {}
 
 POOL_TIME = 0.001 #Seconds
@@ -34,29 +36,6 @@ current_time = None
 last_time = None
 # errors
 errors = []
-
-fg = filtergraph.FilterGraph(recordTimings=True)
-
-audio_in = audio.AudioInput(num_channels=2)
-
-fs = audio_in.getSampleRate()
-
-fg.addEffectNode(audio_in)
-
-led_out = devices.LEDOutput(device)
-fg.addEffectNode(led_out)
-
-
-
-#fg = configs.createSpectrumGraph(num_pixels, device)
-#fg = configs.createMovingLightGraph(num_pixels, device)
-#fg = configs.createVUPeakGraph(num_pixels, device)
-fg = configs.createSwimmingPoolGraph(num_pixels, device)
-#fg = configs.createDefenceGraph(num_pixels, device)
-
-default_values['fs'] = fs
-default_values['num_pixels'] = num_pixels/2 # specific for spectrum
-
 
 # @app.route('/', methods=['GET'])
 # def home():
@@ -306,6 +285,31 @@ def create_app():
     
 
 if __name__ == '__main__':
-    
+    deviceRasp = 'RaspberryPi'
+    deviceCandy = 'FadeCandy'
+
+    parser = argparse.ArgumentParser(description='Audio Reactive LED Strip Server')
+    parser.add_argument('-N', '--num_pixels',  dest='num_pixels', type=int, default=300, help = 'number of pixels (default: 300)')
+    parser.add_argument('-D', '--device', dest='device', default=deviceCandy, choices=[deviceRasp,deviceCandy], help = 'device to send RGB to')
+    parser.add_argument('--device_candy_server', dest='device_candy_server', default='127.0.0.1:7890', help = 'Server for device FadeCandy')
+
+    args = parser.parse_args()
+
+    # Initialize device
+    if args.device == deviceRasp:
+        device = devices.RaspberryPi(num_pixels)
+    elif args.device == deviceCandy:
+        device = devices.FadeCandy(args.device_candy_server)
+
+    devices.LEDOutput.overrideDevice = device
+
+    # Initialize filtergraph
+    fg = configs.createSpectrumGraph(num_pixels, device)
+
+    # Init defaults
+    default_values['fs'] = 48000 # ToDo: How to provide fs information to downstream effects?
+    default_values['num_pixels'] = num_pixels
+
+
     app = create_app()
     app.run(debug=False)
