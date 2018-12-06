@@ -23,16 +23,21 @@ SHORT_NORMALIZE = 1.0 / 32768.0
 
 class ShiftEffect(Effect):
 
-    def __init__(self, num_pixels, speed=2.0, dim_time=.1):
-        self.num_pixels = num_pixels
+    def __init__(self, speed=2.0, dim_time=.1):
         self.speed = speed
         self.dim_time = dim_time
         self.__initstate__()
 
     def __initstate__(self):
         # state
-        self._pixel_state = np.zeros(self.num_pixels) * np.array([[0.0],[0.0],[0.0]])
-        self._last_t = 0.0
+        try: 
+            self._pixel_state
+        except AttributeError:
+            self._pixel_state = None
+        try: 
+            self._last_t
+        except AttributeError:
+            self._last_t = 0.0
         super(ShiftEffect, self).__initstate__()
 
     def numInputChannels(self):
@@ -41,22 +46,46 @@ class ShiftEffect(Effect):
     def numOutputChannels(self):
         return 1
 
-    def process(self):
-        if self._inputBuffer is not None and self._outputBuffer is not None:
-            pixels = self._inputBuffer[0]
-            if pixels is not None:
-                y = pixels
-                pixels = np.roll(self._pixel_state, -1, axis=1)
-                pixels[0][0] = 0
-                pixels[1][0] = 0
-                pixels[2][0] = 0
-                dt = self._t - self._last_t
-                self._last_t = self._t
-                if self.dim_time > 0:
-                    pixels *=(1-dt / self.dim_time)
+    @staticmethod
+    def getParameterDefinition():
+        definition = {
+            "parameters": {
+                # default, min, max, stepsize
+                "speed": [2.0, 0.0, 100.0, 0.1],
+                "dim_time": [0.1, 0.01, 10.0, 0.01],
+            }
+        }
+        return definition
 
-                self._pixel_state = pixels + y
-                self._outputBuffer[0] = self._pixel_state.clip(0.0,255.0)
+    def getParameter(self):
+        definition = self.getParameterDefinition()
+        definition['parameters']['speed'][0] = self.speed
+        definition['parameters']['dim_time'][0] = self.dim_time
+        return definition
+
+    def process(self):
+        if self._inputBuffer is None or self._outputBuffer is None:
+            return
+        if not self._inputBufferValid(0):
+            self._outputBuffer[0] = None
+            return
+
+        y = self._inputBuffer[0]
+        num_pixels = len(y)
+        if self._pixel_state is None:
+            # init with black
+            self._pixel_state = np.zeros(num_pixels) * np.array([[0.0],[0.0],[0.0]])
+        pixels = np.roll(self._pixel_state, -1, axis=1)
+        pixels[0][0] = 0
+        pixels[1][0] = 0
+        pixels[2][0] = 0
+        dt = self._t - self._last_t
+        self._last_t = self._t
+        if self.dim_time > 0:
+            pixels *=(1-dt / self.dim_time)
+
+        self._pixel_state = pixels + y
+        self._outputBuffer[0] = self._pixel_state.clip(0.0,255.0)
 
 
 
