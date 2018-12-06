@@ -160,11 +160,11 @@ function createNetwork() {
         avoidOverlap: 1
       },
       hierarchicalRepulsion: {
-        centralGravity: 10.0,
+        centralGravity: 1.0,
         nodeDistance: 200,
         springLength: 200,
-        springConstant: 0.01,
-        damping: 0.09,
+        springConstant: 0.001,
+        damping: 0.25,
       },
       minVelocity: 0.75,
       solver: "barnesHut"
