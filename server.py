@@ -305,6 +305,9 @@ if __name__ == '__main__':
 
     # Initialize filtergraph
     fg = configs.createSpectrumGraph(num_pixels, device)
+    #fg = configs.createMovingLightGraph(num_pixels, device)
+    #fg = configs.createMovingLightsGraph(num_pixels, device)
+    #fg = configs.createVUPeakGraph(num_pixels, device)
     #fg = configs.createSwimmingPoolGraph(num_pixels, device)
 
     # Init defaults
