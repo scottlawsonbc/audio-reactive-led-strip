@@ -296,7 +296,7 @@ class MovingLight(Effect):
             "parameters": {
                 # default, min, max, stepsize
                 "speed": [10.0, 1.0, 200.0, 1.0],
-                "dim_time": [2.0, 0.0, 100.0, 1.0],
+                "dim_time": [1.0, 0.01, 10.0, 0.01],
                 "lowcut_hz": [50.0, 0.0, 8000.0, 1.0],
                 "highcut_hz": [100.0, 0.0, 8000.0, 1.0],
             }
