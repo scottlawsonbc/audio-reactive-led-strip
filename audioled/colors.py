@@ -36,7 +36,7 @@ def blend(pixel_a, pixel_b, blend_mode):
 
 # New Filtergraph Style effects
 
-class StaticRGBColorEffect(Effect):
+class StaticRGBColor(Effect):
     def __init__(self, num_pixels, r=255.0, g=255.0, b=255.0):
         self.num_pixels = num_pixels
         self.r = r
@@ -47,7 +47,7 @@ class StaticRGBColorEffect(Effect):
     def __initstate__(self):
         # state 
         self._color = None
-        super(StaticRGBColorEffect, self).__initstate__()
+        super(StaticRGBColor, self).__initstate__()
     
 
     def numInputChannels(self):
@@ -83,14 +83,14 @@ class StaticRGBColorEffect(Effect):
         self._outputBuffer = buffer
     
     async def update(self, dt):
-        await super(StaticRGBColorEffect, self).update(dt)
+        await super(StaticRGBColor, self).update(dt)
         if self._color is None:
             self._color = np.ones(self.num_pixels) * np.array([[self.r],[self.g],[self.b]])
 
     def process(self):
         self._outputBuffer[0] = self._color
 
-class ColorWheelEffect(Effect):
+class ColorWheel(Effect):
     """ Generates colors
     """
 
@@ -105,7 +105,7 @@ class ColorWheelEffect(Effect):
     def __initstate__(self):
         # state
         self._color = None
-        super(ColorWheelEffect, self).__initstate__()
+        super(ColorWheel, self).__initstate__()
 
     def numInputChannels(self):
         return 0
@@ -137,7 +137,7 @@ class ColorWheelEffect(Effect):
         return definition
 
     async def update(self, dt):
-        await super(ColorWheelEffect, self).update(dt)
+        await super(ColorWheel, self).update(dt)
         self._color = self.get_color_array(self._t, self.num_pixels)
 
     def process(self):
@@ -236,7 +236,7 @@ class ColorDimEffect(Effect):
         return np.ones(num_pixels) * self.get_color(t, -1)
 
 
-class InterpolateRGBEffect(Effect):
+class InterpolateRGB(Effect):
     def __init__(self, num_pixels):
         self.num_pixels = num_pixels
         self.__initstate__()
@@ -259,7 +259,7 @@ class InterpolateRGBEffect(Effect):
             elif b is not None:
                 self._outputBuffer[0] = b
 
-class InterpolateHSVEffect(Effect):
+class InterpolateHSV(Effect):
     def __init__(self, num_pixels):
         self.num_pixels = num_pixels
         self.__initstate__()

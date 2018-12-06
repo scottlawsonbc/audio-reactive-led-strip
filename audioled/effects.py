@@ -21,7 +21,7 @@ SHORT_NORMALIZE = 1.0 / 32768.0
 
 
 
-class ShiftEffect(Effect):
+class Shift(Effect):
 
     def __init__(self, speed=2.0, dim_time=.1):
         self.speed = speed
@@ -38,7 +38,7 @@ class ShiftEffect(Effect):
             self._last_t
         except AttributeError:
             self._last_t = 0.0
-        super(ShiftEffect, self).__initstate__()
+        super(Shift, self).__initstate__()
 
     def numInputChannels(self):
         return 1
@@ -203,7 +203,7 @@ class Combine(Effect):
             self._outputBuffer[0] = None
 
 
-class AfterGlowEffect(Effect):
+class AfterGlow(Effect):
     """
     Effect that
     """
@@ -216,7 +216,7 @@ class AfterGlowEffect(Effect):
         # state
         self._pixel_state = None
         self._last_t = 0.0
-        super(AfterGlowEffect, self).__initstate__()
+        super(AfterGlow, self).__initstate__()
 
     def numInputChannels(self):
         return 1
@@ -271,7 +271,7 @@ class AfterGlowEffect(Effect):
 
         self._outputBuffer[0] = y
 
-class MirrorEffect(Effect):
+class Mirror(Effect):
 
     def __init__(self, mirror_lower = True, recursion = 0):
         self.mirror_lower = mirror_lower
@@ -282,7 +282,7 @@ class MirrorEffect(Effect):
         # state
         self._mirrorLower = None 
         self._mirrorUpper = None
-        super(MirrorEffect, self).__initstate__()
+        super(Mirror, self).__initstate__()
 
     def numInputChannels(self):
         return 1

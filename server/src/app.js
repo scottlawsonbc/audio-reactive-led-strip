@@ -3,29 +3,31 @@ import 'vis/dist/vis-network.min.css';
 var Configurator = require("vis/lib/shared/Configurator").default;
 let util = require('vis/lib/util');
 import { saveAs } from 'file-saver';
-import colorWheelIcon from '../img/audioled.colors.ColorWheelEffect.png'
 import audioInputIcon from '../img/audioled.audio.AudioInput.png'
-import spectrumIcon from '../img/audioled.audioreactive.SpectrumEffect.png'
+import spectrumIcon from '../img/audioled.audioreactive.Spectrum.png'
+import vuIcon from '../img/audioled.audioreactive.VUMeterPeak.png'
+import movingIcon from '../img/audioled.audioreactive.MovingLight.png'
+import colorWheelIcon from '../img/audioled.colors.ColorWheel.png'
 import ledIcon from '../img/audioled.devices.LEDOutput.png'
 import combineIcon from '../img/audioled.effects.Combine.png'
 import appendIcon from '../img/audioled.effects.Append.png'
-import glowIcon from '../img/audioled.effects.AfterGlowEffect.png'
-import movingIcon from '../img/audioled.audioreactive.MovingLightEffect.png'
-import mirrorIcon from '../img/audioled.effects.MirrorEffect.png'
-import vuIcon from '../img/audioled.audioreactive.VUMeterPeakEffect.png'
+import glowIcon from '../img/audioled.effects.AfterGlow.png'
+import mirrorIcon from '../img/audioled.effects.Mirror.png'
+
 
 var icons = {
-  'audioled.colors.ColorWheelEffect': colorWheelIcon,
   'audioled.audio.AudioInput':audioInputIcon,
-  'audioled.audioreactive.SpectrumEffect':spectrumIcon,
+  'audioled.audioreactive.Spectrum':spectrumIcon,
+  'audioled.audioreactive.MovingLight':movingIcon,
+  'audioled.audioreactive.VUMeterPeak':vuIcon,
+  'audioled.audioreactive.VUMeterRMS':vuIcon,
+  'audioled.colors.ColorWheel': colorWheelIcon,
   'audioled.devices.LEDOutput':ledIcon,
   'audioled.effects.Combine':combineIcon,
   'audioled.effects.Append':appendIcon,
-  'audioled.effects.AfterGlowEffect':glowIcon,
-  'audioled.audioreactive.MovingLightEffect':movingIcon,
-  'audioled.effects.MirrorEffect':mirrorIcon,
-  'audioled.audioreactive.VUMeterPeakEffect':vuIcon,
-  'audioled.audioreactive.VUMeterRMSEffect':vuIcon
+  'audioled.effects.AfterGlow':glowIcon,
+  'audioled.effects.Mirror':mirrorIcon,
+
 }
 
 var nodes, edges, data, options, network, configurator;

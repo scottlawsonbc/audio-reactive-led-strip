@@ -16,16 +16,16 @@ def createMovingLightGraph(N_pixels, device):
     fg.addEffectNode(led_out)
     
     N_pixels = int(N_pixels/2)
-    color_wheel = colors.ColorWheelEffect(N_pixels)
+    color_wheel = colors.ColorWheel(N_pixels)
     fg.addEffectNode(color_wheel)
 
-    movingLight = audioreactive.MovingLightEffect(num_pixels=N_pixels, fs=audio_in.getSampleRate())
+    movingLight = audioreactive.MovingLight(num_pixels=N_pixels, fs=audio_in.getSampleRate())
     fg.addEffectNode(movingLight)
 
-    mirrorLower = effects.MirrorEffect(mirror_lower=True, recursion=0)
+    mirrorLower = effects.Mirror(mirror_lower=True, recursion=0)
     fg.addEffectNode(mirrorLower)
 
-    afterglow = effects.AfterGlowEffect()
+    afterglow = effects.AfterGlow()
     fg.addEffectNode(afterglow)
 
     append = effects.Append(2,flip0=True)
@@ -51,13 +51,13 @@ def createMovingLightsGraph(N_pixels, device):
     
     N_pixels = int(N_pixels/2)
     # Layer 1
-    color_wheel1 = colors.ColorWheelEffect(N_pixels)
+    color_wheel1 = colors.ColorWheel(N_pixels)
     fg.addEffectNode(color_wheel1)
 
-    movingLight1 = audioreactive.MovingLightEffect(N_pixels, audio_in.getSampleRate(),speed=150.0, dim_time=.5,highcut_hz=200)
+    movingLight1 = audioreactive.MovingLight(N_pixels, audio_in.getSampleRate(),speed=150.0, dim_time=.5,highcut_hz=200)
     fg.addEffectNode(movingLight1)
 
-    afterglow1 = effects.AfterGlowEffect()
+    afterglow1 = effects.AfterGlow()
     fg.addEffectNode(afterglow1)
 
     append1 = effects.Append(2,flip0=True)
@@ -71,13 +71,13 @@ def createMovingLightsGraph(N_pixels, device):
     
 
     # Layer 2
-    color_wheel2 = colors.ColorWheelEffect(N_pixels)
+    color_wheel2 = colors.ColorWheel(N_pixels)
     fg.addEffectNode(color_wheel2)
 
-    movingLight2 = audioreactive.MovingLightEffect(N_pixels, audio_in.getSampleRate(),speed=150.0, dim_time=1.0, highcut_hz=500)
+    movingLight2 = audioreactive.MovingLight(N_pixels, audio_in.getSampleRate(),speed=150.0, dim_time=1.0, highcut_hz=500)
     fg.addEffectNode(movingLight2)
 
-    afterglow2 = effects.AfterGlowEffect()
+    afterglow2 = effects.AfterGlow()
     fg.addEffectNode(afterglow2)
 
     append2 = effects.Append(2,flip1=True)
@@ -112,19 +112,19 @@ def createSpectrumGraph(N_pixels, device):
     
 
     N_pixels = int(N_pixels/2)
-    color_wheel = colors.ColorWheelEffect(N_pixels)
+    color_wheel = colors.ColorWheel(N_pixels)
     fg.addEffectNode(color_wheel)
 
-    color_wheel2 = colors.ColorWheelEffect(N_pixels, cycle_time=15.0)
+    color_wheel2 = colors.ColorWheel(N_pixels, cycle_time=15.0)
     fg.addEffectNode(color_wheel2)
 
-    spectrum = audioreactive.SpectrumEffect(num_pixels=N_pixels, fs=audio_in.getSampleRate(), chunk_rate=60)
+    spectrum = audioreactive.Spectrum(num_pixels=N_pixels, fs=audio_in.getSampleRate(), chunk_rate=60)
     fg.addEffectNode(spectrum)
 
     append = effects.Append(2,flip0=True)
     fg.addEffectNode(append)
 
-    afterglow = effects.AfterGlowEffect(glow_time=2.0)
+    afterglow = effects.AfterGlow(glow_time=2.0)
     fg.addEffectNode(afterglow)
 
     fg.addConnection(audio_in,0,spectrum,0)
@@ -150,25 +150,25 @@ def createVUPeakGraph(N_pixels, device):
     fg.addEffectNode(led_out)
 
     N_pixels = int(N_pixels/2)
-    color_wheel = colors.ColorWheelEffect(N_pixels)
+    color_wheel = colors.ColorWheel(N_pixels)
     fg.addEffectNode(color_wheel)
 
-    color_wheel2 = colors.ColorWheelEffect(N_pixels, cycle_time=5.0)
+    color_wheel2 = colors.ColorWheel(N_pixels, cycle_time=5.0)
     fg.addEffectNode(color_wheel2)
 
-    interpCol = colors.InterpolateHSVEffect(N_pixels)
+    interpCol = colors.InterpolateHSV(N_pixels)
     fg.addEffectNode(interpCol)
 
-    vu_peak = audioreactive.VUMeterPeakEffect(N_pixels)
+    vu_peak = audioreactive.VUMeterPeak(N_pixels)
     fg.addEffectNode(vu_peak)
 
-    vu_peak_R = audioreactive.VUMeterPeakEffect(N_pixels)
+    vu_peak_R = audioreactive.VUMeterPeak(N_pixels)
     fg.addEffectNode(vu_peak_R)
 
     append = effects.Append(2,flip1=True)
     fg.addEffectNode(append)
 
-    afterglow = effects.AfterGlowEffect(0.5)
+    afterglow = effects.AfterGlow(0.5)
     fg.addEffectNode(afterglow)
 
     fg.addConnection(audio_in,0,vu_peak,0)
@@ -193,10 +193,10 @@ def createSwimmingPoolGraph(N_pixels, device):
     led_out = devices.LEDOutput(device)
     fg.addEffectNode(led_out)
 
-    color = colors.StaticRGBColorEffect(N_pixels,55.0,150.0,236.0)
+    color = colors.StaticRGBColor(N_pixels,55.0,150.0,236.0)
     fg.addEffectNode(color)
 
-    SwimmingPool = generative.SwimmingpoolEffect(N_pixels)
+    SwimmingPool = generative.Swimmingpool(N_pixels)
     fg.addEffectNode(SwimmingPool)
 
     fg.addConnection(color,0,SwimmingPool,0)

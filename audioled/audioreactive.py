@@ -18,7 +18,7 @@ import audioled.filtergraph as filtergraph
 from audioled.effects import Effect
 
 
-class SpectrumEffect(Effect):
+class Spectrum(Effect):
     """
     SpectrumEffect performs a FFT and visualizes bass and melody frequencies with different colors.
 
@@ -54,7 +54,7 @@ class SpectrumEffect(Effect):
         self._melody_rms = None
         self._lastAudioChunk = None
         self._gen = None
-        super(SpectrumEffect, self).__initstate__()
+        super(Spectrum, self).__initstate__()
 
     def numInputChannels(self):
         return 3
@@ -143,7 +143,7 @@ class SpectrumEffect(Effect):
         return fft*255
 
 
-class VUMeterRMSEffect(Effect):
+class VUMeterRMS(Effect):
     """ VU Meter style effect
     Inputs:
     - 0: Audio
@@ -200,7 +200,7 @@ class VUMeterRMSEffect(Effect):
 
 
 
-class VUMeterPeakEffect(Effect):
+class VUMeterPeak(Effect):
     """ VU Meter style effect
     Inputs:
     - 0: Audio
@@ -258,7 +258,7 @@ class VUMeterPeakEffect(Effect):
 
 
 
-class MovingLightEffect(Effect):
+class MovingLight(Effect):
     """
     This effect generates a peak at the beginning of the strip that moves and dissipates
 
@@ -282,7 +282,7 @@ class MovingLightEffect(Effect):
         self._filter_b, self._filter_a, self._filter_zi = dsp.design_filter(self.lowcut_hz, self.highcut_hz, self.fs, 3)
         self._last_t = 0.0
         self._last_move_t = 0.0
-        super(MovingLightEffect, self).__initstate__()
+        super(MovingLight, self).__initstate__()
 
     def numInputChannels(self):
         return 2

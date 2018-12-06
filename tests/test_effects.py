@@ -24,13 +24,13 @@ class Test_Effects(unittest.TestCase):
         print(mapped)
         np.testing.assert_array_equal(mapped, rgb)
         
-        mirror = effects.MirrorEffect(4,True,0)
+        mirror = effects.Mirror(4,True,0)
         np.testing.assert_array_equal(mirror._mirrorLower[0,:,1],np.array([0,1,1,0]))
         
-        mirror = effects.MirrorEffect(8,True,1)
+        mirror = effects.Mirror(8,True,1)
         np.testing.assert_array_equal(mirror._mirrorLower[0,:,1],np.array([0,1,1,0,0,1,1,0]))
 
 
 
-        mirror = effects.MirrorEffect(16,True,2)
+        mirror = effects.Mirror(16,True,2)
         np.testing.assert_array_equal(mirror._mirrorLower[0,:,1],np.array([0,1,1,0,0,1,1,0,3, 2, 2, 3, 3, 2, 2, 3]))

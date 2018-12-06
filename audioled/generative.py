@@ -17,7 +17,7 @@ import audioled.filtergraph as filtergraph
 from audioled.effect import Effect
 
 
-class SwimmingpoolEffect(Effect):
+class Swimmingpool(Effect):
 
     def __init__(self, num_pixels, num_waves=30, scale=0.2, wavespread_low=30, wavespread_high=70, max_speed=30):
         self.num_pixels = num_pixels
@@ -34,7 +34,7 @@ class SwimmingpoolEffect(Effect):
         self._last_t = 0.0
         self._output = np.copy(self._pixel_state)
         self._Wave, self._WaveSpecSpeed = self._CreateWaves(self.num_waves, self.scale, self.wavespread_low, self.wavespread_high, self.max_speed)
-        super(SwimmingpoolEffect, self).__initstate__()
+        super(Swimmingpool, self).__initstate__()
 
     @staticmethod
     def getParameterDefinition():
