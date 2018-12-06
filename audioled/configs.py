@@ -196,7 +196,7 @@ def createSwimmingPoolGraph(N_pixels, device):
     color = colors.StaticRGBColor(N_pixels,55.0,150.0,236.0)
     fg.addEffectNode(color)
 
-    SwimmingPool = generative.Swimmingpool(N_pixels)
+    SwimmingPool = generative.SwimmingPool(N_pixels)
     fg.addEffectNode(SwimmingPool)
 
     fg.addConnection(color,0,SwimmingPool,0)

@@ -8,12 +8,13 @@ import spectrumIcon from '../img/audioled.audioreactive.Spectrum.png'
 import vuIcon from '../img/audioled.audioreactive.VUMeterPeak.png'
 import movingIcon from '../img/audioled.audioreactive.MovingLight.png'
 import colorWheelIcon from '../img/audioled.colors.ColorWheel.png'
+import colorIcon from '../img/audioled.colors.Color.png'
 import ledIcon from '../img/audioled.devices.LEDOutput.png'
 import combineIcon from '../img/audioled.effects.Combine.png'
 import appendIcon from '../img/audioled.effects.Append.png'
 import glowIcon from '../img/audioled.effects.AfterGlow.png'
 import mirrorIcon from '../img/audioled.effects.Mirror.png'
-
+import swimmingPoolIcon from '../img/audioled.generative.SwimmingPool.png'
 
 var icons = {
   'audioled.audio.AudioInput':audioInputIcon,
@@ -22,11 +23,13 @@ var icons = {
   'audioled.audioreactive.VUMeterPeak':vuIcon,
   'audioled.audioreactive.VUMeterRMS':vuIcon,
   'audioled.colors.ColorWheel': colorWheelIcon,
+  'audioled.colors.StaticRGBColor': colorIcon,
   'audioled.devices.LEDOutput':ledIcon,
   'audioled.effects.Combine':combineIcon,
   'audioled.effects.Append':appendIcon,
   'audioled.effects.AfterGlow':glowIcon,
   'audioled.effects.Mirror':mirrorIcon,
+  'audioled.generative.SwimmingPool':swimmingPoolIcon
 
 }
 
