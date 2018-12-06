@@ -13,6 +13,7 @@ from scipy.ndimage.filters import gaussian_filter1d
 from scipy.signal import lfilter
 
 import audioled.dsp as dsp
+import audioled.colors as colors
 import audioled.filtergraph as filtergraph
 from audioled.effects import Effect
 
@@ -31,7 +32,7 @@ class SpectrumEffect(Effect):
 
     """
 
-    def __init__(self, num_pixels, fs, fmax=6000, n_overlaps=4, chunk_rate=60, fft_bins=64, col_blend = 'lightenOnly'):
+    def __init__(self, num_pixels, fs, fmax=6000, n_overlaps=4, chunk_rate=60, fft_bins=64, col_blend = colors.blend_mode_default):
         self.num_pixels = num_pixels
         self.fs = fs
         self.fmax = fmax
@@ -60,6 +61,31 @@ class SpectrumEffect(Effect):
 
     def numOutputChannels(self):
         return 1
+
+    @staticmethod
+    def getParameterDefinition():
+        definition = {
+            "parameters": {
+                # default, min, max, stepsize
+                "num_pixels": [300, 1, 1000, 1],
+                "fs": [48000, 44100, 96000, 100],
+                "n_overlaps": [4, 0, 20, 1],
+                "chunk_rate": [60, 30, 100, 1],
+                "fft_bins": [64, 32, 128, 1],
+                "col_blend": colors.blend_modes
+            }
+        }
+        return definition
+
+    def getParameter(self):
+        definition = self.getParameterDefinition()
+        #definition['parameters']['num_pixels'][0] = self.num_pixels
+        del definition['parameters']['num_pixels'] # disable edit
+        del definition['parameters']['fs'] # disable edit
+        definition['parameters']['n_overlaps'][0] = self.n_overlaps
+        definition['parameters']['chunk_rate'][0] = self.chunk_rate
+        definition['parameters']['fft_bins'][0] = self.chunk_rate
+        return definition
 
     def _audio_gen(self, audio_gen):
         self._bass_rms = np.zeros(self.chunk_rate * 6)
@@ -95,10 +121,7 @@ class SpectrumEffect(Effect):
                 melody = dsp.warped_psd(y, self.fft_bins, self._fs_ds, [261.0, self.fmax], 'bark')
                 bass = self.process_line(bass, self._bass_rms)
                 melody = self.process_line(melody, self._melody_rms)
-                if self.col_blend == 'lightenOnly':
-                    pixels = np.maximum(1./255.0 * np.multiply(col_bass, bass), 1./255. * np.multiply(col_melody, melody))
-                else:
-                    pixels = 1./255.0 * np.multiply(col_bass, bass) + 1./255. * np.multiply(col_melody, melody)
+                pixels = colors.blend(1./255.0 * np.multiply(col_bass, bass ), 1./255. * np.multiply(col_melody, melody), self.col_blend)
                 self._outputBuffer[0] = pixels.clip(0,255).astype(int)
 
     def process_line(self, fft, fft_rms):
