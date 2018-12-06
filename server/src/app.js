@@ -5,13 +5,13 @@ let util = require('vis/lib/util');
 import { saveAs } from 'file-saver';
 import colorWheelIcon from '../img/audioled.colors.ColorWheelEffect.png'
 import audioInputIcon from '../img/audioled.audio.AudioInput.png'
-import spectrumIcon from '../img/audioled.effects.SpectrumEffect.png'
+import spectrumIcon from '../img/audioled.audioreactive.SpectrumEffect.png'
 import ledIcon from '../img/audioled.devices.LEDOutput.png'
 
 var icons = {
   'audioled.colors.ColorWheelEffect': colorWheelIcon,
   'audioled.audio.AudioInput':audioInputIcon,
-  'audioled.effects.SpectrumEffect':spectrumIcon,
+  'audioled.audioreactive.SpectrumEffect':spectrumIcon,
   'audioled.devices.LEDOutput':ledIcon,
 }
 
