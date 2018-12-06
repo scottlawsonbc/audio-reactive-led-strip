@@ -149,7 +149,7 @@ eval("module.exports = __webpack_require__.p + \"5448eadee1719c98e9d82404af6f199
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
-eval("module.exports = __webpack_require__.p + \"5448eadee1719c98e9d82404af6f1990.png\";\n\n//# sourceURL=webpack://VisServer/./img/audioled.colors.ColorWheel.png?");
+eval("module.exports = __webpack_require__.p + \"74d1422d4df47b5dd2c90f4099c9e8f5.png\";\n\n//# sourceURL=webpack://VisServer/./img/audioled.colors.ColorWheel.png?");
 
 /***/ }),
 

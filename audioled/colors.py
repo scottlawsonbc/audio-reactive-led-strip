@@ -94,9 +94,11 @@ class ColorWheel(Effect):
     """ Generates colors
     """
 
-    def __init__(self, num_pixels = 1, cycle_time = 30.0, offset = 0.0, luminocity = 0.5, saturation = 1.0):
+    def __init__(self, num_pixels = 1, cycle_time = 30.0, offset = 0.0, luminocity = 0.5, saturation = 1.0, wiggle_amplitude = 0.0, wiggle_time = 0.0):
         self.cycle_time = cycle_time
         self.offset = offset
+        self.wiggle_amplitude = wiggle_amplitude
+        self.wiggle_time = wiggle_time
         self.num_pixels = num_pixels
         self.luminocity = luminocity
         self.saturation = saturation
@@ -120,9 +122,11 @@ class ColorWheel(Effect):
                 # default, min, max, stepsize
                 "num_pixels": [1, 1, 1000, 1],
                 "cycle_time": [30.0, 0, 100, 0.1],
-                "offset": [0.0, 0,100,0.1],
+                "offset": [0.0, 0, 1, 0.01],
                 "luminocity": [0.5, 0, 1, 0.01],
-                "saturation": [1.0, 0, 1, 0.01]
+                "saturation": [1.0, 0, 1, 0.01],
+                "wiggle_time": [0.0, 0, 10, 0.1],
+                "wiggle_amplitude": [0.0, 0, 1, 0.01],
             }
         }
         return definition
@@ -134,6 +138,8 @@ class ColorWheel(Effect):
         definition['parameters']['offset'][0] = self.offset
         definition['parameters']['luminocity'][0] = self.luminocity
         definition['parameters']['saturation'][0] = self.saturation
+        definition['parameters']['wiggle_time'][0] = self.wiggle_time
+        definition['parameters']['wiggle_amplitude'][0] = self.wiggle_amplitude
         return definition
 
     async def update(self, dt):
@@ -146,10 +152,15 @@ class ColorWheel(Effect):
 
     def get_color(self, t, pixel):
         h = 0.0
-        if self.cycle_time >= 0:
+        # move through wheel
+        if self.cycle_time > 0:
             h = (t + self.offset % self.cycle_time) / self.cycle_time
         else:
             h = self.offset
+        # and wiggle
+        if self.wiggle_time > 0:
+            h = h + math.sin(2 * math.pi / self.wiggle_time * t) * self.wiggle_amplitude
+
         r, g, b = colorsys.hls_to_rgb(h, self.luminocity, self.saturation) 
         
         return np.array([[r* 255.0], [g* 255.0], [b* 255.0]])

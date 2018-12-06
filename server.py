@@ -305,6 +305,7 @@ if __name__ == '__main__':
 
     # Initialize filtergraph
     fg = configs.createSpectrumGraph(num_pixels, device)
+    #fg = configs.createSwimmingPoolGraph(num_pixels, device)
 
     # Init defaults
     default_values['fs'] = 48000 # ToDo: How to provide fs information to downstream effects?
