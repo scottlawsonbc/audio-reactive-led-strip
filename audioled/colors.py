@@ -10,12 +10,20 @@ import audioled.dsp as dsp
 import audioled.filtergraph as filtergraph
 import math
 import matplotlib as mpl
-from audioled.effects import Effect
+from audioled.effect import Effect
 
 blend_modes = ['lightenOnly', 'darkenOnly']
-blend_mode_default = 'ligthenOnly'
+blend_mode_default = 'lightenOnly'
 
 def blend(pixel_a, pixel_b, blend_mode):
+    if pixel_a is None and pixel_b is None:
+        return None
+    elif not pixel_a is None and pixel_b is None:
+        return pixel_a
+    elif pixel_a is None and not pixel_b is None:
+        return pixel_b
+    
+
     if blend_mode == 'lightenOnly':
         return np.maximum(pixel_a, pixel_b)
     elif blend_mode == 'darkenOnly':

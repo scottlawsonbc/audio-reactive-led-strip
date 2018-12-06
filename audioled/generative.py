@@ -14,7 +14,7 @@ from scipy.signal import lfilter
 
 import audioled.dsp as dsp
 import audioled.filtergraph as filtergraph
-from audioled.effects import Effect
+from audioled.effect import Effect
 
 
 class SwimmingpoolEffect(Effect):

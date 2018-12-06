@@ -85,6 +85,7 @@ class SpectrumEffect(Effect):
         definition['parameters']['n_overlaps'][0] = self.n_overlaps
         definition['parameters']['chunk_rate'][0] = self.chunk_rate
         definition['parameters']['fft_bins'][0] = self.chunk_rate
+        definition['parameters']['col_blend'] = [self.col_blend] + [x for x in colors.blend_modes if x!=self.col_blend]
         return definition
 
     def _audio_gen(self, audio_gen):

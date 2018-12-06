@@ -4,7 +4,7 @@ from __future__ import unicode_literals
 from __future__ import absolute_import
 import time
 import numpy as np
-from audioled.effects import Effect
+from audioled.effect import Effect
 
 _GAMMA_TABLE = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1,
                 1, 1, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 4, 4, 4, 4, 5, 5,
