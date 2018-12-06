@@ -8,6 +8,8 @@ import atexit
 import asyncio
 import json
 import argparse
+import colorsys
+import numpy as np
 from flask import Flask, jsonify, abort, send_from_directory, request
 from audioled import filtergraph
 from audioled import audio
@@ -280,6 +282,23 @@ def create_app():
     atexit.register(interrupt)
     return app
 
+def strandTest(device, num_pixels):
+    pixels = np.zeros(int(num_pixels/2)) * np.array([[255.0],[255.0],[255.0]])
+    t = 0.0
+    dt = 0.001
+    for i in range(0,int(num_pixels*1.2)):
+        h = t / dt / num_pixels
+        r,g,b, = 0,0,0
+        if i < num_pixels/2:
+            r, g, b = colorsys.hls_to_rgb(h, 0.5, 1.0)
+        pixels = np.roll(pixels, -1, axis=1)
+        pixels[0][0] = r * 255.0
+        pixels[1][0] = g * 255.0
+        pixels[2][0] = b * 255.0
+        device.show(np.concatenate((pixels, pixels[:,::-1]), axis=1))
+        t = t+dt
+        time.sleep(dt)
+    
 
 
     
@@ -294,7 +313,7 @@ if __name__ == '__main__':
     parser.add_argument('--device_candy_server', dest='device_candy_server', default='127.0.0.1:7890', help = 'Server for device FadeCandy')
 
     args = parser.parse_args()
-
+    num_pixels = args.num_pixels
     # Initialize device
     if args.device == deviceRasp:
         device = devices.RaspberryPi(num_pixels)
@@ -302,6 +321,9 @@ if __name__ == '__main__':
         device = devices.FadeCandy(args.device_candy_server)
 
     devices.LEDOutput.overrideDevice = device
+
+    # strand test
+    strandTest(device, num_pixels)
 
     # Initialize filtergraph
     fg = configs.createSpectrumGraph(num_pixels, device)
