@@ -71,7 +71,7 @@ class ShiftEffect(Effect):
             return
 
         y = self._inputBuffer[0]
-        num_pixels = len(y)
+        num_pixels = np.size(y,1)
         if self._pixel_state is None:
             # init with black
             self._pixel_state = np.zeros(num_pixels) * np.array([[0.0],[0.0],[0.0]])
@@ -273,16 +273,15 @@ class AfterGlowEffect(Effect):
 
 class MirrorEffect(Effect):
 
-    def __init__(self, num_pixels, mirror_lower = True, recursion = 0):
-        self.num_pixels = num_pixels
+    def __init__(self, mirror_lower = True, recursion = 0):
         self.mirror_lower = mirror_lower
         self.recursion = recursion
         self.__initstate__()
 
     def __initstate__(self):
         # state
-        self._mirrorLower = self._genMirrorLowerMap(self.num_pixels,self.recursion)
-        self._mirrorUpper = self._genMirrorUpperMap(self.num_pixels,self.recursion)
+        self._mirrorLower = None 
+        self._mirrorUpper = None
         super(MirrorEffect, self).__initstate__()
 
     def numInputChannels(self):
@@ -291,19 +290,41 @@ class MirrorEffect(Effect):
     def numOutputChannels(self):
         return 1
 
+    @staticmethod
+    def getParameterDefinition():
+        definition = {
+            "parameters": {
+                "mirror_lower": True,
+                # default, min, max, stepsize
+                "recursion": [1, 0, 8, 1],
+            }
+        }
+        return definition
+
+    def getParameter(self):
+        definition = self.getParameterDefinition()
+        definition['parameters']['mirror_lower'] = self.mirror_lower
+        definition['parameters']['recursion'][0] = self.recursion
+        return definition
+
     def process(self):
-        if self._inputBuffer is not None and self._outputBuffer is not None:
-            n = self.num_pixels
-            h = int(n/2)
-            buffer = self._inputBuffer[0]
-            if buffer is not None:
-                y = buffer
-                # 0 .. h .. n
-                #   h    n-h
-                if self.mirror_lower:
-                    self._outputBuffer[0] = buffer[self._mirrorLower[:,:,0],self._mirrorLower[:,:,1]]
-                else:
-                    self._outputBuffer[0] = buffer[self._mirrorUpper[:,:,0],self._mirrorUpper[:,:,1]]
+        if self._inputBuffer is None or self._outputBuffer is None:
+            return
+        if not self._inputBufferValid(0):
+            self._outputBuffer[0] = None
+            return
+        num_pixels = np.size(self._inputBuffer[0], 1)
+        if self._mirrorLower is None or np.size(self._mirrorLower,1) != num_pixels:
+            self._mirrorLower = self._genMirrorLowerMap(num_pixels,self.recursion)
+        if self._mirrorUpper is None or np.size(self._mirrorUpper,1) != num_pixels:
+            self._mirrorUpper = self._genMirrorUpperMap(num_pixels,self.recursion)
+        buffer = self._inputBuffer[0]
+        # 0 .. h .. n
+        #   h    n-h
+        if self.mirror_lower:
+            self._outputBuffer[0] = buffer[self._mirrorLower[:,:,0],self._mirrorLower[:,:,1]]
+        else:
+            self._outputBuffer[0] = buffer[self._mirrorUpper[:,:,0],self._mirrorUpper[:,:,1]]
 
     def _genMirrorLowerMap(self, n, recursion):
         h = int(n/2)

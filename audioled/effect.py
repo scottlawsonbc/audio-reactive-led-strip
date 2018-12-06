@@ -97,6 +97,7 @@ class Effect(object):
             return False
         if len(self._inputBuffer) <= index:
             return False
-        if self._inputBuffer[0] is None:
+        if self._inputBuffer[index] is None:
             return False
+        return True
 

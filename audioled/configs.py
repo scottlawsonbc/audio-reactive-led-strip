@@ -22,7 +22,7 @@ def createMovingLightGraph(N_pixels, device):
     movingLight = audioreactive.MovingLightEffect(num_pixels=N_pixels, fs=audio_in.getSampleRate())
     fg.addEffectNode(movingLight)
 
-    mirrorLower = effects.MirrorEffect(N_pixels,mirror_lower=True, recursion=0)
+    mirrorLower = effects.MirrorEffect(mirror_lower=True, recursion=0)
     fg.addEffectNode(mirrorLower)
 
     afterglow = effects.AfterGlowEffect()
