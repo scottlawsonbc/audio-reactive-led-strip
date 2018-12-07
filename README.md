@@ -2,7 +2,12 @@
 
 Original Readme text can be found below. You can also go to the main repo for more details. 
 
+# Demo
 Here is a demo of my implementation of it.  I used the standalone Pi set up: [https://www.youtube.com/watch?v=vY4P0MU62X8](https://www.youtube.com/watch?v=vY4P0MU62X8)
+
+# Tutorial
+A full video tutorial can be found on YouTube at https://www.youtube.com/watch?v=FA9rMkuVmvQ
+More information on the tutorial can be found at https://www.easyprogramming.net/raspberrypi/audio_reactive_raspberry_pi_lights.php
 
 # Nazberry Pi Modifications
 
