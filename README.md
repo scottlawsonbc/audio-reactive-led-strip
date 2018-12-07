@@ -7,6 +7,7 @@ Here is a demo of my implementation of it.  I used the standalone Pi set up: [ht
 
 # Tutorial
 A full video tutorial can be found on YouTube at https://www.youtube.com/watch?v=FA9rMkuVmvQ
+
 More information on the tutorial can be found at https://www.easyprogramming.net/raspberrypi/audio_reactive_raspberry_pi_lights.php
 
 # Nazberry Pi Modifications
