@@ -17,7 +17,7 @@ More information on the tutorial can be found at https://www.easyprogramming.net
 One issue i ran into when installing the dependencies is the installation of pyqtgraph. If you run into issues with it, try installing python-pyqtgraph instead:
 
 ```shell
-sudo apt get python-pyqtgraph
+sudo apt install python-pyqtgraph
 ```
 
 ### `config.py` has been edited as follows:
