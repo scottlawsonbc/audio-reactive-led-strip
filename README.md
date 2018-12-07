@@ -6,6 +6,14 @@ Here is a demo of my implementation of it.  I used the standalone Pi set up: [ht
 
 # Nazberry Pi Modifications
 
+### Install pyqtgraph
+
+One issue i ran into when installing the dependencies is the installation of pyqtgraph. If you run into issues with it, try installing python-pyqtgraph instead:
+
+```shell
+sudo apt get python-pyqtgraph
+```
+
 ### `config.py` has been edited as follows:
 
 ```python
