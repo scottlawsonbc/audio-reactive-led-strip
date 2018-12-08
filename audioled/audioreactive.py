@@ -306,13 +306,16 @@ class MovingLight(Effect):
     - 1: Color
     """
 
-    def __init__(self, num_pixels, fs, speed=100.0, dim_time=2.0, lowcut_hz=50.0, highcut_hz=300.0):
+    def __init__(self, num_pixels, fs, speed=100.0, dim_time=2.5, lowcut_hz=50.0, highcut_hz=300.0, peak_scale = 4.0, peak_filter = 2.6, highlight=0.6):
         self.num_pixels = num_pixels
         self.speed = speed
         self.dim_time = dim_time
         self.fs = fs
         self.lowcut_hz = lowcut_hz
         self.highcut_hz = highcut_hz
+        self.peak_scale = peak_scale
+        self.peak_filter = peak_filter
+        self.highlight = highlight
         self.__initstate__()
 
     def __initstate__(self):
@@ -338,6 +341,9 @@ class MovingLight(Effect):
                 "dim_time": [1.0, 0.01, 10.0, 0.01],
                 "lowcut_hz": [50.0, 0.0, 8000.0, 1.0],
                 "highcut_hz": [100.0, 0.0, 8000.0, 1.0],
+                "peak_filter": [1.0, 0.0, 10.0, .01],
+                "peak_scale": [1.0, 0.0, 5.0, .01],
+                "highlight": [0.0, 0.0, 1.0, 0.01]
             }
         }
         return definition
@@ -348,6 +354,9 @@ class MovingLight(Effect):
         definition['parameters']['dim_time'][0] = self.dim_time
         definition['parameters']['lowcut_hz'][0] = self.lowcut_hz
         definition['parameters']['highcut_hz'][0] = self.highcut_hz
+        definition['parameters']['peak_scale'][0] = self.peak_scale
+        definition['parameters']['peak_filter'][0] = self.peak_filter
+        definition['parameters']['highlight'][0] = self.highlight
         return definition
 
     def process(self):
@@ -370,19 +379,20 @@ class MovingLight(Effect):
                 self._pixel_state[:, shift_pixels:] = self._pixel_state[:, :-shift_pixels]
                 self._pixel_state[:, 0:shift_pixels] = self._pixel_state[:, shift_pixels:shift_pixels+1]
                 # convolve to smooth edges
-                self._pixel_state[:, 0:2*shift_pixels] = gaussian_filter1d(self._pixel_state[:,0:2*shift_pixels],0.5)
+                self._pixel_state[:, 0:2*shift_pixels] = gaussian_filter1d(self._pixel_state[:,0:2*shift_pixels],sigma=0.5,axis=1)
                 self._last_move_t = self._t
             # dim with time
             dt = self._t - self._last_t
             self._last_t = self._t
             self._pixel_state*= (1.0 - dt / self.dim_time)
-            self._pixel_state = gaussian_filter1d(self._pixel_state, sigma=0.5)
-            self._pixel_state = gaussian_filter1d(self._pixel_state, sigma=0.5)
+            self._pixel_state = gaussian_filter1d(self._pixel_state, sigma=0.5, axis=1)
+            self._pixel_state = gaussian_filter1d(self._pixel_state, sigma=0.5, axis=1)
             # new color at origin
-            peak = np.max(y) * 2.0
-            peak = peak**2
+            peak = np.max(y) * 1.0
+            peak = peak ** self.peak_filter
+            peak = peak * self.peak_scale
             r,g,b = color[0,0], color[1,0], color[2,0]
-            self._pixel_state[0][0] = r * peak + peak * 255.0
-            self._pixel_state[1][0] = g * peak+ peak * 255.0
-            self._pixel_state[2][0] = b * peak+ peak * 255.0
+            self._pixel_state[0][0] = r * peak + self.highlight * peak * 255.0
+            self._pixel_state[1][0] = g * peak + self.highlight * peak * 255.0
+            self._pixel_state[2][0] = b * peak + self.highlight * peak * 255.0
             self._outputBuffer[0] = self._pixel_state.clip(0.0,255.0)

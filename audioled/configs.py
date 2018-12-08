@@ -25,7 +25,7 @@ def createMovingLightGraph(N_pixels, device):
     mirrorLower = effects.Mirror(mirror_lower=True, recursion=0)
     fg.addEffectNode(mirrorLower)
 
-    afterglow = effects.AfterGlow()
+    afterglow = effects.AfterGlow(glow_time=0.15)
     fg.addEffectNode(afterglow)
 
     append = effects.Append(2,flip0=True)
