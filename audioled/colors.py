@@ -12,7 +12,7 @@ import math
 import matplotlib as mpl
 from audioled.effect import Effect
 
-blend_modes = ['lightenOnly', 'darkenOnly']
+blend_modes = ['lightenOnly', 'darkenOnly', 'addition']
 blend_mode_default = 'lightenOnly'
 
 def blend(pixel_a, pixel_b, blend_mode):
@@ -28,6 +28,8 @@ def blend(pixel_a, pixel_b, blend_mode):
         return np.maximum(pixel_a, pixel_b)
     elif blend_mode == 'darkenOnly':
         return np.minimum(pixel_a, pixel_b)
+    elif blend_mode == 'addition':
+        return pixel_a + pixel_b
     
     return pixel_a
 
