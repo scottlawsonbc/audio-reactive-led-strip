@@ -330,16 +330,34 @@ class LEDOutput(Effect):
     def __setstate__(self, state):
         # override __setstate__ from Effect:
         # We want to be able to inject another device with class variable
-        if self.overrideDevice is not None:
+        if self.overrideDevice is not None and 'controller' in state:
             del state['controller']
             self.controller = self.overrideDevice
+        if 'brightness' in state:
+            floatVal = float(state['brightness'])
+            self.controller.setBrightness(floatVal)
         super().__setstate__(state)    
 
+    @staticmethod
+    def getParameterDefinition():
+        definition = {
+            "parameters": {
+                # default, min, max, stepsize
+                "brightness": [1.0, 0.0, 1.0, 0.01],
+            }
+        }
+        return definition
+
+    def getParameter(self):
+        definition = self.getParameterDefinition()
+        definition['parameters']['brightness'][0] = self.controller.getBrightness()
+        return definition
     
     def numInputChannels(self):
         return 1
     def numOutputChannels(self):
         return 0
+        
     def process(self):
         if self._inputBuffer != None:
             if self._inputBuffer[0] is not None:
