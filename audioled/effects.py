@@ -23,17 +23,16 @@ SHORT_NORMALIZE = 1.0 / 32768.0
 
 class Shift(Effect):
 
-    def __init__(self, speed=2.0, dim_time=.1):
+    def __init__(self, speed=100.0):
         self.speed = speed
-        self.dim_time = dim_time
         self.__initstate__()
 
     def __initstate__(self):
         # state
-        try: 
-            self._pixel_state
+        try:
+            self._shift_pixels
         except AttributeError:
-            self._pixel_state = None
+            self._shift_pixels = 0
         try: 
             self._last_t
         except AttributeError:
@@ -51,8 +50,7 @@ class Shift(Effect):
         definition = {
             "parameters": {
                 # default, min, max, stepsize
-                "speed": [2.0, 0.0, 100.0, 0.1],
-                "dim_time": [0.1, 0.01, 10.0, 0.01],
+                "speed": [100.0, 0.0, 1000.0, 1.0],
             }
         }
         return definition
@@ -60,7 +58,6 @@ class Shift(Effect):
     def getParameter(self):
         definition = self.getParameterDefinition()
         definition['parameters']['speed'][0] = self.speed
-        definition['parameters']['dim_time'][0] = self.dim_time
         return definition
 
     def process(self):
@@ -71,21 +68,11 @@ class Shift(Effect):
             return
 
         y = self._inputBuffer[0]
-        num_pixels = np.size(y,1)
-        if self._pixel_state is None:
-            # init with black
-            self._pixel_state = np.zeros(num_pixels) * np.array([[0.0],[0.0],[0.0]])
-        pixels = np.roll(self._pixel_state, -1, axis=1)
-        pixels[0][0] = 0
-        pixels[1][0] = 0
-        pixels[2][0] = 0
-        dt = self._t - self._last_t
+        dt_move = self._t - self._last_t
+        if dt_move * self.speed > 1:
+            self._shift_pixels = int(self._shift_pixels + dt_move * self.speed) % np.size(y, axis=1)
         self._last_t = self._t
-        if self.dim_time > 0:
-            pixels *=(1-dt / self.dim_time)
-
-        self._pixel_state = pixels + y
-        self._outputBuffer[0] = self._pixel_state.clip(0.0,255.0)
+        self._outputBuffer[0] = np.roll(y,self._shift_pixels, axis=1)
 
 
 
