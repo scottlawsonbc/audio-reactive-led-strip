@@ -1,3 +1,4 @@
+import inspect
 class Effect(object):
     """
     Base class for effects
@@ -21,6 +22,14 @@ class Effect(object):
             self._outputBuffer
         except AttributeError:
             self._outputBuffer = None
+        # make sure all default values are set (basic backwards compatibility)
+        argspec = inspect.getargspec(self.__init__)
+        if argspec.defaults is not None:
+            argsWithDefaults = dict(zip(argspec.args[-len(argspec.defaults):],argspec.defaults))
+            for key in argsWithDefaults:
+                if not key in self.__dict__:
+                    print("Backwards compatibility: Adding default value {}={}".format(key,argsWithDefaults[key]))
+                    self.__dict__[key] = argsWithDefaults[key]
 
     def numOutputChannels(self):
         """

@@ -150,10 +150,18 @@ class VUMeterRMS(Effect):
     - 1: Color
     """
 
-    def __init__(self, num_pixels, db_range = 60.0):
+    def __init__(self, num_pixels, db_range = 60.0, n_overlaps=1):
         self.num_pixels = num_pixels
         self.db_range = db_range
+        self.n_overlaps = n_overlaps
         self.__initstate__()
+
+    def __initstate__(self):
+        super().__initstate__()
+        try:
+            self._hold_values
+        except AttributeError:
+            self._hold_values = []
 
 
     def numInputChannels(self):
@@ -168,6 +176,7 @@ class VUMeterRMS(Effect):
                 # default, min, max, stepsize
                 "num_pixels": [300, 1, 1000, 1],
                 "db_range": [60.0, 20.0, 100.0, 1.0],
+                "n_overlaps": [1, 0, 20, 1]
             }
         }
         return definition
@@ -177,26 +186,36 @@ class VUMeterRMS(Effect):
         #definition['parameters']['num_pixels'][0] = self.num_pixels
         del definition['parameters']['num_pixels'] # disable edit
         definition['parameters']['db_range'][0] = self.db_range
+        definition['parameters']['n_overlaps'][0] = self.n_overlaps
         return definition
 
     def process(self):
-        if self._inputBuffer != None and self._outputBuffer != None:
-            buffer = self._inputBuffer[0]
-            color = self._inputBuffer[1]
-            if color is None:
-                # default color: all white
-                color = np.ones(self.num_pixels) * np.array([[255.0],[255.0],[255.0]])
-            if buffer is not None:
-                y = self._inputBuffer[0]
-                N = len(y) # blocksize
-                rms = dsp.rms(y)
-                db = 20 * math.log10(max(rms, 1e-16))
+        if self._inputBuffer is None or self._outputBuffer is None:
+            return
+        buffer = self._inputBuffer[0]
+        if buffer is None:
+            self._outputBuffer[0] = None
+            return
+        color = self._inputBuffer[1]
+        if color is None:
+            # default color: all white
+            color = np.ones(self.num_pixels) * np.array([[255.0],[255.0],[255.0]])
+        
+        y = self._inputBuffer[0]
+        N = len(y) # blocksize
+        rms = dsp.rms(y)
+        # calculate rms over hold_time
+        while len(self._hold_values) > self.n_overlaps:
+            self._hold_values.pop()
+        self._hold_values.insert(0, rms)
+        rms = dsp.rms(self._hold_values)
+        db = 20 * math.log10(max(rms, 1e-16))
 
-                bar = np.zeros(self.num_pixels) * np.array([[0],[0],[0]])
-                index = int(self.num_pixels * rms)
-                index = np.clip(index, 0, self.num_pixels-1)
-                bar[0:3,0:index] = color[0:3,0:index]
-                self._outputBuffer[0] = bar
+        bar = np.zeros(self.num_pixels) * np.array([[0],[0],[0]])
+        index = int(self.num_pixels * rms)
+        index = np.clip(index, 0, self.num_pixels-1)
+        bar[0:3,0:index] = color[0:3,0:index]
+        self._outputBuffer[0] = bar
 
 
 
@@ -207,10 +226,18 @@ class VUMeterPeak(Effect):
     - 1: Color
     """
 
-    def __init__(self, num_pixels, db_range = 60.0):
+    def __init__(self, num_pixels, db_range = 60.0, n_overlaps = 1):
         self.num_pixels = num_pixels
         self.db_range = db_range
+        self.n_overlaps = n_overlaps
         self.__initstate__()
+
+    def __initstate__(self):
+        super().__initstate__()
+        try:
+            self._hold_values
+        except AttributeError:
+            self._hold_values = []
 
     def numInputChannels(self):
         return 2
@@ -225,6 +252,7 @@ class VUMeterPeak(Effect):
                 # default, min, max, stepsize
                 "num_pixels": [300, 1, 1000, 1],
                 "db_range": [60.0, 20.0, 100.0, 1.0],
+                "n_overlaps": [1, 0, 20, 1]
             }
         }
         return definition
@@ -234,27 +262,38 @@ class VUMeterPeak(Effect):
         #definition['parameters']['num_pixels'][0] = self.num_pixels
         del definition['parameters']['num_pixels'] # disable edit
         definition['parameters']['db_range'][0] = self.db_range
+        definition['parameters']['n_overlaps'][0] = self.n_overlaps
         return definition
 
     def process(self):
-        if self._inputBuffer != None and self._outputBuffer != None:
-            buffer = self._inputBuffer[0]
-            color = self._inputBuffer[1]
-            if color is None:
-                # default color: all white
-                color = np.ones(self.num_pixels) * np.array([[255.0],[255.0],[255.0]])
-            if buffer is not None:
-                y = self._inputBuffer[0]
+        if self._inputBuffer is None or self._outputBuffer is None:
+            return
+        buffer = self._inputBuffer[0]
+        if buffer is None:
+            self._outputBuffer[0] = None
+            return
+        color = self._inputBuffer[1]
+        if color is None:
+            # default color: all white
+            color = np.ones(self.num_pixels) * np.array([[255.0],[255.0],[255.0]])
 
-                N = len(y) # blocksize
-                peak = np.max(y)
-                db = (20*(math.log10(max(peak, 1e-16))))
-                scal_value = (self.db_range+db)/self.db_range
-                bar = np.zeros(self.num_pixels) * np.array([[0],[0],[0]])
-                index = int(self.num_pixels * scal_value)
-                index = np.clip(index, 0, self.num_pixels-1)
-                bar[0:3,0:index] = color[0:3,0:index]
-                self._outputBuffer[0] = bar
+        y = self._inputBuffer[0]
+
+        N = len(y) # blocksize
+        peak = np.max(y)
+        # calculate max over hold_time
+        while len(self._hold_values) > self.n_overlaps:
+            self._hold_values.pop()
+        self._hold_values.insert(0, peak)
+        peak = np.max(self._hold_values)
+
+        db = (20*(math.log10(max(peak, 1e-16))))
+        scal_value = (self.db_range+db)/self.db_range
+        bar = np.zeros(self.num_pixels) * np.array([[0],[0],[0]])
+        index = int(self.num_pixels * scal_value)
+        index = np.clip(index, 0, self.num_pixels-1)
+        bar[0:3,0:index] = color[0:3,0:index]
+        self._outputBuffer[0] = bar
 
 
 
