@@ -1,0 +1,284 @@
+{
+    "py/object": "audioled.filtergraph.FilterGraph",
+    "py/state": {
+        "connections": [
+            {
+                "from_node_uid": "b0133ebb9a3c439d8c927000221df303",
+                "to_node_channel": 0,
+                "from_node_channel": 0,
+                "uid": "35b9f46e12bf471f94eda35d1bb071f9",
+                "to_node_uid": "38adbcf62a644844a9619b697102629a"
+            },
+            {
+                "from_node_uid": "58e565effbd34c3e9b4e69a540f67ee5",
+                "to_node_channel": 0,
+                "from_node_channel": 0,
+                "uid": "ef6b1f1f4db14b499719b3973fb62cb7",
+                "to_node_uid": "28e137027e1349b481a9efb7031c126a"
+            },
+            {
+                "from_node_uid": "04531306e6f24d318c2ed0cb0324fccc",
+                "to_node_channel": 1,
+                "from_node_channel": 0,
+                "uid": "8013e5855e5e4570b7e0d642cd219815",
+                "to_node_uid": "28e137027e1349b481a9efb7031c126a"
+            },
+            {
+                "from_node_uid": "28e137027e1349b481a9efb7031c126a",
+                "to_node_channel": 1,
+                "from_node_channel": 0,
+                "uid": "a50efff252ff4935b18c2fd9b32ceeb7",
+                "to_node_uid": "38adbcf62a644844a9619b697102629a"
+            },
+            {
+                "from_node_uid": "b0133ebb9a3c439d8c927000221df303",
+                "to_node_channel": 0,
+                "from_node_channel": 1,
+                "uid": "be9f95aebfc24c0180dc740acb8e3d74",
+                "to_node_uid": "ffee6b1ecb794104b2bf000bd75edbe0"
+            },
+            {
+                "from_node_uid": "28e137027e1349b481a9efb7031c126a",
+                "to_node_channel": 1,
+                "from_node_channel": 0,
+                "uid": "4969d337782b4528bda94e7491eec8ec",
+                "to_node_uid": "ffee6b1ecb794104b2bf000bd75edbe0"
+            },
+            {
+                "from_node_uid": "bc03209c00334bdbb85f464c1f5103ee",
+                "to_node_channel": 0,
+                "from_node_channel": 0,
+                "uid": "9c7d6844f6c44bf5aae87f6b7c6f63c7",
+                "to_node_uid": "b7f4816a70184dc4b2095241ff40c0a5"
+            },
+            {
+                "from_node_uid": "b7f4816a70184dc4b2095241ff40c0a5",
+                "to_node_channel": 0,
+                "from_node_channel": 0,
+                "uid": "5c11bd46557645fb98563cf99f93256e",
+                "to_node_uid": "2ffad3e356e840ff881b37b4d6752d44"
+            },
+            {
+                "from_node_uid": "38adbcf62a644844a9619b697102629a",
+                "to_node_channel": 0,
+                "from_node_channel": 0,
+                "uid": "487cd046a4344933b3dd506b2b1e39ce",
+                "to_node_uid": "ccdeb6e8fad942ef91617fc80b6cbd9a"
+            },
+            {
+                "from_node_uid": "ccdeb6e8fad942ef91617fc80b6cbd9a",
+                "to_node_channel": 0,
+                "from_node_channel": 0,
+                "uid": "61926e40dd0f49ee8fd0e870d6274546",
+                "to_node_uid": "bc03209c00334bdbb85f464c1f5103ee"
+            },
+            {
+                "from_node_uid": "38adbcf62a644844a9619b697102629a",
+                "to_node_channel": 0,
+                "from_node_channel": 0,
+                "uid": "1dad198f6b7a4cb6b4c22d7ae4d976aa",
+                "to_node_uid": "021ed5aab10e444d89c5c58cc8fd35ec"
+            },
+            {
+                "from_node_uid": "021ed5aab10e444d89c5c58cc8fd35ec",
+                "to_node_channel": 1,
+                "from_node_channel": 0,
+                "uid": "c64092b614714e209b5ac2b02b193cd2",
+                "to_node_uid": "bc03209c00334bdbb85f464c1f5103ee"
+            }
+        ],
+        "nodes": [
+            {
+                "py/object": "audioled.filtergraph.Node",
+                "py/state": {
+                    "effect": {
+                        "py/object": "audioled.audio.AudioInput",
+                        "py/state": {
+                            "chunk_rate": 60,
+                            "num_channels": 2,
+                            "device_index": null
+                        }
+                    },
+                    "uid": "b0133ebb9a3c439d8c927000221df303",
+                    "numInputChannels": 0,
+                    "numOutputChannels": 2
+                }
+            },
+            {
+                "py/object": "audioled.filtergraph.Node",
+                "py/state": {
+                    "effect": {
+                        "py/object": "audioled.devices.LEDOutput",
+                        "py/state": {
+                            "controller": {
+                                "py/object": "audioled.devices.RaspberryPi",
+                                "py/state": {
+                                    "num_pixels": 300,
+                                    "freq_hz": 800000,
+                                    "pin": 18,
+                                    "dma": 5,
+                                    "brightness": 255,
+                                    "invert": false
+                                }
+                            }
+                        }
+                    },
+                    "uid": "2ffad3e356e840ff881b37b4d6752d44",
+                    "numInputChannels": 1,
+                    "numOutputChannels": 0
+                }
+            },
+            {
+                "py/object": "audioled.filtergraph.Node",
+                "py/state": {
+                    "effect": {
+                        "py/object": "audioled.colors.ColorWheel",
+                        "py/state": {
+                            "wiggle_amplitude": 0,
+                            "saturation": 1,
+                            "wiggle_time": 0,
+                            "cycle_time": 30,
+                            "luminocity": 0.5,
+                            "num_pixels": 150,
+                            "offset": 0
+                        }
+                    },
+                    "uid": "58e565effbd34c3e9b4e69a540f67ee5",
+                    "numInputChannels": 0,
+                    "numOutputChannels": 1
+                }
+            },
+            {
+                "py/object": "audioled.filtergraph.Node",
+                "py/state": {
+                    "effect": {
+                        "py/object": "audioled.colors.ColorWheel",
+                        "py/state": {
+                            "wiggle_amplitude": 0,
+                            "saturation": 1,
+                            "wiggle_time": 0,
+                            "cycle_time": 5,
+                            "luminocity": 0.5,
+                            "num_pixels": 150,
+                            "offset": 0
+                        }
+                    },
+                    "uid": "04531306e6f24d318c2ed0cb0324fccc",
+                    "numInputChannels": 0,
+                    "numOutputChannels": 1
+                }
+            },
+            {
+                "py/object": "audioled.filtergraph.Node",
+                "py/state": {
+                    "effect": {
+                        "py/object": "audioled.colors.InterpolateHSV",
+                        "py/state": {
+                            "num_pixels": 150
+                        }
+                    },
+                    "uid": "28e137027e1349b481a9efb7031c126a",
+                    "numInputChannels": 2,
+                    "numOutputChannels": 1
+                }
+            },
+            {
+                "py/object": "audioled.filtergraph.Node",
+                "py/state": {
+                    "effect": {
+                        "py/object": "audioled.audioreactive.VUMeterPeak",
+                        "py/state": {
+                            "db_range": 20,
+                            "num_pixels": 150
+                        }
+                    },
+                    "uid": "38adbcf62a644844a9619b697102629a",
+                    "numInputChannels": 2,
+                    "numOutputChannels": 1
+                }
+            },
+            {
+                "py/object": "audioled.filtergraph.Node",
+                "py/state": {
+                    "effect": {
+                        "py/object": "audioled.audioreactive.VUMeterPeak",
+                        "py/state": {
+                            "db_range": 20,
+                            "num_pixels": 150
+                        }
+                    },
+                    "uid": "ffee6b1ecb794104b2bf000bd75edbe0",
+                    "numInputChannels": 2,
+                    "numOutputChannels": 1
+                }
+            },
+            {
+                "py/object": "audioled.filtergraph.Node",
+                "py/state": {
+                    "effect": {
+                        "py/object": "audioled.effects.Append",
+                        "py/state": {
+                            "flip5": false,
+                            "flip6": false,
+                            "flip4": false,
+                            "num_channels": 2,
+                            "flip3": false,
+                            "flip0": false,
+                            "flip2": false,
+                            "flip7": false,
+                            "flip1": true
+                        }
+                    },
+                    "uid": "bc03209c00334bdbb85f464c1f5103ee",
+                    "numInputChannels": 2,
+                    "numOutputChannels": 1
+                }
+            },
+            {
+                "py/object": "audioled.filtergraph.Node",
+                "py/state": {
+                    "effect": {
+                        "py/object": "audioled.effects.AfterGlow",
+                        "py/state": {
+                            "glow_time": 0.33
+                        }
+                    },
+                    "uid": "b7f4816a70184dc4b2095241ff40c0a5",
+                    "numInputChannels": 1,
+                    "numOutputChannels": 1
+                }
+            },
+            {
+                "py/object": "audioled.filtergraph.Node",
+                "py/state": {
+                    "effect": {
+                        "py/object": "audioled.effects.Mirror",
+                        "py/state": {
+                            "mirror_lower": false,
+                            "recursion": 0
+                        }
+                    },
+                    "uid": "ccdeb6e8fad942ef91617fc80b6cbd9a",
+                    "numInputChannels": 1,
+                    "numOutputChannels": 1
+                }
+            },
+            {
+                "py/object": "audioled.filtergraph.Node",
+                "py/state": {
+                    "effect": {
+                        "py/object": "audioled.effects.Mirror",
+                        "py/state": {
+                            "mirror_lower": false,
+                            "recursion": 0
+                        }
+                    },
+                    "uid": "021ed5aab10e444d89c5c58cc8fd35ec",
+                    "numInputChannels": 1,
+                    "numOutputChannels": 1
+                }
+            }
+        ],
+        "recordTimings": true
+    }
+}
