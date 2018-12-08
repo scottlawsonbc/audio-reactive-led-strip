@@ -278,10 +278,10 @@ class RaspberryPi(LEDController):
         # Optional gamma correction
         pixels = _GAMMA_TABLE[pixels]
         # Encode 24-bit LED values in 32 bit integers
-        r = np.left_shift(pixels[0][:].astype(int), 8)
-        g = np.left_shift(pixels[1][:].astype(int), 16)
+        r = np.left_shift(pixels[0][:].astype(int), 16)
+        g = np.left_shift(pixels[1][:].astype(int), 8)
         b = pixels[2][:].astype(int)
-        rgb = np.bitwise_or(np.bitwise_or(r, g), b)
+        rgb = np.bitwise_or(np.bitwise_or(g, r), b)
         # Update the pixels
         
         for i in range(n_pixels):
