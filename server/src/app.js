@@ -269,6 +269,9 @@ function addNode(data, cancelAction, callback) {
       sortSelect(effectDropdown);
       effectDropdown.selectedIndex = 0;
       updateNodeArgs();
+    }).catch( err => {
+      showError("Error fetching effects. See console for details");
+      console.error("Error fetching effects:",err);
     })
   }
   fetchEffects();
@@ -311,6 +314,7 @@ function editNode(uid, cancelAction, callback) {
           // updateVisNode(data, node); // TODO: Needed?
         })
         .catch(error => {
+          showError("Error on updating node. See console for details.")
           console.error('Error on updating node:', error);
         })
       });
@@ -361,6 +365,7 @@ async function saveNodeData(data, callback) {
     callback(data);
   })
   .catch(error => {
+    showError("Error on creating node. See console for details");
     console.error('Error on creating node:', error);
   })
   .finally(() => {
@@ -535,7 +540,10 @@ async function updateNodeArgs() {
     configurator = new ConfigurationWrapper(selectedEffect, document.getElementById('node-configuration'), parameters, defaults, async (nodeUid, data) => {
       // do nothing
     });
-  }) ;
+  }).catch(err => {
+    showError("Error updating node configuration. See console for details.");
+    console.err("Error updating node configuration:",err);
+  });
 }
 
 createNetwork();

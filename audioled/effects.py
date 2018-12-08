@@ -90,7 +90,7 @@ class Shift(Effect):
 
 
 class Append(Effect):
-    def __init__(self, num_channels, flip0=False, flip1=False, flip2=False, flip3=False, flip4=False, flip5=False, flip6=False, flip7=False):
+    def __init__(self, num_channels=2, flip0=False, flip1=False, flip2=False, flip3=False, flip4=False, flip5=False, flip6=False, flip7=False):
         self.num_channels = num_channels
         self.flip0 = flip0
         self.flip1 = flip1

@@ -113,7 +113,7 @@ def create_app():
         if not request.json:
             abort(400)
         full_class_name = request.json[0]
-        parameters = request.json[1] # TODO: Don't pickle!
+        parameters = request.json[1] 
         print(parameters)
         module_name, class_name = None, None
         try:
