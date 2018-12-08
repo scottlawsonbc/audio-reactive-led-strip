@@ -224,12 +224,9 @@ def create_app():
     @app.route('/remote/brightness', methods=['POST'])
     def remote_brightness_post():
         global device
-        if not request.json:
-            print(request)
-            abort(400)
-        print(request.json)
-        floatVal = float(request.json['value'])
-        print(floatVal)
+        value = int(request.args.get('value'))
+        floatVal = float(value/100)
+        print("Setting brightness: {}".format(floatVal))
         device.setBrightness(floatVal)
         return "OK"
 
