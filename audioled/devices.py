@@ -43,8 +43,19 @@ class LEDController:
         device.show(pixels)
     """
 
-    def __init__(self):
-        pass
+    def __init__(self, brightness=1.0):
+        self.brightness = brightness
+    
+    def setBrightness(self, value):
+        self.brightness = value
+    
+    def getBrightness(self):
+        try:
+            return self.brightness
+        except AttributeError:
+            self.brightness = 1.0
+            return self.brightness
+
 
     def show(self, pixels):
         """Set LED pixels to the values given in the array
@@ -124,7 +135,7 @@ class ESP8266(LEDController):
             g (0 to 255): Green value of LED
             b (0 to 255): Blue value of LED
         """
-        message = pixels.T.clip(0, 255).astype(np.uint8).ravel().tostring()
+        message = (pixels*self.getBrightness()).T.clip(0, 255).astype(np.uint8).ravel().tostring()
         self._sock.sendto(message, (self._ip, self._port))
 
 
@@ -147,7 +158,7 @@ class FadeCandy(LEDController):
             print('Ensure that fcserver is running and try again.')
 
     def show(self, pixels):
-        self.client.put_pixels(pixels.T.clip(0, 255).astype(int).tolist())
+        self.client.put_pixels((pixels*self.getBrightness()).T.clip(0, 255).astype(int).tolist())
 
 
 class BlinkStick(LEDController):
@@ -169,7 +180,7 @@ class BlinkStick(LEDController):
         """
         # Truncate values and cast to integer
         n_pixels = pixels.shape[1]
-        pixels = pixels.clip(0, 255).astype(int)
+        pixels = (pixels*self.getBrightness()).clip(0, 255).astype(int)
         pixels = _GAMMA_TABLE[pixels]
         # Read the rgb values
         r = pixels[0][:].astype(int)
@@ -263,7 +274,7 @@ class RaspberryPi(LEDController):
             
         # Truncate values and cast to integer
         n_pixels = pixels.shape[1]
-        pixels = pixels.clip(0, 255).astype(int)
+        pixels = (pixels*self.getBrightness()).clip(0, 255).astype(int)
         # Optional gamma correction
         pixels = _GAMMA_TABLE[pixels]
         # Encode 24-bit LED values in 32 bit integers
@@ -306,7 +317,7 @@ class DotStar(LEDController):
 
     def show(self, pixels):
         bgr = [2,1,0]
-        self.led_data[0:,1:4] = pixels[bgr].T.clip(0,255)
+        self.led_data[0:,1:4] = (pixels*self.getBrightness())[bgr].T.clip(0,255)
         self._strip.show()
 
 class LEDOutput(Effect):

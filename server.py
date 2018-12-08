@@ -10,6 +10,7 @@ import json
 import argparse
 import colorsys
 import numpy as np
+import os.path
 from flask import Flask, jsonify, abort, send_from_directory, request
 from audioled import filtergraph
 from audioled import audio
@@ -220,6 +221,33 @@ def create_app():
         fg = jsonpickle.decode(request.json)
         return "OK"
 
+    @app.route('/remote/brightness', methods=['POST'])
+    def remote_brightness_post():
+        global device
+        if not request.json:
+            print(request)
+            abort(400)
+        print(request.json)
+        floatVal = float(request.json['value'])
+        print(floatVal)
+        device.setBrightness(floatVal)
+        return "OK"
+
+    @app.route('/remote/favorites/<id>', methods=['POST'])
+    def remote_favorites_id_post(id):
+        filename = "favorites/{}.json".format(id)
+        global fg
+        if os.path.isfile(filename):
+            with open(filename,"r") as f:
+                fg = jsonpickle.decode(f.read())
+                return "OK"
+        else:
+            print("Favorite not found: {}".format(filename))
+        
+        abort(404)
+        
+            
+
     
     def processLED():
         global fg
@@ -326,8 +354,8 @@ if __name__ == '__main__':
     strandTest(device, num_pixels)
 
     # Initialize filtergraph
-    fg = configs.createSpectrumGraph(num_pixels, device)
-    #fg = configs.createMovingLightGraph(num_pixels, device)
+    #fg = configs.createSpectrumGraph(num_pixels, device)
+    fg = configs.createMovingLightGraph(num_pixels, device)
     #fg = configs.createMovingLightsGraph(num_pixels, device)
     #fg = configs.createVUPeakGraph(num_pixels, device)
     #fg = configs.createSwimmingPoolGraph(num_pixels, device)
