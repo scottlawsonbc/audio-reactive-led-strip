@@ -26,7 +26,8 @@ spectrumConf = 'spectrum'
 vu_peakConf = 'vu_peak'
 swimmingConf = 'swimming'
 defenceConf = 'defence'
-configChoices = [movingLightConf, spectrumConf, vu_peakConf, movingLightsConf, swimmingConf, defenceConf]
+keyboardConf = 'keyboard'
+configChoices = [movingLightConf, spectrumConf, vu_peakConf, movingLightsConf, swimmingConf, defenceConf, keyboardConf]
 
 deviceRasp = 'RaspberryPi'
 deviceCandy = 'FadeCandy'
@@ -69,7 +70,9 @@ def createFilterGraph(config, num_pixels, device):
     elif config == swimmingConf:
         return configs.createSwimmingPoolGraph(num_pixels,device)
     elif config == defenceConf:
-        return configs.createDefenceGraph(num_pixels,device)
+        return configs.createDefenceGraph(num_pixels, device)
+    elif config == keyboardConf:
+        return configs.createKeyboardGraph(num_pixels, device)
     else:
         raise NotImplementedError("Config not implemented")
 

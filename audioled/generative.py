@@ -7,6 +7,7 @@ import math
 import random
 import struct
 import time
+import keyboard
 
 import numpy as np
 from scipy.ndimage.filters import gaussian_filter1d
@@ -130,4 +131,40 @@ class DefenceMode(Effect):
             else:
                 self._output = np.zeros(self.num_pixels) * np.array([[0.0], [0.0], [0.0]])
 
+            self._outputBuffer[0] = self._output.clip(0.0,255.0)
+
+
+
+class PrimitiveKeyboard(Effect):
+    #needs import keyboard and terminal run as sudo
+    #press 'w' to trigger defence mode
+
+
+    def __init__(self, num_pixels, explodeAtPixel=100, _trigger=False, broadness=50, scale=0.2):
+        self.num_pixels = num_pixels
+        self.explodeAtPixel = explodeAtPixel
+        self._trigger = _trigger
+        self.broadness = broadness
+        self.scale = scale
+        self.__initstate__()
+
+    def __initstate__(self):
+        # state
+        self._pixel_state = np.zeros(self.num_pixels) * np.array([[0.0], [0.0], [0.0]])
+        self._last_t = 0.0
+        super(PrimitiveKeyboard, self).__initstate__()
+
+    def numInputChannels(self):
+        return 1
+
+    def numOutputChannels(self):
+        return 1
+
+    def process(self):
+        if self._outputBuffer is not None:
+            if keyboard.is_pressed('w') == True:
+                #print('You Pressed A Key!')
+                self._output = np.ones(self.num_pixels) * np.array([[random.randint(0.0,255.0)], [random.randint(0.0,255.0)], [random.randint(0.0,255.0)]])
+            else:
+                self._output = np.zeros(self.num_pixels) * np.array([[0.0], [0.0], [0.0]])
             self._outputBuffer[0] = self._output.clip(0.0,255.0)
