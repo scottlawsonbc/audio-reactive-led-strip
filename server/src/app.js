@@ -95,10 +95,42 @@ const createEdgesFromBackend = async() => {
   }));
 }
 
+function conUid(inout, index, uid) {
+  return inout + '_' + index + '_' + uid;
+}
+
 function addVisNode(node) {
   var visNode = {};
   updateVisNode(visNode, node);
   nodes.add(visNode);
+  var numOutputChannels = node['py/state']['numOutputChannels'];
+  var numInputChannels = node['py/state']['numInputChannels'];
+  for(var i=0; i<numOutputChannels; i++) {
+    var outNode = {};
+    outNode.group = 'out'
+    outNode.id = conUid('out', i, visNode.id);
+    outNode.label = `${i}`
+    outNode.shape = 'circle'
+    outNode.nodeType = 'channel'
+    outNode.nodeUid = node.id;
+    outNode.nodeChannel = i;
+    nodes.add(outNode);
+    edges.add({id: outNode.id, from: visNode.id, to: outNode.id});
+  }
+  for(var i=0; i < numInputChannels; i++) {
+    var inNode = {};
+    inNode.group = 'in';
+    inNode.id = conUid('in', i, visNode.id);
+    inNode.label = `${i}`;
+    inNode.shape = 'circle';
+    inNode.nodeType = 'channel';
+    inNode.nodeUid = node.id;
+    inNode.nodeChannel = i;
+    nodes.add(inNode);
+    edges.add({id: inNode.id, from:inNode.id, to: visNode.id});
+
+  }
+  
 }
 
 function updateVisNode(node, json) {
@@ -109,6 +141,7 @@ function updateVisNode(node, json) {
   node.label = name;
   node.shape = 'circularImage';
   node.group = 'ok';
+  node.nodeType = 'node';
   var icon = icons[name];
   node.image = icon ? icon : '';
 }
@@ -123,9 +156,11 @@ function updateVisConnection(edge, json) {
   console.debug('Update Vis Connection:',json["py/state"]);
   var state = json["py/state"];
   edge.id = state["uid"];
-  edge.from = state["from_node_uid"];
+  //edge.from = state["from_node_uid"];
+  edge.from = conUid('out', state['from_node_channel'], state['from_node_uid'])
   edge.from_channel = state["from_node_channel"];
-  edge.to = state["to_node_uid"];
+  //edge.to = state["to_node_uid"];
+  edge.to = conUid('in', state['to_node_channel'], state['to_node_uid'])
   edge.to_channel = state["to_node_channel"];
   edge.arrows = 'to'
 }
@@ -147,9 +182,9 @@ function createNetwork() {
     layout: {
       hierarchical: {
         enabled: true,
-        levelSeparation: 200,
+        levelSeparation: 70,
         direction: "UD",
-        nodeSpacing: 300,
+        nodeSpacing: 80,
         sortMethod: 'directed',
 
       },
@@ -159,20 +194,31 @@ function createNetwork() {
       barnesHut: {
         gravitationalConstant: -2000,
         centralGravity: 0.3,
-        springLength: 200,
-        springConstant: 0.04,
-        damping: 0.09,
+        springLength: 25,
+        springConstant: 0.5,
+        damping: 0.88,
         avoidOverlap: 1
       },
       hierarchicalRepulsion: {
-        centralGravity: 1.0,
-        nodeDistance: 200,
-        springLength: 200,
-        springConstant: 0.001,
-        damping: 0.25,
+        centralGravity: .05,
+        nodeDistance: 150,
+        springLength: 100,
+        springConstant: 0.5,
+        damping: 0.8,
       },
-      minVelocity: 0.75,
-      solver: "barnesHut"
+      forceAtlas2Based: {
+        gravitationalConstant: -26,
+        centralGravity: 0.005,
+        springLength: 100,
+        springConstant: 0.18
+      },
+      maxVelocity: 146,
+      timestep: 0.35,
+      solver: 'barnesHut',
+      stabilization: {
+        enabled: false,
+        onlyDynamicEdges: true
+      },
     },
     interaction: {
       navigationButtons: false,
@@ -198,6 +244,14 @@ function createNetwork() {
           callback(null);
           return;
         }
+        var fromNode = nodes.get(data.from);
+        var toNode = nodes.get(data.to);
+        if (fromNode.nodeType == 'channel' && fromNode.group == 'out' && toNode.nodeType == 'channel' && toNode.group == 'in' ) {
+          console.log("could add edge")
+        } else {
+          console.log("could not add edge")
+        }
+        return;
         document.getElementById('edge-operation').innerHTML = "Add Edge";
         editEdgeWithoutDrag(data, callback);
       },
@@ -227,11 +281,21 @@ function createNetwork() {
           border: '#222222',
           background: '#666666'
         },
+        mass: 10
       }, error: {
         color: {
           border: '#ee0000',
           background: '#666666'
         },
+        mass: 10
+      },
+      in: {
+        //physics: false
+        mass: 1
+      },
+      out: {
+        //physics: false
+        mass: 1
       }
     }
   };
@@ -624,7 +688,7 @@ window.setInterval(function(){
   const fetchErrors = async() => fetch('./errors').then(response => response.json()).then(json => {
     for (var entry in nodes.get()) {
       var node = nodes.get()[entry];
-      if(node.group != 'ok') {
+      if(node.group == 'error') {
         node.group = 'ok';
         nodes.update(node);
       }

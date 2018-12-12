@@ -60,3 +60,4 @@ Temporary Items
 # node
 
 *node_modules
+.cache
