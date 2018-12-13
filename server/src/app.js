@@ -233,7 +233,20 @@ function createNetwork() {
       },
       deleteNode: function(data, callback) {
         data.nodes.forEach(id => {
-          deleteNodeData(id);
+          var node = nodes.get(id)
+          if(node.nodeType == 'node') {
+            // update callback data to include all input and output nodes for this node
+            var inputOutputNodes = nodes.get({
+              filter: function (item) {
+                return item.nodeType == 'channel' && item.nodeUid == id;
+              }
+            });
+            data.nodes = data.nodes.concat(inputOutputNodes.map(x => x.id));
+            deleteNodeData(id);
+          } else {
+            console.log("Cannot delete node")
+            return
+          }
           console.debug("Deleted node",id);
         });
         callback(data);
@@ -276,7 +289,8 @@ function createNetwork() {
           }
         });
         callback(data);
-      }
+      },
+      editEdge: false,
     },
     nodes: {
       borderWidth:4,
@@ -482,6 +496,8 @@ async function deleteNodeData(id) {
     console.debug('Delete node successful:', id);
   }).catch(error => {
     console.error('Error on deleting node:', error)
+  }).finally(() => {
+    clearNodePopUp();
   })
 }
 
