@@ -83,8 +83,8 @@ class Test_FilterGraph(unittest.TestCase):
         ef1 = MockEffect()
         fg.addEffectNode(ef1)
         fg.process()
-        self.assertEqual(len(fg._filterNodes[0].outputBuffer), 5)
-        self.assertEqual(fg._filterNodes[0].outputBuffer[0], 0)
+        self.assertEqual(len(fg._filterNodes[0]._outputBuffer), 5)
+        self.assertEqual(fg._filterNodes[0]._outputBuffer[0], 0)
     
     def test_mockEffect_works(self):
         fg = filtergraph.FilterGraph()
@@ -94,10 +94,10 @@ class Test_FilterGraph(unittest.TestCase):
         ef1.process()
         self.assertEqual(ef1._outputBuffer[0], 'test')
 
-        n1.inputBuffer[0] = 'test2'
+        n1._inputBuffer[0] = 'test2'
         fg.process()
         self.assertEqual(ef1._outputBuffer[0], 'test2')
-        self.assertEqual(n1.outputBuffer[0], 'test2')
+        self.assertEqual(n1._outputBuffer[0], 'test2')
 
 
     def test_valuePropagation_works(self):
@@ -109,11 +109,11 @@ class Test_FilterGraph(unittest.TestCase):
         n2 = fg.addEffectNode(ef2)
         fg.addConnection(ef1,0,ef2,1)
 
-        n1.inputBuffer[0] = 'test'
+        n1._inputBuffer[0] = 'test'
         fg.process()
 
-        self.assertEqual(n1.outputBuffer[0], 'test')
-        self.assertEqual(n2.outputBuffer[1], 'test')
+        self.assertEqual(n1._outputBuffer[0], 'test')
+        self.assertEqual(n2._outputBuffer[1], 'test')
 
 
 class MockEffect(object):
