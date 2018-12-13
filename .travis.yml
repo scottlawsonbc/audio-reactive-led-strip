@@ -27,6 +27,6 @@ install:
   - conda create -q -n visualization-env python=$TRAVIS_PYTHON_VERSION numpy scipy
   - source activate visualization-env
   # Install pip dependencies
-  - pip install pyaudio
+  - pip install pyaudio matplotlib jsonpickle flask
 # command to run tests
 script: python -m unittest discover
