@@ -637,6 +637,11 @@ async function updateNodeArgs() {
   const json = response.json();
   const defaultReponse = await fetch('./effect/'+selectedEffect+'/args');
   const defaultJson = defaultReponse.json();
+
+  if(configurator) {
+    configurator.clear();
+  }
+
   Promise.all([json,defaultJson]).then(result => { 
     var parameters = result[0];
     var defaults = result[1];
