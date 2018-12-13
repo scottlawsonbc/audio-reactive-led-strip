@@ -112,7 +112,7 @@ function addVisNode(node) {
     outNode.label = `${i}`
     outNode.shape = 'circle'
     outNode.nodeType = 'channel'
-    outNode.nodeUid = node.id;
+    outNode.nodeUid = visNode.id;
     outNode.nodeChannel = i;
     nodes.add(outNode);
     edges.add({id: outNode.id, from: visNode.id, to: outNode.id});
@@ -124,7 +124,7 @@ function addVisNode(node) {
     inNode.label = `${i}`;
     inNode.shape = 'circle';
     inNode.nodeType = 'channel';
-    inNode.nodeUid = node.id;
+    inNode.nodeUid = visNode.id;
     inNode.nodeChannel = i;
     nodes.add(inNode);
     edges.add({id: inNode.id, from:inNode.id, to: visNode.id});
@@ -248,6 +248,7 @@ function createNetwork() {
         var toNode = nodes.get(data.to);
         if (fromNode.nodeType == 'channel' && fromNode.group == 'out' && toNode.nodeType == 'channel' && toNode.group == 'in' ) {
           console.log("could add edge")
+          postEdgeData(fromNode.nodeUid, fromNode.nodeChannel, toNode.nodeUid, toNode.nodeChannel, data, callback )
         } else {
           console.log("could not add edge")
         }
@@ -256,9 +257,23 @@ function createNetwork() {
         editEdgeWithoutDrag(data, callback);
       },
       deleteEdge: function(data, callback) {
-        data.edges.forEach(data => {
-          deleteEdgeData(data);
-          console.debug("Deleted edge",data);
+        data.edges.forEach(edgeUid => {
+          var edge = edges.get(edgeUid);
+          var fromNode = nodes.get(edge.from);
+          var toNode = nodes.get(edge.to);
+          if (fromNode.nodeType == 'channel' && fromNode.group == 'out' && toNode.nodeType == 'channel' && toNode.group == 'in' ) {
+          
+            deleteEdgeData(edgeUid);
+            
+            console.debug("Deleted edge",edge);
+          } else {
+            console.log("could not delete edge")
+            // Remove edge from callback data
+            var index = data.edges.indexOf(edgeUid);
+            if (index > -1) {
+              data.edges.splice(index, 1);
+            }
+          }
         });
         callback(data);
       }
@@ -550,8 +565,10 @@ async function saveEdgeData(data, callback) {
   var from_node_channel = fromChannelDropdown.options[fromChannelDropdown.selectedIndex].value;
   var toChannelDropdown = document.getElementById('edge-toChannelDropdown');
   var to_node_channel = toChannelDropdown.options[toChannelDropdown.selectedIndex].value;
-
-  var postData = {from_node_uid: data.from, from_node_channel: from_node_channel, to_node_uid: data.to, to_node_channel: to_node_channel};
+  await postEdgeData(data.from, from_node_channel, data.to, to_node_channel, data, callback);
+}
+async function postEdgeData(from_node_uid, from_node_channel, to_node_uid, to_node_channel, data, callback) {
+  var postData = {from_node_uid: from_node_uid, from_node_channel: from_node_channel, to_node_uid: to_node_uid, to_node_channel: to_node_channel};
 
   // Save node in backend
   await fetch('./connection', {
