@@ -95,22 +95,62 @@ const createEdgesFromBackend = async() => {
   }));
 }
 
-function addVisNode(node) {
-  var visNode = {};
-  updateVisNode(visNode, node);
-  nodes.add(visNode);
+function conUid(inout, index, uid) {
+  return inout + '_' + index + '_' + uid;
 }
 
-function updateVisNode(node, json) {
+function addVisNode(json) {
+  var visNode = {};
+  updateVisNode(visNode, json);
+  nodes.add(visNode);
+  
+  
+}
+
+function updateVisNode(visNode, json) {
   console.debug('Update Vis Node:', json["py/state"]);
   var uid = json["py/state"]["uid"];
   var name = json["py/state"]["effect"]["py/object"];
-  node.id = uid;
-  node.label = name;
-  node.shape = 'circularImage';
-  node.group = 'ok';
+  visNode.id = uid;
+  visNode.label = name;
+  visNode.shape = 'circularImage';
+  visNode.group = 'ok';
+  visNode.nodeType = 'node';
   var icon = icons[name];
-  node.image = icon ? icon : '';
+  visNode.image = icon ? icon : '';
+  // update input and output nodes
+  var numOutputChannels = json['py/state']['numOutputChannels'];
+  var numInputChannels = json['py/state']['numInputChannels'];
+  for(var i=0; i<numOutputChannels; i++) {
+    uid = conUid('out', i, visNode.id);
+    if(nodes.get(uid) == null) {
+      var outNode = {};
+      outNode.group = 'out';
+      outNode.id = uid;
+      outNode.label = `${i}`;
+      outNode.shape = 'circle';
+      outNode.nodeType = 'channel';
+      outNode.nodeUid = visNode.id;
+      outNode.nodeChannel = i;
+      nodes.add(outNode);
+      edges.add({id: outNode.id, from: visNode.id, to: outNode.id});
+    }
+  }
+  for(var i=0; i < numInputChannels; i++) {
+    uid = conUid('in', i, visNode.id);
+    if(nodes.get(uid) == null) {
+      var inNode = {};
+      inNode.group = 'in';
+      inNode.id = uid;
+      inNode.label = `${i}`;
+      inNode.shape = 'circle';
+      inNode.nodeType = 'channel';
+      inNode.nodeUid = visNode.id;
+      inNode.nodeChannel = i;
+      nodes.add(inNode);
+      edges.add({id: inNode.id, from:inNode.id, to: visNode.id});
+    }
+  }
 }
 
 function addVisConnection(con) {
@@ -123,9 +163,11 @@ function updateVisConnection(edge, json) {
   console.debug('Update Vis Connection:',json["py/state"]);
   var state = json["py/state"];
   edge.id = state["uid"];
-  edge.from = state["from_node_uid"];
+  //edge.from = state["from_node_uid"];
+  edge.from = conUid('out', state['from_node_channel'], state['from_node_uid'])
   edge.from_channel = state["from_node_channel"];
-  edge.to = state["to_node_uid"];
+  //edge.to = state["to_node_uid"];
+  edge.to = conUid('in', state['to_node_channel'], state['to_node_uid'])
   edge.to_channel = state["to_node_channel"];
   edge.arrows = 'to'
 }
@@ -147,9 +189,9 @@ function createNetwork() {
     layout: {
       hierarchical: {
         enabled: true,
-        levelSeparation: 200,
+        levelSeparation: 70,
         direction: "UD",
-        nodeSpacing: 300,
+        nodeSpacing: 80,
         sortMethod: 'directed',
 
       },
@@ -159,20 +201,31 @@ function createNetwork() {
       barnesHut: {
         gravitationalConstant: -2000,
         centralGravity: 0.3,
-        springLength: 200,
-        springConstant: 0.04,
-        damping: 0.09,
+        springLength: 25,
+        springConstant: 0.5,
+        damping: 0.88,
         avoidOverlap: 1
       },
       hierarchicalRepulsion: {
-        centralGravity: 1.0,
-        nodeDistance: 200,
-        springLength: 200,
-        springConstant: 0.001,
-        damping: 0.25,
+        centralGravity: .05,
+        nodeDistance: 150,
+        springLength: 100,
+        springConstant: 0.5,
+        damping: 0.8,
       },
-      minVelocity: 0.75,
-      solver: "barnesHut"
+      forceAtlas2Based: {
+        gravitationalConstant: -26,
+        centralGravity: 0.005,
+        springLength: 100,
+        springConstant: 0.18
+      },
+      maxVelocity: 146,
+      timestep: 0.35,
+      solver: 'barnesHut',
+      stabilization: {
+        enabled: false,
+        onlyDynamicEdges: true
+      },
     },
     interaction: {
       navigationButtons: false,
@@ -187,7 +240,20 @@ function createNetwork() {
       },
       deleteNode: function(data, callback) {
         data.nodes.forEach(id => {
-          deleteNodeData(id);
+          var node = nodes.get(id)
+          if(node.nodeType == 'node') {
+            // update callback data to include all input and output nodes for this node
+            var inputOutputNodes = nodes.get({
+              filter: function (item) {
+                return item.nodeType == 'channel' && item.nodeUid == id;
+              }
+            });
+            data.nodes = data.nodes.concat(inputOutputNodes.map(x => x.id));
+            deleteNodeData(id);
+          } else {
+            console.log("Cannot delete node")
+            return
+          }
           console.debug("Deleted node",id);
         });
         callback(data);
@@ -198,16 +264,40 @@ function createNetwork() {
           callback(null);
           return;
         }
+        var fromNode = nodes.get(data.from);
+        var toNode = nodes.get(data.to);
+        if (fromNode.nodeType == 'channel' && fromNode.group == 'out' && toNode.nodeType == 'channel' && toNode.group == 'in' ) {
+          console.log("could add edge")
+          postEdgeData(fromNode.nodeUid, fromNode.nodeChannel, toNode.nodeUid, toNode.nodeChannel, data, callback )
+        } else {
+          console.log("could not add edge")
+        }
+        return;
         document.getElementById('edge-operation').innerHTML = "Add Edge";
         editEdgeWithoutDrag(data, callback);
       },
       deleteEdge: function(data, callback) {
-        data.edges.forEach(data => {
-          deleteEdgeData(data);
-          console.debug("Deleted edge",data);
+        data.edges.forEach(edgeUid => {
+          var edge = edges.get(edgeUid);
+          var fromNode = nodes.get(edge.from);
+          var toNode = nodes.get(edge.to);
+          if (fromNode.nodeType == 'channel' && fromNode.group == 'out' && toNode.nodeType == 'channel' && toNode.group == 'in' ) {
+          
+            deleteEdgeData(edgeUid);
+            
+            console.debug("Deleted edge",edge);
+          } else {
+            console.log("could not delete edge")
+            // Remove edge from callback data
+            var index = data.edges.indexOf(edgeUid);
+            if (index > -1) {
+              data.edges.splice(index, 1);
+            }
+          }
         });
         callback(data);
-      }
+      },
+      editEdge: false,
     },
     nodes: {
       borderWidth:4,
@@ -227,11 +317,21 @@ function createNetwork() {
           border: '#222222',
           background: '#666666'
         },
+        mass: 10
       }, error: {
         color: {
           border: '#ee0000',
           background: '#666666'
         },
+        mass: 10
+      },
+      in: {
+        //physics: false
+        mass: 1
+      },
+      out: {
+        //physics: false
+        mass: 1
       }
     }
   };
@@ -361,8 +461,9 @@ async function saveNodeData(data, callback) {
   }).then(res => res.json())
   .then(node => {
     console.debug('Create node successful:', JSON.stringify(node));
-    updateVisNode(data, node);
-    callback(data);
+    //updateVisNode(data, node);
+    addVisNode(node);
+    callback(null); // can't use callback since we alter nodes in updateVisNode
   })
   .catch(error => {
     showError("Error on creating node. See console for details");
@@ -403,6 +504,8 @@ async function deleteNodeData(id) {
     console.debug('Delete node successful:', id);
   }).catch(error => {
     console.error('Error on deleting node:', error)
+  }).finally(() => {
+    clearNodePopUp();
   })
 }
 
@@ -486,8 +589,10 @@ async function saveEdgeData(data, callback) {
   var from_node_channel = fromChannelDropdown.options[fromChannelDropdown.selectedIndex].value;
   var toChannelDropdown = document.getElementById('edge-toChannelDropdown');
   var to_node_channel = toChannelDropdown.options[toChannelDropdown.selectedIndex].value;
-
-  var postData = {from_node_uid: data.from, from_node_channel: from_node_channel, to_node_uid: data.to, to_node_channel: to_node_channel};
+  await postEdgeData(data.from, from_node_channel, data.to, to_node_channel, data, callback);
+}
+async function postEdgeData(from_node_uid, from_node_channel, to_node_uid, to_node_channel, data, callback) {
+  var postData = {from_node_uid: from_node_uid, from_node_channel: from_node_channel, to_node_uid: to_node_uid, to_node_channel: to_node_channel};
 
   // Save node in backend
   await fetch('./connection', {
@@ -532,6 +637,11 @@ async function updateNodeArgs() {
   const json = response.json();
   const defaultReponse = await fetch('./effect/'+selectedEffect+'/args');
   const defaultJson = defaultReponse.json();
+
+  if(configurator) {
+    configurator.clear();
+  }
+
   Promise.all([json,defaultJson]).then(result => { 
     var parameters = result[0];
     var defaults = result[1];
@@ -624,7 +734,7 @@ window.setInterval(function(){
   const fetchErrors = async() => fetch('./errors').then(response => response.json()).then(json => {
     for (var entry in nodes.get()) {
       var node = nodes.get()[entry];
-      if(node.group != 'ok') {
+      if(node.group == 'error') {
         node.group = 'ok';
         nodes.update(node);
       }
