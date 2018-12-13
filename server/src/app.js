@@ -99,51 +99,58 @@ function conUid(inout, index, uid) {
   return inout + '_' + index + '_' + uid;
 }
 
-function addVisNode(node) {
+function addVisNode(json) {
   var visNode = {};
-  updateVisNode(visNode, node);
+  updateVisNode(visNode, json);
   nodes.add(visNode);
-  var numOutputChannels = node['py/state']['numOutputChannels'];
-  var numInputChannels = node['py/state']['numInputChannels'];
-  for(var i=0; i<numOutputChannels; i++) {
-    var outNode = {};
-    outNode.group = 'out'
-    outNode.id = conUid('out', i, visNode.id);
-    outNode.label = `${i}`
-    outNode.shape = 'circle'
-    outNode.nodeType = 'channel'
-    outNode.nodeUid = visNode.id;
-    outNode.nodeChannel = i;
-    nodes.add(outNode);
-    edges.add({id: outNode.id, from: visNode.id, to: outNode.id});
-  }
-  for(var i=0; i < numInputChannels; i++) {
-    var inNode = {};
-    inNode.group = 'in';
-    inNode.id = conUid('in', i, visNode.id);
-    inNode.label = `${i}`;
-    inNode.shape = 'circle';
-    inNode.nodeType = 'channel';
-    inNode.nodeUid = visNode.id;
-    inNode.nodeChannel = i;
-    nodes.add(inNode);
-    edges.add({id: inNode.id, from:inNode.id, to: visNode.id});
-
-  }
+  
   
 }
 
-function updateVisNode(node, json) {
+function updateVisNode(visNode, json) {
   console.debug('Update Vis Node:', json["py/state"]);
   var uid = json["py/state"]["uid"];
   var name = json["py/state"]["effect"]["py/object"];
-  node.id = uid;
-  node.label = name;
-  node.shape = 'circularImage';
-  node.group = 'ok';
-  node.nodeType = 'node';
+  visNode.id = uid;
+  visNode.label = name;
+  visNode.shape = 'circularImage';
+  visNode.group = 'ok';
+  visNode.nodeType = 'node';
   var icon = icons[name];
-  node.image = icon ? icon : '';
+  visNode.image = icon ? icon : '';
+  // update input and output nodes
+  var numOutputChannels = json['py/state']['numOutputChannels'];
+  var numInputChannels = json['py/state']['numInputChannels'];
+  for(var i=0; i<numOutputChannels; i++) {
+    uid = conUid('out', i, visNode.id);
+    if(nodes.get(uid) == null) {
+      var outNode = {};
+      outNode.group = 'out';
+      outNode.id = uid;
+      outNode.label = `${i}`;
+      outNode.shape = 'circle';
+      outNode.nodeType = 'channel';
+      outNode.nodeUid = visNode.id;
+      outNode.nodeChannel = i;
+      nodes.add(outNode);
+      edges.add({id: outNode.id, from: visNode.id, to: outNode.id});
+    }
+  }
+  for(var i=0; i < numInputChannels; i++) {
+    uid = conUid('in', i, visNode.id);
+    if(nodes.get(uid) == null) {
+      var inNode = {};
+      inNode.group = 'in';
+      inNode.id = uid;
+      inNode.label = `${i}`;
+      inNode.shape = 'circle';
+      inNode.nodeType = 'channel';
+      inNode.nodeUid = visNode.id;
+      inNode.nodeChannel = i;
+      nodes.add(inNode);
+      edges.add({id: inNode.id, from:inNode.id, to: visNode.id});
+    }
+  }
 }
 
 function addVisConnection(con) {
@@ -454,8 +461,9 @@ async function saveNodeData(data, callback) {
   }).then(res => res.json())
   .then(node => {
     console.debug('Create node successful:', JSON.stringify(node));
-    updateVisNode(data, node);
-    callback(data);
+    //updateVisNode(data, node);
+    addVisNode(node);
+    callback(null); // can't use callback since we alter nodes in updateVisNode
   })
   .catch(error => {
     showError("Error on creating node. See console for details");
