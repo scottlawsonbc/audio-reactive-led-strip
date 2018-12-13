@@ -6,6 +6,7 @@ Real-time LED strip music visualization using Python and the ESP8266 or Raspberr
 
 The works in this project is based on [https://github.com/scottlawsonbc/audio-reactive-led-strip](https://github.com/scottlawsonbc/audio-reactive-led-strip).
 
+
 # Getting started (local machine)
 
 ## Python Dependencies
