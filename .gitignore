@@ -47,3 +47,6 @@ Temporary Items
 .apdisk
 *.pyc
 *.pdf
+
+#VSCode project settings
+.vscode/

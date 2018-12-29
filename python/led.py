@@ -30,6 +30,19 @@ elif config.DEVICE == 'blinkstick':
     # Create a listener that turns the leds off when the program terminates
     signal.signal(signal.SIGTERM, signal_handler)
     signal.signal(signal.SIGINT, signal_handler)
+elif config.DEVICE == 'lightpack':
+    import socket
+    _sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    _sock.connect((config.LIGHTPACK_HOST, config.LIGHTPACK_PORT))
+
+    # Send API Key for authentication if set
+    if config.LIGHTPACK_APIKEY != '':
+        _sock.send('apikey:' + config.LIGHTPACK_APIKEY + '\n')
+
+    # lock api
+    _sock.send('lock' + '\n')
+
+
 
 _gamma = np.load(config.GAMMA_TABLE_PATH)
 """Gamma lookup table used for nonlinear brightness correction"""
@@ -134,6 +147,42 @@ def _update_blinkstick():
     #send the data to the blinkstick
     stick.set_led_data(0, newstrip)
 
+def _update_lightpack():
+    """Sends update to lighpack api via tcp connection"""
+    global pixels, _prev_pixels
+
+    # Truncate values and cast to integer
+    pixels = np.clip(pixels, 0, 255).astype(int)
+
+    # Optional gamma correction
+    p = _gamma[pixels] if config.SOFTWARE_GAMMA_CORRECTION else np.copy(pixels)
+
+    # create api message
+    api_msg = 'setcolor:'
+
+    for i in range(config.N_PIXELS):
+        color_i = i
+
+        if config.CENTER_OFFSET != 0:
+            color_i += config.CENTER_OFFSET
+
+            if color_i < 0:
+                color_i = config.N_PIXELS - color_i
+
+            if color_i > (config.N_PIXELS - 1):
+                color_i = color_i - (config.N_PIXELS - 1)
+
+        # Ignore pixels if they haven't changed (saves bandwidth)
+        if np.array_equal(p[:, color_i], _prev_pixels[:, color_i]):
+            continue
+
+        # append led data
+        api_msg += str(i + 1) + '-' + str(p[0][color_i]) + ',' + str(p[1][color_i]) + ',' + str(p[2][color_i]) + ';'
+
+    _prev_pixels = np.copy(p)
+    #send the data to the lightpack api
+    _sock.send(api_msg + '\n')
+
 
 def update():
     """Updates the LED strip values"""
@@ -143,6 +192,8 @@ def update():
         _update_pi()
     elif config.DEVICE == 'blinkstick':
         _update_blinkstick()
+    elif config.DEVICE == 'lightpack':
+        _update_lightpack()
     else:
         raise ValueError('Invalid device selected')
 
