@@ -1,3 +1,7 @@
+/*
+*This example works for ESP32 and uses the NeoPixelBus library instead of the one bundle
+*
+*/
 #include <Arduino.h>
 #include <WiFi.h>
 #include <Hash.h>
@@ -15,8 +19,8 @@
 const uint8_t PixelPin = 3;  // make sure to set this to the correct pin, ignored for Esp8266(set to 3 by default for DMA)
 
 // Wifi and socket settings
-char* ssid     = "Bjoeandy_5ghz";
-char* password = "02030410";
+char* ssid     = "NETGEAR45";
+char* password = "orangeflower393";//oh no don't steal my wifi 
 unsigned int localPort = 7777;
 char packetBuffer[BUFFER_LEN];
 
