@@ -4,7 +4,6 @@
 */
 #include <Arduino.h>
 #include <WiFi.h>
-#include <Hash.h>
 #include <WiFiUdp.h>
 #include <NeoPixelBus.h>
 
