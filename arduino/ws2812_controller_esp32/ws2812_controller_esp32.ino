@@ -23,10 +23,10 @@ char* password = "orangeflower393";//oh no don't steal my wifi
 unsigned int localPort = 7777;
 char packetBuffer[BUFFER_LEN];
 
-// LED strip
-NeoPixelBus<NeoGrbFeature, Neo800KbpsMethod> ledstrip(NUM_LEDS, PixelPin);
+uint8_t N = 0;
 
 WiFiUDP port;
+NeoPixelBus<NeoGrbFeature, Neo800KbpsMethod> ledstrip(NUM_LEDS, PixelPin);
 
 void setup() {
     Serial.begin(115200);
@@ -47,7 +47,6 @@ void setup() {
     ledstrip.Show();//Clear the strip for use
 }
 
-uint8_t N = 0;
 #if PRINT_FPS
     uint16_t fpsCounter = 0;
     uint32_t secondTimer = 0;
