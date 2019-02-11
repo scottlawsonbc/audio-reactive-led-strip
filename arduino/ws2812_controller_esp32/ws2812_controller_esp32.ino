@@ -61,8 +61,8 @@ void loop() {
         for(int i = 0; i < len; i+=4) {
             packetBuffer[len] = 0;
             N = packetBuffer[i];
-            RgbColor pixel((uint8_t)packetBuffer[i+1], (uint8_t)packetBuffer[i+2], (uint8_t)packetBuffer[i+3]);
-            ledstrip.SetPixelColor(N, pixel);
+            RgbColor pixel((uint8_t)packetBuffer[i+1], (uint8_t)packetBuffer[i+2], (uint8_t)packetBuffer[i+3]);//color
+            ledstrip.SetPixelColor(N, pixel);//N is the pixel number
         } 
         ledstrip.Show();
         #if PRINT_FPS
