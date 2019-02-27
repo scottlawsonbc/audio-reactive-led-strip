@@ -47,3 +47,9 @@ Temporary Items
 .apdisk
 *.pyc
 *.pdf
+
+# Python setup stuff
+*.egg-info
+build
+dist
+.venv
