@@ -3,6 +3,8 @@ Install pip dependencies
 ```
 pip install flask flask_wtf flask_bootstrap wtforms numpy scipy
 ```
+Must also install pyaudio
+
 
 Install node dependencies
 
