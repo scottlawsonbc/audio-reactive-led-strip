@@ -150,3 +150,13 @@ def compute_melmat(num_mel_bands=12, freq_min=64, freq_max=8000,
         )
 
     return melmat, (center_frequencies_mel, freqs)
+
+
+def filterbank(samplerate, updaterate, nbins, fmin, fmax):
+    samples = samplerate // (2 * updaterate)
+    y, _ = compute_melmat(num_mel_bands=nbins,
+                          freq_min=fmin,
+                          freq_max=fmax,
+                          num_fft_bands=samples,
+                          sample_rate=samplerate)
+    return y

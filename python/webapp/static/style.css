@@ -1,0 +1,25 @@
+body{
+    padding-top: 50px;
+}
+
+.form-control {
+    font-family: Consolas, Lucida Console, monospace;
+}
+
+.ledstrip {
+    background-color: #111;
+}
+
+.ledlight {
+    width: 10px;
+    height: 100px;
+    float: left;
+    background-color: #000;
+    margin: 0px;
+    filter: blur(6px);
+}
+
+.form-control {
+    background-color: black;
+}
+
