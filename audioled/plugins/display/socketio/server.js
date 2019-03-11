@@ -18,6 +18,9 @@ server.listen(80)
 
 // Called when a line is read from the standard input stream (stdin).
 rl.on('line', function (line) {
+    // Copy line to stdout.
+    process.stdout.write(line + '\n')
+
     var fields = line.split("\t")
     var msg = [
         parseInt(fields[0]),

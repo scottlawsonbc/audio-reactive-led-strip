@@ -8,10 +8,17 @@ import flask_wtf
 import flask_bootstrap
 
 
+defaults = {
+    'source': 'mic',
+    'effect': 'effect spectrum --pixels 100 --rate 50',
+    'display': 'node audioled/plugins/display/socketio/server.js',
+}
+
+
 class SettingsForm(flask_wtf.FlaskForm):
-    source = wtforms.StringField(default='python audioled/mic.py')
-    effect = wtforms.StringField(default='python audioled/effect.py spectrum --pixels 100 --rate 30')
-    display = wtforms.StringField(default='node ledsocket/server.js')
+    source = wtforms.StringField(default=defaults['source'])
+    effect = wtforms.StringField(default=defaults['effect'])
+    display = wtforms.StringField(default=defaults['display'])
     submit = wtforms.SubmitField()
 
 
@@ -28,7 +35,6 @@ display = None
 
 @app.route('/', methods=['GET', 'POST'])
 def index():
-
     global source
     global effect
     global display
@@ -66,5 +72,10 @@ def index():
     return flask.render_template('index.html', form=form)
 
 
-if __name__ == '__main__':
+def main():
+    print('Starting server.')
     app.run(debug=False, host='0.0.0.0')
+
+
+if __name__ == '__main__':
+    main()

@@ -11,7 +11,7 @@ parser.add_argument('--rate', type=int, default=None, help='Sampling rate (Hz)')
 parser.add_argument('--chunk', type=int, default=2048, help='Audio buffer size.')
 
 
-if __name__ == '__main__':
+def main():
     p = pyaudio.PyAudio()
     args = parser.parse_args()
 
@@ -56,3 +56,7 @@ if __name__ == '__main__':
         stream.close()
 
     p.terminate()
+
+
+if __name__ == '__main__':
+    main()

@@ -7,19 +7,8 @@ import numpy as np
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--loop', action='store_true')
-parser.add_argument('--text', action='store_true')
 
-
-def write(frames, use_text_mode):
-    # Output in text mode (inefficient but human readable).
-    if use_text_mode:
-        sys.stdout.write('\n'.join(str(f) for f in frames))
-    # Output in binary mode (efficient but not human readable).
-    else:
-        sys.stdout.buffer.write(frames.tobytes())
-
-
-if __name__ == '__main__':
+def main():
     args = parser.parse_args()
 
     wav = wave.open(sys.stdin.buffer, 'rb')
@@ -44,12 +33,13 @@ if __name__ == '__main__':
         frames = (frames[0::2] + frames[1::2]) / 2.0
 
     # Header information.
-    if args.text:
-        sys.stdout.write('{}\n'.format(framerate))
-    else:
-        sys.stdout.buffer.write(framerate.to_bytes(4, byteorder='big'))
+    sys.stdout.buffer.write(framerate.to_bytes(4, byteorder='big'))
 
-    write(frames, use_text_mode=args.text)
+    sys.stdout.buffer.write(frames.tobytes())
     if args.loop:
         while True:
-            write(frames, use_text_mode=args.text)
+            sys.stdout.buffer.write(frames.tobytes())
+
+
+if __name__ == '__main__':
+    main()

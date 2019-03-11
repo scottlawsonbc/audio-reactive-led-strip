@@ -7,9 +7,9 @@ import numpy as np
 
 from scipy.ndimage.filters import gaussian_filter1d
 
-import dsp
-import mel
-import audio
+from . import dsp
+from . import mel
+from . import audio
 
 
 def scroll(freqbins, npixels, nbins):
@@ -40,8 +40,8 @@ def scroll(freqbins, npixels, nbins):
 def spectrum(freqbins, npixels, nbins):
     N = npixels // 2
     prevbins = np.tile(0.01, N)
-    lowpass = dsp.RealTimeExpFilter(np.tile(0.01, N), fall=0.99, rise=0.01)
-    r_lowpass = dsp.RealTimeExpFilter(np.tile(0.01, N), fall=0.2, rise=0.99)
+    lowpass = dsp.RealTimeExpFilter(np.tile(0.01, N), fall=0.95, rise=0.01)
+    r_lowpass = dsp.RealTimeExpFilter(np.tile(0.01, N), fall=0.01, rise=0.99)
     g_lowpass = dsp.RealTimeExpFilter(np.tile(0.01, N), fall=0.05, rise=0.3)
     b_lowpass = dsp.RealTimeExpFilter(np.tile(0.01, N), fall=0.1, rise=0.5)
 
@@ -102,7 +102,7 @@ parser.add_argument('--fmin', type=int, default=200, help='Min frequency (Hz)')
 parser.add_argument('--fmax', type=int, default=2000, help='Max frequency (Hz)')
 
 
-if __name__ == '__main__':
+def main():
     args = parser.parse_args()
     effect = getattr(sys.modules[__name__], args.effect)
 
@@ -138,3 +138,7 @@ if __name__ == '__main__':
             sys.stderr.write(msg)
 
     sys.stdout.close()
+
+
+if __name__ == '__main__':
+    main()
