@@ -1,10 +1,14 @@
-Install pip dependencies
+On Linux, install PyAudio headers.
 
 ```
-pip install flask flask_wtf flask_bootstrap wtforms numpy scipy
+sudo apt-get install python3-pyaudio python-pyaudio
 ```
-Must also install pyaudio
 
+Install audioled (after cloning repo and in the root directory of the repository).
+
+```
+python setup.py develop
+```
 
 Install node dependencies
 
@@ -15,10 +19,11 @@ npm i socket.io
 npm i readline
 ```
 
-Start the server from root directory of the repository (must be Python 3+).
+Open a terminal in the root directory of the repository and run the app.
 
 ```
-python python/webapp/app.py
+audioled
 ```
 
 Navigate your browser to http://localhost:5000
+
