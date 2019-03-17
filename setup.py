@@ -1,4 +1,4 @@
-from setuptools import setup, find_packages, find_namespace_packages
+from setuptools import setup, find_packages
 
 
 setup(
@@ -25,9 +25,6 @@ setup(
         'pyaudio',
         'numpy',
         'scipy',
-        'wtforms',
         'Flask',
-        'Flask-WTF',
-        'flask_bootstrap',
     ]
 )

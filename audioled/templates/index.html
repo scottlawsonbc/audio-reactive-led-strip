@@ -1,5 +1,4 @@
-{% import 'bootstrap/wtf.html' as wtf %}
-
+{% import 'macros.html' as macros %}
 <!DOCTYPE html>
 <html>
 
@@ -7,21 +6,28 @@
     <meta charset="UTF-8">
     <title>AudioLED</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <link href="{{ url_for('static', filename='bootstrap.css') }}" media="screen" rel="stylesheet">
+    <link rel="shortcut icon" href="{{ url_for('static', filename='favicon.ico') }}">
+    {# <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css"> #}
+    <link href="{{ url_for('static', filename='cyborg.css') }}" rel="stylesheet">
     <link href="{{ url_for('static', filename='style.css') }}" rel="stylesheet">
 </head>
 
 <body>
+    <div id="ledstrip"></div>
+
     <div class="container">
-        <div id="ledstrip" class="container"></div>
-        <br><br><br>
-        <h5>Settings</h5>
-        {{ wtf.form_errors(form) }}
-        {{ wtf.quick_form(form, form_type='horizontal', horizontal_columns=('sm', 1, 8), button_map={'submit': 'btn btn-primary btn-sm'})}}
+        <div class="row">
+            {% for key in plugins -%}
+            <div class="col-lg" id="{{ key }}">
+                {{ macros.render_plugins(plugins[key], key)}}
+            </div>
+            {%- endfor %}
+        </div>
     </div>
-    <script src="{{ url_for('static', filename='jquery.min.js') }}"></script>
-    <script src="{{ url_for('static', filename='popper.min.js') }}"></script>
-    <script src="{{ url_for('static', filename='bootstrap.min.js') }}"></script>
+    <script src="https://code.jquery.com/jquery-3.3.1.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js"></script>
     <script src="{{ url_for('static', filename='socket.io.js') }}"></script>
     <script src="{{ url_for('static', filename='app.js') }}"></script>
 </body>

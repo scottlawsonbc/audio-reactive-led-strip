@@ -1,0 +1,25 @@
+{
+    "title": "Microphone",
+    "help": "Stream from default audio input device.",
+    "exec": ["python", "mic.py"],
+    "args": [
+        {
+            "name": "Device",
+            "help": "Index of the desired audio device.",
+            "flag": "--index",
+            "type": "integer"
+        },
+        {
+            "name": "Rate",
+            "help": "Sampling frequency in Hertz (Hz). Usually 44100 or 48000.",
+            "flag": "--rate",
+            "type": "integer"
+        },
+        {
+            "name": "Chunk",
+            "help": "Audio buffer size in bytes. Small values may result in overflow.",
+            "flag": "--chunk",
+            "type": "integer"
+        }
+    ]
+}

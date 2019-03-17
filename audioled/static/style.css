@@ -1,25 +1,78 @@
-body{
-    padding-top: 50px;
+body {
+    padding-top: 10px;
 }
 
-.form-control {
-    font-family: Consolas, Lucida Console, monospace;
+.card {
+    background-color: black !important;
 }
 
-.ledstrip {
-    background-color: #111;
+.field-value {
+    background-color: black;
+    color: #555;
+    border-color: #555;
 }
 
-.ledlight {
-    width: 10px;
-    height: 100px;
-    float: left;
-    background-color: #000;
-    margin: 0px;
-    filter: blur(6px);
+.field-name {
+    background-color: black;
+    color: #555;
+    border-color: #555;
 }
 
 .form-control {
     background-color: black;
+    color: #555;
 }
 
+.select {
+    background-color: black;
+    color: #555;
+}
+
+.plugin {
+    display: none;
+}
+
+#ledstrip
+{
+   display: -webkit-flex;
+   display: flex;
+   margin: 20px;
+   -webkit-flex-direction: row;
+   flex-direction: row;
+   -webkit-flex-wrap: nowrap;
+   flex-wrap: nowrap;
+   -webkit-justify-content: space-around;
+   justify-content: space-around;
+   -webkit-align-items: center;
+   align-items: center;
+   -webkit-align-content: flex-start;
+   align-content: flex-start;
+   background-color: transparent;
+   background-image: none;
+   border: 0px #CCCCCC solid;
+   -webkit-box-sizing: border-box;
+   -moz-box-sizing: border-box;
+   box-sizing: border-box;
+}
+
+.pixel
+{
+   border-radius: 2px;
+   border: 0px transparent solid;
+   margin: .5px;
+   height: 50px;
+   background-color: black;
+   display: block;
+   background-image: none;
+   -webkit-box-sizing: border-box;
+   -moz-box-sizing: border-box;
+   box-sizing: border-box;
+   -webkit-flex-grow: 1;
+   flex-grow: 1;
+   -webkit-flex-shrink: 0;
+   flex-shrink: 0;
+   -webkit-align-self: auto;
+   align-self: auto;
+   text-align: center;
+   filter: blur(5px);
+}

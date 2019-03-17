@@ -1,0 +1,19 @@
+{
+    "title": "Noise",
+    "help": "Randomly generate white noise.",
+    "exec": ["python", "noise.py"],
+    "args": [
+        {
+            "name": "Rate",
+            "help": "Sampling frequency in Hertz (Hz).",
+            "flag": "--rate",
+            "type": "integer"
+        },
+        {
+            "name": "Chunk",
+            "help": "Audio buffer size in bytes.",
+            "flag": "--chunk",
+            "type": "integer"
+        }
+    ]
+}

@@ -1,0 +1,20 @@
+{
+    "title": "Socket.IO",
+    "help": "Emit pixel values to Socket.IO.",
+    "exec": ["node", "server.js"],
+    "args": [
+        {
+            "name": "Host",
+            "help": "Server hostname.",
+            "flag": "--host",
+            "type": "string"
+        },
+        {
+            "name": "Port",
+            "help": "Socket port number.",
+            "flag": "--port",
+            "type": "integer"
+        }
+    ]
+}
+

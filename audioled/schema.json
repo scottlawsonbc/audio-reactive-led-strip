@@ -1,0 +1,59 @@
+{
+    "title": "AudioLED Plugin",
+    "type": "object",
+    "required": ["title", "help", "name", "path", "exec"],
+    "properties": {
+        "title": {
+            "type": "string",
+            "description": "Human friendly plugin title."
+        },
+        "name": {
+            "type": "string",
+            "description": "One word name used to identify the plugin."
+        },
+        "path": {
+            "type": "string",
+            "description": "Path to the plugin directory."
+        },
+        "exec": {
+            "type": "array",
+            "description": "Command to execute."
+        },
+        "help": {
+            "type": "string",
+            "description": "Brief description of the plugin."
+        },
+        "args": {
+            "type": "array",
+            "items": { "$ref": "#/definitions/pluginArgument" }
+        }
+    },
+    "definitions": {
+        "pluginArgument": {
+            "type": "object",
+            "required": ["name", "help", "type"],
+            "properties": {
+                "name": {
+                    "type": "string",
+                    "description": "Name of the argument."
+                },
+                "help": {
+                    "type": "string",
+                    "description": "Brief description of the argument."
+                },
+                "type": {
+                    "type": "string",
+                    "description": "Argument type."
+                },
+                "flag": {
+                    "type": "string",
+                    "description": "Command line flag."
+                },
+                "enum": {
+                    "type": "array",
+                    "items": {"type": "string"}
+                }
+            }
+        }
+    }
+}

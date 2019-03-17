@@ -1,0 +1,27 @@
+{
+    "mic": {
+        "Device": "",
+        "Rate": 44100,
+        "Chunk": 2048
+    },
+    "noise": {
+        "Rate": 44100,
+        "Chunk": 2048
+    },
+    "wav": {
+        "Loop": false,
+        "File": ""
+    },
+    "classic": {
+        "Effect": "energy",
+        "Pixels": 60,
+        "Rate": 60,
+        "Bins": 30,
+        "Min Frequency": 200,
+        "Max Frequency": 2000
+    },
+    "socketio": {
+        "Host": "localhost",
+        "Port": 3000
+    }
+}

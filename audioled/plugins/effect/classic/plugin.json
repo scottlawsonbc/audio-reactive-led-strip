@@ -1,0 +1,43 @@
+{
+    "title": "Classic",
+    "help": "Classic built-in effects.",
+    "exec": ["python", "effect.py"],
+    "args": [
+        {
+            "name": "Effect",
+            "help": "Visualization effect.",
+            "type": "choice",
+            "enum": ["energy", "spectrum", "scroll"]
+        },
+        {
+            "name": "Pixels",
+            "help": "Number of LED strip pixels.",
+            "flag": "--pixels",
+            "type": "integer"
+        },
+        {
+            "name": "Rate",
+            "help": "Visualization refresh rate in Hertz (Hz).",
+            "flag": "--rate",
+            "type": "integer"
+        },
+        {
+            "name": "Bins",
+            "help": "Number of FFT bins to use.",
+            "flag": "--bins",
+            "type": "integer"
+        },
+        {
+            "name": "Min Frequency",
+            "help": "Minimum frequency in Hertz (Hz).",
+            "flag": "--fmin",
+            "type": "integer"
+        },
+        {
+            "name": "Max Frequency",
+            "help": "Maximum frequency in Hertz (Hz).",
+            "flag": "--fmax",
+            "type": "integer"
+        }
+    ]
+}

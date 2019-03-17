@@ -1,0 +1,18 @@
+{
+    "title": "WAV",
+    "help": "Read audio from WAV file.",
+    "exec": ["python", "wav.py"],
+    "args": [
+        {
+            "name": "Loop",
+            "flag": "--loop",
+            "help": "Loop audio playback.",
+            "type": "boolean"
+        },
+        {
+            "name": "File",
+            "help": "Path to the WAV file.",
+            "type": "string"
+        }
+    ]
+}

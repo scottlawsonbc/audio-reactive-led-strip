@@ -1,81 +1,113 @@
+import os
+import sys
+import json
+import time
+import pprint
 import threading
+import subprocess
 
-from subprocess import Popen, PIPE
-
-import wtforms
 import flask
-import flask_wtf
-import flask_bootstrap
 
-
-defaults = {
-    'source': 'mic',
-    'effect': 'effect spectrum --pixels 100 --rate 50',
-    'display': 'node audioled/plugins/display/socketio/server.js',
-}
-
-
-class SettingsForm(flask_wtf.FlaskForm):
-    source = wtforms.StringField(default=defaults['source'])
-    effect = wtforms.StringField(default=defaults['effect'])
-    display = wtforms.StringField(default=defaults['display'])
-    submit = wtforms.SubmitField()
+import plugin
 
 
 app = flask.Flask(__name__)
-app.config['WTF_CSRF_ENABLED'] = False
-app.config['SECRET_KEY'] = b'123'
-flask_bootstrap.Bootstrap(app)
-
-lock = threading.Lock()
-source = None
-effect = None
-display = None
+root = 'plugins'
+types = ('source', 'effect', 'display')
+plugins = {t: plugin.discover(os.path.join(root, t)) for t in types}
+pprint.pprint(plugins)
 
 
-@app.route('/', methods=['GET', 'POST'])
+_rpc_lock = threading.Lock()
+_rpc_process = {t: None for t in types}
+
+
+def _plugin_lookup(method):
+    for plugin_type in plugins:
+        for p in plugins[plugin_type]:
+            if method == p['name']:
+                return p
+    raise KeyError('Unrecognized method "{}"'.format(method))
+
+
+def _plugin_args(p, params):
+    args = [*p['exec']]
+    for arg in p['args']:
+        if arg['name'] in params:
+            if 'flag' in arg:
+                args.append(arg['flag'])
+            args.append(str(params[arg['name']]))
+    return args
+
+
+def _kill_rpc():
+    for t in types:
+        if isinstance(_rpc_process[t], subprocess.Popen):
+            print('Killing', t)
+            _rpc_process[t].kill()
+
+
+def run_command(params):
+    source, source_params = params['source'], params['source_params']
+    effect, effect_params = params['effect'], params['effect_params']
+    display, display_params = params['display'], params['display_params']
+
+    source_plugin = _plugin_lookup(source)
+    effect_plugin = _plugin_lookup(effect)
+    display_plugin = _plugin_lookup(display)
+
+    source_args = _plugin_args(source_plugin, source_params)
+    effect_args = _plugin_args(effect_plugin, effect_params)
+    display_args = _plugin_args(display_plugin, display_params)
+
+    with _rpc_lock:
+        _kill_rpc()
+        print(source_args)
+        print(effect_args)
+        print(display_args)
+
+        _rpc_process['source'] = subprocess.Popen(
+            args=source_args,
+            cwd=source_plugin['path'],
+            stdin=subprocess.DEVNULL,
+            stdout=subprocess.PIPE,
+            bufsize=0)
+        _rpc_process['effect'] = subprocess.Popen(
+            args=effect_args,
+            cwd=effect_plugin['path'],
+            stdin=_rpc_process['source'].stdout,
+            stdout=subprocess.PIPE,
+            bufsize=0)
+        _rpc_process['display'] = subprocess.Popen(
+            args=display_args,
+            cwd=display_plugin['path'],
+            stdin=_rpc_process['effect'].stdout,
+            stdout=sys.stdout,
+            bufsize=0)
+    time.sleep(0.1)
+
+
+@app.route('/api', methods=['POST'])
+def api():
+    request = flask.request.get_json()
+    response = {'jsonrpc': '2.0', 'id': request['id']}
+
+    try:
+        if request['method'] == 'run':
+            run_command(request['params'])
+        response['result'] = 'Success!'
+    except Exception as e:
+        response['error'] = str(e)
+
+    return flask.jsonify(response)
+
+
+@app.route('/', methods=['GET'])
 def index():
-    global source
-    global effect
-    global display
-    form = SettingsForm()
-
-    if flask.request.method == 'POST' and form.validate():
-        with lock:
-            for p in (source, effect, display):
-                if isinstance(p, Popen):
-                    p.kill()
-
-            print(form.source.data)
-            print(form.effect.data)
-            print(form.display.data)
-            print('Starting!')
-
-            try:
-                source = Popen(form.source.data, stdout=PIPE)
-            except OSError as e:
-                form.source.errors.append(e)
-                return flask.render_template('index.html', form=form)
-
-            try:
-                effect = Popen(form.effect.data, stdin=source.stdout, stdout=PIPE)
-            except OSError as e:
-                form.effect.errors.append(e)
-                return flask.render_template('index.html', form=form)
-
-            try:
-                display = Popen(form.display.data, stdin=effect.stdout)
-            except OSError as e:
-                form.display.errors.append(e)
-                return flask.render_template('index.html', form=form)
-
-    return flask.render_template('index.html', form=form)
-
-
-def main():
-    print('Starting server.')
-    app.run(debug=False, host='0.0.0.0')
+    with open('defaults.json') as f:
+        defaults = json.load(f)
+    return flask.render_template('index.html', plugins=plugins, defaults=defaults)
 
 
 if __name__ == '__main__':
-    main()
+    app.run(debug=True, host='0.0.0.0')

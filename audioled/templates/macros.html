@@ -1,0 +1,51 @@
+
+{% macro render_plugin_field(field, plugin_name) %}
+<div class="plugin-field form-group-row mt-3">
+    <div class="input-group">
+        <div class="input-group-prepend">
+            <label class="field-name input-group-text">{{ field['name'] }}</label>
+        </div>
+        {%- if field['type'] == 'string' %}
+        <input id="{{ plugin_name }}-{{ field['name'] }}" class="field-value form-control" type="text">
+        {%- elif field['type'] == 'integer' %}
+        <input id="{{ plugin_name }}-{{ field['name'] }}" class="field-value form-control" type="number" step="1" pattern="\d+">
+        {%- elif field['type'] == 'float' %}
+        <input id="{{ plugin_name }}-{{ field['name'] }}" class="field-value form-control" type="number">
+        {%- elif field['type'] == 'boolean' %}
+        <input id="{{ plugin_name }}-{{ field['name'] }}" class="field-value form-control form-check-input" type="checkbox">
+        {%- elif field['type'] == 'choice' %}
+        <select id="{{ plugin_name }}-{{ field['name'] }}" class="field-value form-control">
+            {% for entry in field['enum'] %}
+            <option>{{ entry }}</option>
+            {% endfor %}
+        </select>
+        {% endif %}
+    </div>
+    <small class="form-text text-muted">{{ field['help'] }}</small>
+</div>
+{% endmacro %}
+
+
+{% macro render_plugins(plugins, title) %}
+<div class="card border-secondary mb-3">
+    <div class="card-body">
+        <h4 class="card-title text-secondary text-capitalize">{{ title }}</h4>
+        <select class="plugin-select form-control form-control-lg btn-outline-secondary">
+            {%- for plugin in plugins %}
+            <option value="{{ plugin['name'] }}">{{ plugin['title'] }}</option>
+            {%- endfor %}
+        </select>
+        {% for plugin in plugins -%}
+        <div id="{{ plugin['name'] }}" class="plugin">
+            <div class="card-text text-secondary mt-3">{{ plugin['help'] }}</div>
+            <form onsubmit="return false">
+                {% for field in plugin['args'] %}
+                {{- render_plugin_field(field, plugin['name']) -}}
+                {% endfor %}
+                <button type="submit" class="plugin-btn btn btn-outline-secondary mt-3">Apply</button>
+            </form>
+        </div>
+        {%- endfor %}
+    </div>
+</div>
+{% endmacro %}

@@ -7,9 +7,9 @@ import numpy as np
 
 from scipy.ndimage.filters import gaussian_filter1d
 
-from . import dsp
-from . import mel
-from . import audio
+import dsp
+import mel
+import audio
 
 
 def scroll(freqbins, npixels, nbins):
@@ -95,8 +95,8 @@ def energy(freqbins, npixels, nbins, scale=0.9):
 
 parser = argparse.ArgumentParser(description='Energy visualization.')
 parser.add_argument('effect', type=str, help='Effect name.')
-parser.add_argument('--pixels', type=int, help='Number of LED strip pixels')
-parser.add_argument('--rate', type=int, default=60, help='Update rate in Hz')
+parser.add_argument('--pixels', required=True, type=int, help='Number of LED strip pixels')
+parser.add_argument('--rate', type=int, default=None, help='Update rate in Hz')
 parser.add_argument('--bins', type=int, default=30, help='Number of FFT bins')
 parser.add_argument('--fmin', type=int, default=200, help='Min frequency (Hz)')
 parser.add_argument('--fmax', type=int, default=2000, help='Max frequency (Hz)')
@@ -133,7 +133,9 @@ def main():
         twait = tnorm - (tstop - tstart)
         early = twait >= 0
 
-        if not early:
+        if early:
+            time.sleep(twait)
+        else:
             msg = 'Late {:.2f} ms (1/f = {:.2f} ms)\n'.format(-twait * 1000, tnorm * 1000)
             sys.stderr.write(msg)
 
