@@ -124,7 +124,7 @@ The connections are:
 6. Upload the [ws2812_controller.ino](arduino/ws2812_controller/ws2812_controller.ino) firmware to the ESP8266. Ensure that you have selected the correct ESP8266 board from the boards menu. In the dropdown menu, set `CPU Frequency` to 160 MHz for optimal performance.
 7. In [config.py](python/config.py):
   - Set `N_PIXELS` to the number of LEDs in your LED strip (must match `NUM_LEDS` in [ws2812_controller.ino](arduino/ws2812_controller/ws2812_controller.ino))
-  - Set `UDP_IP` to the IP address of your ESP8266 (must match `ip` in [ws2812_controller.ino](arduino/ws2812_controller/ws2812_controller.ino))
+  - Set `UDP_IPs` to the IP addresses of your ESP8266s (must match `ip` in [ws2812_controller.ino](arduino/ws2812_controller/ws2812_controller.ino))
   - If needed, set `MIC_RATE` to your microphone sampling rate in Hz. Most of the time you will not need to change this.
 
 # Installation for Raspberry Pi
