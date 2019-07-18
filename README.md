@@ -108,7 +108,7 @@ The connections are:
 
 * Connect GND on the power supply to GND on the LED strip and GND on the Raspberry Pi (they MUST share a common GND connection)
 * Connect +5V on the power supply to +5V on the LED strip
-* Connect a PWM GPIO pin on the Raspberry Pi to the data pin on the LED strip. If using the Raspberry Pi 2 or 3, then try Pin 18.
+* Connect a PWM GPIO pin on the Raspberry Pi to the data pin on the LED strip. If using the Raspberry Pi 2 or 3, then try Pin 18(GPIO5).
 
 # Setup and Configuration
 1. Install Python and Python dependencies
