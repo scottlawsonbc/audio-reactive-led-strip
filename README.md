@@ -130,6 +130,8 @@ The connections are:
 # Installation for Raspberry Pi
 If you encounter any problems running the visualization on a Raspberry Pi, please [open a new issue](https://github.com/scottlawsonbc/audio-reactive-led-strip/issues). Also, please consider opening an issue if you have any questions or suggestions for improving the installation process.
 
+Download and extract all of the files in this repository onto your pi to begin.
+
 ## Installing the Python dependencies
 Install python dependencies using apt-get
 ```
