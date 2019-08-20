@@ -1,6 +1,5 @@
 #include <Arduino.h>
 #include <ESP8266WiFi.h>
-#include <Hash.h>
 #include <WiFiUdp.h>
 #include <NeoPixelBus.h>
 
