@@ -263,7 +263,7 @@ else:
     elif sys.argv[1] == "scroll":
         visualization_effect = visualize_scroll
     else:
-        print("Arguments unrecognised! - Possible values are: spectrum, energy, scroll")
+        print("Invalid argument! - Possible values are: spectrum, energy, scroll")
 
 if __name__ == '__main__':
     if config.USE_GUI:
