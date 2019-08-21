@@ -226,7 +226,7 @@ Once everything has been configured, run [visualization.py](python/visualization
 
 A PyQtGraph GUI will open to display the output of the visualization on the computer. There is a setting to enable/disable the GUI display in [config.py](python/config.py)
 
-You can run visualization.py with one of the follow arguments to start in the chosen mode: energy, spectrum, scroll
+You can run visualization.py with one of the following arguments to start in that mode: energy, spectrum, scroll
 
 For example: $ python python/visualization.py spectrum 
 
