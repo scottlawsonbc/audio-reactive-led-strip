@@ -8,6 +8,7 @@
 #include <NeoPixelBus.h>
 
 // Set to the number of LEDs in your LED strip
+
 #define NUM_LEDS 60
 // Maximum number of packets to hold in the buffer. Don't change this.
 #define BUFFER_LEN 1024
@@ -32,7 +33,6 @@ IPAddress ip(192, 168, 0, 150);
 // Set gateway to your router's gateway
 IPAddress gateway(192, 168, 0, 1);
 IPAddress subnet(255, 255, 255, 0);
-
 NeoPixelBus<NeoGrbFeature, Neo800KbpsMethod> ledstrip(NUM_LEDS, PixelPin);
 
 void setup() {
