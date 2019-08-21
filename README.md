@@ -226,6 +226,10 @@ Once everything has been configured, run [visualization.py](python/visualization
 
 A PyQtGraph GUI will open to display the output of the visualization on the computer. There is a setting to enable/disable the GUI display in [config.py](python/config.py)
 
+You can run visualization.py with one of the follow arguments to start in the chosen mode: energy, spectrum, scroll
+
+For example: $ python python/visualization.py spectrum 
+
 ![visualization-gui](images/visualization-gui.png)
 
 If you encounter any issues or have questions about this project, feel free to [open a new issue](https://github.com/scottlawsonbc/audio-reactive-led-strip/issues).
