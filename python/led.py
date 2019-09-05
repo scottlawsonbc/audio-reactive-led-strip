@@ -119,9 +119,9 @@ def _update_blinkstick():
     # Optional gamma correction
     p = _gamma[pixels] if config.SOFTWARE_GAMMA_CORRECTION else np.copy(pixels)
     # Read the rgb values
-    r = p[0][:].astype(int)
-    g = p[1][:].astype(int)
-    b = p[2][:].astype(int)
+    r = (config.BRIGHTNESS*p[0][:]).astype(int)
+    g = (config.BRIGHTNESS*p[1][:]).astype(int)
+    b = (config.BRIGHTNESS*p[2][:]).astype(int)
 
     #create array in which we will store the led states
     newstrip = [None]*(config.N_PIXELS*3)
