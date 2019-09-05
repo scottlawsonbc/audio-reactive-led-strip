@@ -57,6 +57,7 @@ def _update_esp8266():
         g (0 to 255): Green value of LED
         b (0 to 255): Blue value of LED
     """
+    brightness = 0.1 #between 0 and 1
     global pixels, _prev_pixels
     # Truncate values and cast to integer
     pixels = np.clip(pixels, 0, 255).astype(int)
@@ -75,9 +76,9 @@ def _update_esp8266():
                 m += chr(i) + chr(p[0][i]) + chr(p[1][i]) + chr(p[2][i])
             else:
                 m.append(i)  # Index of pixel to change
-                m.append(p[0][i])  # Pixel red value
-                m.append(p[1][i])  # Pixel green value
-                m.append(p[2][i])  # Pixel blue value
+                m.append(int(p[0][i]*brightness))  # Pixel red value
+                m.append(int(p[1][i]*brightness))  # Pixel green value
+                m.append(int(p[2][i]*brightness))  # Pixel blue value
         m = m if _is_python_2 else bytes(m)
         _sock.sendto(m, (config.UDP_IP, config.UDP_PORT))
     _prev_pixels = np.copy(p)
