@@ -316,11 +316,13 @@ if __name__ == '__main__':
         bright_label = pg.LabelItem('')
         # Brightness slider
         def bright_slider_change(tick):
-            bright_label.setText('Brightness level: {:.0f}%'.format(bright_slider.tickValue(0)*100))
+            newBrightness = bright_slider.tickValue(0)
+            bright_label.setText('Brightness level: {:.0f}%'.format(newBrightness*100))
+            config.BRIGHTNESS = newBrightness
         bright_slider = pg.TickSliderItem(orientation='bottom', allowAdd=True)
         bright_slider.addTick(1, color='#16dbeb' , movable=True)
         bright_slider.tickMoveFinished = bright_slider_change
-        bright_label.setText('Brightness level: {}%'.format(bright_slider.tickValue(0)*100))
+        bright_label.setText('Brightness: {}%'.format(bright_slider.tickValue(0)*100))
         # Effect selection
         active_color = '#16dbeb'
         inactive_color = '#FFFFFF'

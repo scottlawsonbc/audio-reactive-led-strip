@@ -14,7 +14,7 @@ elif config.DEVICE == 'pi':
     import neopixel
     strip = neopixel.Adafruit_NeoPixel(config.N_PIXELS, config.LED_PIN,
                                        config.LED_FREQ_HZ, config.LED_DMA,
-                                       config.LED_INVERT, config.BRIGHTNESS)
+                                       config.LED_INVERT, config.PI_BRIGHTNESS)
     strip.begin()
 elif config.DEVICE == 'blinkstick':
     from blinkstick import blinkstick
@@ -57,7 +57,6 @@ def _update_esp8266():
         g (0 to 255): Green value of LED
         b (0 to 255): Blue value of LED
     """
-    brightness = 0.1 #between 0 and 1
     global pixels, _prev_pixels
     # Truncate values and cast to integer
     pixels = np.clip(pixels, 0, 255).astype(int)
@@ -73,12 +72,12 @@ def _update_esp8266():
         m = '' if _is_python_2 else []
         for i in packet_indices:
             if _is_python_2:
-                m += chr(i) + chr(int(p[0][i]*brightness)) + chr(int(p[1][i]*brightness)) + chr(int(p[2][i]*brightness))
+                m += chr(i) + chr(int(p[0][i]*config.BRIGHTNESS)) + chr(int(p[1][i]*config.BRIGHTNESS)) + chr(int(p[2][i]*config.BRIGHTNESS))
             else:
                 m.append(i)  # Index of pixel to change
-                m.append(int(p[0][i]*brightness))  # Pixel red value
-                m.append(int(p[1][i]*brightness))  # Pixel green value
-                m.append(int(p[2][i]*brightness))  # Pixel blue value
+                m.append(int(p[0][i]*config.BRIGHTNESS))  # Pixel red value
+                m.append(int(p[1][i]*config.BRIGHTNESS))  # Pixel green value
+                m.append(int(p[2][i]*config.BRIGHTNESS))  # Pixel blue value
         m = m if _is_python_2 else bytes(m)
         _sock.sendto(m, (config.UDP_IP, config.UDP_PORT))
     _prev_pixels = np.copy(p)

@@ -3,7 +3,7 @@ from __future__ import print_function
 from __future__ import division
 import os
 
-DEVICE = 'esp8266'
+DEVICE = 'blinkstick'
 """Device used to control LED strip. Must be 'pi',  'esp8266' or 'blinkstick'
 
 'esp8266' means that you are using an ESP8266 module to control the LED strip
@@ -15,6 +15,9 @@ audio input and control the LED strip directly.
 'blinkstick' means that a BlinkstickPro is connected to this PC which will be used
 to control the leds connected to it.
 """
+
+BRIGHTNESS = 1
+"""Set between 0 and 1 to control LED brightness for pi,esp8266,and blinkstick"""
 
 if DEVICE == 'esp8266':
     UDP_IP = '192.168.1.150'
@@ -31,7 +34,7 @@ if DEVICE == 'pi':
     """LED signal frequency in Hz (usually 800kHz)"""
     LED_DMA = 5
     """DMA channel used for generating PWM signal (try 5)"""
-    BRIGHTNESS = 255
+    PI_BRIGHTNESS = 255 * BRIGHTNESS
     """Brightness of LED strip between 0 and 255"""
     LED_INVERT = True
     """Set True if using an inverting logic level converter"""
@@ -57,7 +60,7 @@ GAMMA_TABLE_PATH = os.path.join(os.path.dirname(__file__), 'gamma_table.npy')
 MIC_RATE = 44100
 """Sampling frequency of the microphone in Hz"""
 
-FPS = 60
+FPS = 100
 """Desired refresh rate of the visualization (frames per second)
 
 FPS indicates the desired refresh rate, or frames-per-second, of the audio
