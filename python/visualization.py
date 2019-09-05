@@ -312,6 +312,15 @@ if __name__ == '__main__':
         freq_label.setText('Frequency range: {} - {} Hz'.format(
             config.MIN_FREQUENCY,
             config.MAX_FREQUENCY))
+        # Brightness label
+        bright_label = pg.LabelItem('')
+        # Brightness slider
+        def bright_slider_change(tick):
+            bright_label.setText('Brightness level: {:.0f}%'.format(bright_slider.tickValue(0)*100))
+        bright_slider = pg.TickSliderItem(orientation='bottom', allowAdd=True)
+        bright_slider.addTick(1, color='#16dbeb' , movable=True)
+        bright_slider.tickMoveFinished = bright_slider_change
+        bright_label.setText('Brightness level: {}%'.format(bright_slider.tickValue(0)*100))
         # Effect selection
         active_color = '#16dbeb'
         inactive_color = '#FFFFFF'
@@ -350,6 +359,10 @@ if __name__ == '__main__':
         layout.addItem(energy_label)
         layout.addItem(scroll_label)
         layout.addItem(spectrum_label)
+        layout.nextRow() 
+        layout.addItem(bright_label, colspan=3)
+        layout.nextRow() 
+        layout.addItem(bright_slider, colspan=3)
     # Initialize LEDs
     led.update()
     # Start listening to live audio stream
