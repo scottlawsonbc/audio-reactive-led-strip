@@ -322,7 +322,7 @@ if __name__ == '__main__':
         bright_slider = pg.TickSliderItem(orientation='bottom', allowAdd=True)
         bright_slider.addTick(config.BRIGHTNESS, color='#16dbeb' , movable=True)
         bright_slider.tickMoveFinished = bright_slider_change
-        bright_label.setText('Brightness: {}%'.format(bright_slider.tickValue(0)*100))
+        bright_label.setText('Brightness: {:.0f}%'.format(bright_slider.tickValue(0)*100))
         # Effect selection
         active_color = '#16dbeb'
         inactive_color = '#FFFFFF'
