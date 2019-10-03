@@ -73,6 +73,20 @@ Once everything is placed, you can go to `http://ip_addr/control.php?on=spectrum
 
 I'll work in a frontend UI with buttons for easier control at some point. 
 
+### Troubleshooting
+
+#### [#2](/../../issues/2) PHP URL commands not activating visualizations
+Most users should not have to do this but if you are experiencing the following error when trying to run the script via a browser:
+
+```
+sudo: no tty present and no askpass program specified
+```
+Add the following to your `/etc/sudoers` file:
+
+```
+www-data ALL = NOPASSWD: /usr/bin/python
+```
+
 ------------------------------------------------------------------------------------
 ------------------------------------------------------------------------------------
 
