@@ -25,7 +25,7 @@ NeoPixelBus<NeoGrbFeature, Neo800KbpsMethod> ledstrip(NUM_LEDS, PixelPin);
 WiFiUDP port;
 
 // Network information
-// IP must match the IP in config.py
+// IP must match the IP in config.py in python folder
 IPAddress ip(192, 168, 0, 150);
 // Set gateway to your router's gateway
 IPAddress gateway(192, 168, 0, 1);
