@@ -55,7 +55,7 @@ Visualization code is compatible with Python 2.7 or 3.5. A few Python dependenci
 - PyQtGraph (for GUI visualization)
 - PyAudio (for recording audio with microphone)
 
-On Windows machines, the use of [Anaconda](https://www.continuum.io/downloads) is **highly recommended**. Anaconda simplifies the installation of Python dependencies, which is sometimes difficult on Windows.
+On Windows machines, the use of [Anaconda](https://www.anaconda.com/distribution/) is **highly recommended**. Anaconda simplifies the installation of Python dependencies, which is sometimes difficult on Windows.
 
 ### Installing dependencies with Anaconda
 Create a [conda virtual environment](http://conda.pydata.org/docs/using/envs.html) (this step is optional but recommended)
