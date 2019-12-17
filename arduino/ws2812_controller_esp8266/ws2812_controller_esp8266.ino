@@ -63,10 +63,10 @@ void loop() {
     // If packets have been received, interpret the command
     if (packetSize) {
         int len = port.read(packetBuffer, BUFFER_LEN);
-        for(int i = 0; i < len; i+=4) {
+        for(int i = 0; i < len; i+=5) {
             packetBuffer[len] = 0;
-            N = packetBuffer[i];
-            RgbColor pixel((uint8_t)packetBuffer[i+1], (uint8_t)packetBuffer[i+2], (uint8_t)packetBuffer[i+3]);
+            N = ((packetBuffer[i] << 8) + packetBuffer[i + 1]);
+            RgbColor pixel((uint8_t)packetBuffer[i+2], (uint8_t)packetBuffer[i+3], (uint8_t)packetBuffer[i+4]);
             ledstrip.SetPixelColor(N, pixel);
         } 
         ledstrip.Show();
