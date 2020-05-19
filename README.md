@@ -23,7 +23,7 @@ The repository includes everything needed to build an LED strip music visualizer
 # What do I need to make one?
 ## Computer + ESP8266
 To build a visualizer using a computer and ESP8266, you will need:
-- Computer with Python 2.7 or 3.5 ([Anaconda](https://www.continuum.io/downloads) is recommended on Windows)
+- Computer with Python 2.7 or 3.5 ([Anaconda](https://www.anaconda.com/distribution/) is recommended on Windows)
 - ESP8266 module with RX1 pin exposed. These modules can be purchased for as little as $5 USD. These modules are known to be compatible, but many others will work too:
   - NodeMCU v3
   - Adafruit HUZZAH
@@ -55,7 +55,7 @@ Visualization code is compatible with Python 2.7 or 3.5. A few Python dependenci
 - PyQtGraph (for GUI visualization)
 - PyAudio (for recording audio with microphone)
 
-On Windows machines, the use of [Anaconda](https://www.continuum.io/downloads) is **highly recommended**. Anaconda simplifies the installation of Python dependencies, which is sometimes difficult on Windows.
+On Windows machines, the use of [Anaconda](https://www.anaconda.com/distribution/) is **highly recommended**. Anaconda simplifies the installation of Python dependencies, which is sometimes difficult on Windows.
 
 ### Installing dependencies with Anaconda
 Create a [conda virtual environment](http://conda.pydata.org/docs/using/envs.html) (this step is optional but recommended)
