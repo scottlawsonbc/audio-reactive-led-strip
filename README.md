@@ -82,8 +82,6 @@ If `pip` is not found try using `python -m pip install` instead.
 ## Arduino dependencies
 ESP8266 firmare is uploaded using the Arduino IDE. See [this tutorial](https://learn.sparkfun.com/tutorials/esp8266-thing-hookup-guide/installing-the-esp8266-arduino-addon) to setup the Arduino IDE for ESP8266.
 
-<!-- This [ws2812b i2s library](https://github.com/JoDaNl/esp8266_ws2812_i2s) must be downloaded and installed in the Arduino libraries folder.
- -->
 ## Hardware Connections
 ### ESP8266
 The ESP8266 has hardware support for [I²S](https://en.wikipedia.org/wiki/I%C2%B2S) and this peripheral is used <!-- by the [ws2812b i2s library](https://github.com/JoDaNl/esp8266_ws2812_i2s)  -->to control the ws2812b LED strip. This signficantly improves performance compared to bit-banging the IO pin. Unfortunately, this means that the LED strip **must** be connected to the RX1 pin, which is not accessible in some ESP8266 modules (such as the ESP-01).
@@ -137,16 +135,8 @@ sudo apt-get update
 sudo apt-get install python-numpy python-scipy python-pyaudio
 ```
 
-## Install ws281x library
-To install the ws281x library I recommend following this [Adafruit tutorial](https://learn.adafruit.com/neopixels-on-raspberry-pi/software).
-```
-sudo apt-get install build-essential python-dev git scons swig
-git clone https://github.com/jgarff/rpi_ws281x.git
-cd rpi_ws281x
-scons
-cd python
-sudo python setup.py install
-```
+## Install NeoPixelBus library
+[Download Here](https://github.com/Makuna/NeoPixelBus) or using library manager, search for "NeoPixelBus".
 
 ## Audio device configuration
 For the Raspberry Pi, a USB audio device needs to be configured as the default audio device.
