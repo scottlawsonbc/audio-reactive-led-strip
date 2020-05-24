@@ -51,7 +51,7 @@ void setup() {
     ledstrip.Show();//Clear the strip for use
 }
 
-uint8_t N = 0;
+uint16_t N = 0;
 #if PRINT_FPS
     uint16_t fpsCounter = 0;
     uint32_t secondTimer = 0;
