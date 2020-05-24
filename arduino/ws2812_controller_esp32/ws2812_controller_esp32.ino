@@ -24,7 +24,7 @@ const char* password = "YOUR_WIFI_PASSWORD";
 unsigned int localPort = 7777;
 char packetBuffer[BUFFER_LEN];
 
-uint8_t N = 0;
+uint16_t N = 0;
 
 WiFiUDP port;
 // Network information
