@@ -1,9 +1,12 @@
-# Nazberry Pi - Audio Reactive LEDs
+# Nazberry Pi - Dancy Pi: Audio Reactive LEDs
 
-Original Readme text can be found below. You can also go to the main repo for more details. 
+Original Readme text can be found below. You can also go to the main repo for more details. This repo has been modified slightly to work only with Python 3+ on the Raspberry Pi. 
+I haven't done an integration with ESP8266 yet but still plan to in the future. 
+
+The steps in this repo can be applied globally on your Pi or inside virtual environments like `venv` or `conda`. My tutorial does everything globally! 
 
 # Demo
-Here is a demo of my implementation of it.  I used the standalone Pi set up: [https://www.youtube.com/watch?v=vY4P0MU62X8](https://www.youtube.com/watch?v=vY4P0MU62X8)
+Here is the old demo of my implementation of this project.  I used the standalone Pi set up: [https://www.youtube.com/watch?v=vY4P0MU62X8](https://www.youtube.com/watch?v=vY4P0MU62X8)
 
 # Tutorial
 A full video tutorial can be found on YouTube at https://www.youtube.com/watch?v=FA9rMkuVmvQ
@@ -13,12 +16,70 @@ More information on the tutorial can be found at https://www.easyprogramming.net
 
 # Nazberry Pi Modifications
 
-### Install pyqtgraph
+### Install dependencies
 
-One issue i ran into when installing the dependencies is the installation of pyqtgraph. If you run into issues with it, try installing python-pyqtgraph instead:
+Make sure that your Pi is up to date:
 
 ```shell
-sudo apt install python-pyqtgraph
+sudo apt update && sudo apt upgrade -y
+```
+
+We'll use `pip` to install the rest of our dependencies so make sure that you have pip installed and it's up to date:
+
+```shell
+sudo apt install python3-pip -y
+sudo pip3 install --upgrade pip
+```
+
+We'll then install `numpy`, `pyaudio`, and `pyqtgraph` with pip3:
+
+```shell
+sudo pip3 install numpy pyaudio pyqtgraph
+```
+
+We'll also install `scipy` version 1.4.1. The reason I have this in a separate step is because I've had issues installing the latest version of this:
+
+```shell
+sudo pip3 install scipy==1.4.1
+```
+
+Current `scipy` version is 1.5.0 but we'll install 1.4.1 for now. 
+
+We'll also need a couple more dependencies:
+
+```shell
+sudo apt install python-setuptools libatlas-base-dev -y
+```
+
+Once that's done, we can install the `rpi_ws281x` library with one simple command instead of the 6 or so commands listed in the original readme:
+
+```shell
+sudo pip3 install rpi_ws281x
+``` 
+
+### Audio Configs
+
+Head over to t he [Audio Device Configuration](#audio-device-configuration) section below to modify the `asound.conf` file and `alsa.conf` file. Once you edit those, come back here. 
+
+If you're wondering how I knew what number to pick for the audio card, try this command to look at your connected devices:
+
+```shell
+cat /proc/asound/cards
+```
+
+### Clone this repo
+
+If you installed Buster lite, you may  not have Git installed on your Pi. Install it th en clone this repo:
+
+```shell
+sudo apt install git -y
+git clone https://github.com/naztronaut/dancyPi-audio-reactive-led.git
+```
+
+Then let's head into our `python` directory and look at the configurations and finally run this project:
+
+```shell
+cd python
 ```
 
 ### `config.py` has been edited as follows:
@@ -27,14 +88,14 @@ sudo apt install python-pyqtgraph
 DEVICE = 'pi'
 USE_GUI = False
 DISPLAY_FPS = False
-N_PIXELS = 142
+N_PIXELS = 144
 MIC_RATE = 48000
 FPS = 50
 ```
 
-I'm using the standalone Raspberry Pi with a 142 LED strip (it had 144 but I had to remove two since they were broken). The USB Microphone that I'm using has a rate of 48000 hz. And I turned the FPS down to 50 but i was easily getting 90 FPS without issues. 
+I'm using the standalone Raspberry Pi with a 144 LED strip. The USB Microphone that I'm using has a rate of 48000 hz. And I turned the FPS down to 50 but i was easily getting 90 FPS without issues. 
 
-I'm also using this headless so the GUI and FPS have been turned off for better perofrmance. 
+I'm also using this headless so the GUI and FPS have been turned off for better performance. 
 
 ### `visualization.py` has been edited as follows:
 
@@ -61,7 +122,9 @@ sudo python visualization.py spectrum
 
 You can substitute `spectrum` for either `energy` or `scroll` for the other two effects. 
 
-# Browser setup
+# Browser setup (Deprecated)
+
+**Deprecated section** I will work on a Flask app that can do this at some point.
 
 Still working on completing a full browser UI. But once you clone/download this repository, copy everything in the python/ folder into /var/www/html/ (assuming you installed apache already). You can put it in a sub folder if you'd like. You may need to edit all the files to be owned by www-data (apache2 user). You can do this with the following command to change everything at once:
 
