@@ -11,10 +11,6 @@ def install_dependencies():
     os.system("sudo pip3 install --upgrade pip")
     print("================== Finish Updating PIP ==================")
 
-    print("================== Start Installing Git ==================")
-    os.system("sudo apt install git -y")
-    print("================== Finish Installing Git ==================")
-
     print("================== Start Installing Setuptools and Libatlas ==================")
     os.system("sudo apt install python-setuptools libatlas-base-dev -y")
     print("================== Finish Installing Setuptools and Libatlas ==================")
