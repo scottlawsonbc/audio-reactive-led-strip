@@ -3,8 +3,6 @@
 # Installs dependences needed for Dancy Pi
 # Author: Nazmus Nasir
 # Website: https://www.easyprogramming.net
-# Can add an extra param to install everything globally: e.g. sudo python3 install.py global
-
 
 import os
 from shutil import copy2
