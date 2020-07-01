@@ -1,6 +1,14 @@
+# install.py
+# Version: 1.0.0
+# Installs dependences needed for Dancy Pi
+# Author: Nazmus Nasir
+# Website: https://www.easyprogramming.net
+# Can add an extra param to install everything globally: e.g. sudo python3 install.py global
+
+
 import os
 from shutil import copy2
-import sys
+
 
 def install_dependencies():
     print("================== Start Installing PIP ==================")
@@ -19,15 +27,14 @@ def install_dependencies():
     os.system("sudo apt install libatlas3-base libgfortran5 -y")
     print("================== Completed Installing Fortran ==================")
 
-    if len(sys.argv) > 1:
-        print("================== Start Installing Numpy, Scipy, PyAudio, PyQtgraph ==================")
-        os.system("sudo apt install python-numpy python-scipy python-pyaudio python-pyqtgraph")
-        os.system("sudo pip3 install numpy scipy==1.4.1 pyaudio pyqtgraph")
-        print("================== Completed Installing Numpy, Scipy, PyAudio, PyQtgraph ==================")
+    print("================== Start Installing Numpy, Scipy, PyAudio, PyQtgraph ==================")
+    os.system("sudo apt install python-numpy python-scipy python-pyaudio python-pyqtgraph -y")
+    os.system("sudo pip3 install numpy scipy==1.4.1 pyaudio pyqtgraph")
+    print("================== Completed Installing Numpy, Scipy, PyAudio, PyQtgraph ==================")
 
-        print("================== Start Installing rpi_ws281x ==================")
-        os.system("sudo pip3 install rpi_ws281x")
-        print("================== Completed Installing rpi_ws281x ==================")
+    print("================== Start Installing rpi_ws281x ==================")
+    os.system("sudo pip3 install rpi_ws281x")
+    print("================== Completed Installing rpi_ws281x ==================")
 
 
 def replace_asound():
