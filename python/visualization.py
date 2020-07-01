@@ -9,7 +9,7 @@ import dsp
 import led
 import sys
 
-visType = sys.argv[1]
+visualization_type = sys.argv[1]
 
 _time_prev = time.time() * 1000.0
 """The previous time that the frames_per_second() function was called"""
@@ -254,15 +254,15 @@ y_roll = np.random.rand(config.N_ROLLING_HISTORY, samples_per_frame) / 1e16
 #visualization_effect = visualize_spectrum
 
 if sys.argv[1] == "spectrum":
-        visType = visualize_spectrum
+        visualization_type = visualize_spectrum
 elif sys.argv[1] == "energy":
-        visType = visualize_energy
+        visualization_type = visualize_energy
 elif  sys.argv[1] == "scroll":
-        visType = visualize_scroll
+        visualization_type = visualize_scroll
 else:
-        visType = visualize_spectrum
+        visualization_type = visualize_spectrum
 
-visualization_effect = visType
+visualization_effect = visualization_type
 """Visualization effect to display on the LED strip"""
 
 
