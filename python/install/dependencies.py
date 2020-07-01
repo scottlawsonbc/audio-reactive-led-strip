@@ -1,23 +1,33 @@
 import os
 from shutil import copy2
-
+import sys
 
 def install_dependencies():
     print("================== Start Installing PIP ==================")
     os.system("sudo apt install python3-pip -y")
-    print("================== Finished Installing PIP ==================")
+    print("================== Completed Installing PIP ==================")
 
     print("================== Start Updating PIP ==================")
     os.system("sudo pip3 install --upgrade pip")
-    print("================== Finish Updating PIP ==================")
+    print("================== Completed Updating PIP ==================")
 
     print("================== Start Installing Setuptools and Libatlas ==================")
     os.system("sudo apt install python-setuptools libatlas-base-dev -y")
-    print("================== Finish Installing Setuptools and Libatlas ==================")
+    print("================== Completed Installing Setuptools and Libatlas ==================")
 
     print("================== Start Installing Fortran ==================")
     os.system("sudo apt install libatlas3-base libgfortran5 -y")
-    print("================== Finish Installing Fortran ==================")
+    print("================== Completed Installing Fortran ==================")
+
+    if len(sys.argv) > 1:
+        print("================== Start Installing Numpy, Scipy, PyAudio, PyQtgraph ==================")
+        os.system("sudo apt install python-numpy python-scipy python-pyaudio python-pyqtgraph")
+        os.system("sudo pip3 install numpy scipy==1.4.1 pyaudio pyqtgraph")
+        print("================== Completed Installing Numpy, Scipy, PyAudio, PyQtgraph ==================")
+
+        print("================== Start Installing rpi_ws281x ==================")
+        os.system("sudo pip3 install rpi_ws281x")
+        print("================== Completed Installing rpi_ws281x ==================")
 
 
 def replace_asound():
