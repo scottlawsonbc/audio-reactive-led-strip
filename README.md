@@ -1,86 +1,72 @@
-# Nazberry Pi - Dancy Pi: Audio Reactive LEDs
+# Dancy Pi: Audio Reactive LEDs
 
-Original Readme text can be found below. You can also go to the main repo for more details. This repo has been modified slightly to work only with Python 3+ on the Raspberry Pi. 
-I haven't done an integration with ESP8266 yet but still plan to in the future. 
+This repo is my implementation of Scott Lawson's work. I did my best to simplify the installation process. The original Readme text can be found below my updated Readme. 
+
+This repo is designed to work with Python 3+. Python 2 is no longer supported but it may still work without (m)any changes. I haven't done an integration with ESP8266 yet but 
+still plan to in the future. 
 
 The steps in this repo can be applied globally on your Pi or inside virtual environments like `venv` or `conda`. My tutorial does everything globally! 
 
 # Demo
-Here is the old demo of my implementation of this project.  I used the standalone Pi set up: [https://www.youtube.com/watch?v=vY4P0MU62X8](https://www.youtube.com/watch?v=vY4P0MU62X8)
+
+See the new demo at: TBD
+
+Join the Conversation on EasyProgramming at: TBD 
+
+You can also watch the old demo at the following URL. You can see just how much time the new implementation saves: 
+[https://www.youtube.com/watch?v=vY4P0MU62X8](https://www.youtube.com/watch?v=vY4P0MU62X8)
 
 # Tutorial
+
+
 A full video tutorial can be found on YouTube at https://www.youtube.com/watch?v=FA9rMkuVmvQ
 <a href="https://www.youtube.com/watch?v=FA9rMkuVmvQ" target="_blank"><img src="https://www.easyprogramming.net/img/audioReactiveLed.jpg" width="700px" alt="Audio Reactive LED Strip Tutorial"></a>
 
 More information on the tutorial can be found at https://www.easyprogramming.net/raspberrypi/audio_reactive_raspberry_pi_lights.php
 
+See the old tutorial on Branch [v1.0.0](tree/v1.0.0).
+
 # Nazberry Pi Modifications
 
-### Install dependencies
+The following assumes that you have Raspberry Pi OS installed and your Pi is up to date with `sudo apt upgrade && sudo apt upgrade`.
 
-Make sure that your Pi is up to date:
+### Install Git & Clone repo
 
-```shell
-sudo apt update && sudo apt upgrade -y
-```
-
-We'll use `pip` to install the rest of our dependencies so make sure that you have pip installed and it's up to date:
-
-```shell
-sudo apt install python3-pip -y
-sudo pip3 install --upgrade pip
-```
-
-We'll then install `numpy`, `pyaudio`, and `pyqtgraph` with pip3:
-
-```shell
-sudo pip3 install numpy pyaudio pyqtgraph
-```
-
-We'll also install `scipy` version 1.4.1. The reason I have this in a separate step is because I've had issues installing the latest version of this:
-
-```shell
-sudo pip3 install scipy==1.4.1
-```
-
-Current `scipy` version is 1.5.0 but we'll install 1.4.1 for now. 
-
-We'll also need a couple more dependencies:
-
-```shell
-sudo apt install python-setuptools libatlas-base-dev -y
-```
-
-Once that's done, we can install the `rpi_ws281x` library with one simple command instead of the 6 or so commands listed in the original readme:
-
-```shell
-sudo pip3 install rpi_ws281x
-``` 
-
-### Audio Configs
-
-Head over to t he [Audio Device Configuration](#audio-device-configuration) section below to modify the `asound.conf` file and `alsa.conf` file. Once you edit those, come back here. 
-
-If you're wondering how I knew what number to pick for the audio card, try this command to look at your connected devices:
-
-```shell
-cat /proc/asound/cards
-```
-
-### Clone this repo
-
-If you installed Buster lite, you may  not have Git installed on your Pi. Install it th en clone this repo:
+I normally start the lite version of Raspberry Pi OS without desktop and recommended software so it usually doesn't come with Git installed. So let's install it:
 
 ```shell
 sudo apt install git -y
+```
+
+After we install git, clone this repo:
+
+```shell
 git clone https://github.com/naztronaut/dancyPi-audio-reactive-led.git
 ```
 
-Then let's head into our `python` directory and look at the configurations and finally run this project:
+Then let's head into our install directory and continue to the next step:
 
 ```shell
-cd python
+cd dancyPi-audio-reactive-led/python/install
 ```
+
+### Install dependencies with `install.py`
+
+In the previous version, there were MANY steps before the lights would work. I tried my best to simply this into one simple command which modifies the audio config files as needed
+and installs all dependencies globally. Once you are in the install directory, run this command:
+
+```shell
+sudo python3 install.py
+```
+
+The installation should take a few minutes (depends on your internet speed and how many of the packages need a full install). The script is very simple. It runs a bunch of `sudo apt install`
+and `pip3 install` commands followed by placing the `asound.conf` file in its proper location and modifying the `alsa.conf` as necessary by commenting out hardware that is not needed/used
+and making sure the correct audio device is used. 
+
+The script also installs the `rpi_ws281x` library which is used to actually turn the lights on and off. In the previous version, this install required about 8 steps on its own. Now it's done
+through the install script. Since it's done this way, there's no more "demo" script that you can run. I will maybe work on one later (may or may not be in another repo). 
+
+You'll still need to make some edits to fit your needs. 
 
 ### `config.py` has been edited as follows:
 
@@ -93,7 +79,8 @@ MIC_RATE = 48000
 FPS = 50
 ```
 
-I'm using the standalone Raspberry Pi with a 144 LED strip. The USB Microphone that I'm using has a rate of 48000 hz. And I turned the FPS down to 50 but i was easily getting 90 FPS without issues. 
+I'm using the standalone Raspberry Pi with a 144 LED strip. The USB Microphone that I'm using has a rate of 48000 hz. And I turned the FPS down to 50 but I was easily getting 
+90 FPS without issues. 
 
 I'm also using this headless so the GUI and FPS have been turned off for better performance. 
 
@@ -104,39 +91,28 @@ Added the following after line 9 to allow reading command line arguments:
 ```python
 import sys
 
-visType = sys.argv[1]
+visualization_type = sys.argv[1]
 ``` 
 
-Also added if/elif statements starting on line 256 to assign the above `visType` variable to `visualization_effect` variable on line 265. 
+Also added if/elif statements starting on line 256 to assign the above `visualization_type` variable to `visualization_effect` variable on line 265. This now accepts an extra 
+command line argument which tells the script which visualization to run. The options are `spectrum`, `energy`, or `scroll`. To run this, simply run:
+
+```shell
+sudo python visualization.py scroll
+``` 
+
+You can substitute `scroll` for either `energy` or `spectrum`for the other two effects. 
 
 ### `off.py` was added to the package
 
-Contains python code to turn off all the LEDs after the off command was sent. Change the `LED_COUNT` if your LED count is different from 142. 
+Contains python code to turn off all the LEDs after the off command was sent. Change the `LED_COUNT` if your LED count is different from 144. 
 
-# CLI Options
-I modified the `visualization.py` script to accept an extra command line argument which tells the script which visualiztion to run. The options are spectrum, energy, or scroll. To run this, simply run:
-
-```shell
-sudo python visualization.py spectrum
-``` 
-
-You can substitute `spectrum` for either `energy` or `scroll` for the other two effects. 
-
-# Browser setup (Deprecated)
-
-**Deprecated section** I will work on a Flask app that can do this at some point.
-
-Still working on completing a full browser UI. But once you clone/download this repository, copy everything in the python/ folder into /var/www/html/ (assuming you installed apache already). You can put it in a sub folder if you'd like. You may need to edit all the files to be owned by www-data (apache2 user). You can do this with the following command to change everything at once:
-
-```shell
-chown www-data:www-data *
-```
-
-Once everything is placed, you can go to `http://ip_addr/control.php?on=spectrum` to turn on the lights. You can substitute `spectrum` for either `energy` or `scroll`. To turn off the lights, just go to `http://ip_addr/control.php?off=1`. 
-
-I'll work in a frontend UI with buttons for easier control at some point. 
 
 ### Troubleshooting
+
+#### Audio Device not recognized
+
+Turn off your pi, plug your USB Mic in, then turn your Pi back on.  I've noticed that sometimes, the Pi won't easily recognize a new usb device. 
 
 #### [#2](/../../issues/2) PHP URL commands not activating visualizations
 Most users should not have to do this but if you are experiencing the following error when trying to run the script via a browser:
@@ -149,6 +125,21 @@ Add the following to your `/etc/sudoers` file:
 ```
 www-data ALL = NOPASSWD: /usr/bin/python
 ```
+
+## Authors
+* **Nazmus Nasir** - [Nazm.us](https://nazm.us) - Owner of EasyProgramming.net
+
+## License
+
+This project is licensed under the MIT License - see the [LICENSE.txt](LICENSE.txt) file for details
+
+# Questions ?
+Have questions? You can reach me through several different channels. You can ask a question in the  [issues forum](/../../issues), 
+on [EasyProgramming.net](https://www.easyprogramming.net), or on the video comments on YouTube. 
+
+
+# Contribute 
+I will accept Pull requests fixing bugs or adding new features after I've vetted them. Feel free to create pull requests! 
 
 ------------------------------------------------------------------------------------
 ------------------------------------------------------------------------------------
