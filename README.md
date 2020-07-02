@@ -24,7 +24,7 @@ A full video tutorial can be found on YouTube at https://www.youtube.com/watch?v
 
 More information on the tutorial can be found at https://www.easyprogramming.net/raspberrypi/audio_reactive_raspberry_pi_lights.php
 
-See the old tutorial on Branch [v1.0.0](tree/v1.0.0).
+See the old tutorial on Branch [v1.0.0](../../tree/v1.0.0).
 
 # Nazberry Pi Modifications
 
