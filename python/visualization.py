@@ -251,13 +251,11 @@ samples_per_frame = int(config.MIC_RATE / config.FPS)
 # Array containing the rolling audio sample window
 y_roll = np.random.rand(config.N_ROLLING_HISTORY, samples_per_frame) / 1e16
 
-#visualization_effect = visualize_spectrum
-
 if sys.argv[1] == "spectrum":
         visualization_type = visualize_spectrum
 elif sys.argv[1] == "energy":
         visualization_type = visualize_energy
-elif  sys.argv[1] == "scroll":
+elif sys.argv[1] == "scroll":
         visualization_type = visualize_scroll
 else:
         visualization_type = visualize_spectrum
