@@ -9,20 +9,19 @@ The steps in this repo can be applied globally on your Pi or inside virtual envi
 
 # Demo
 
-See the new demo at: TBD
+See the new demo at: https://www.youtube.com/watch?v=7YLF-N0596I
 
-Join the Conversation on EasyProgramming at: TBD 
+Join the Conversation on EasyProgramming at: https://www.easyprogramming.net/raspberrypi/audio_reactive_led.php
 
 You can also watch the old demo at the following URL. You can see just how much time the new implementation saves: 
 [https://www.youtube.com/watch?v=vY4P0MU62X8](https://www.youtube.com/watch?v=vY4P0MU62X8)
 
 # Tutorial
 
+A full video tutorial can be found on YouTube at https://www.youtube.com/watch?v=7YLF-N0596I
+<a href="https://www.youtube.com/watch?v=7YLF-N0596I" target="_blank"><img src="https://raw.githubusercontent.com/naztronaut/dancyPi-audio-reactive-led/master/images/thumbnail.jpg" width="700px" alt="Audio Reactive LED Strip Tutorial"></a>
 
-A full video tutorial can be found on YouTube at https://www.youtube.com/watch?v=FA9rMkuVmvQ
-<a href="https://www.youtube.com/watch?v=FA9rMkuVmvQ" target="_blank"><img src="https://www.easyprogramming.net/img/audioReactiveLed.jpg" width="700px" alt="Audio Reactive LED Strip Tutorial"></a>
-
-More information on the tutorial can be found at https://www.easyprogramming.net/raspberrypi/audio_reactive_raspberry_pi_lights.php
+More information on the tutorial can be found at https://www.easyprogramming.net/raspberrypi/audio_reactive_led.php
 
 See the old tutorial on Branch [v1.0.0](../../tree/v1.0.0).
 
@@ -98,7 +97,7 @@ Also added if/elif statements starting on line 256 to assign the above `visualiz
 command line argument which tells the script which visualization to run. The options are `spectrum`, `energy`, or `scroll`. To run this, simply run:
 
 ```shell
-sudo python visualization.py scroll
+sudo python3 visualization.py scroll
 ``` 
 
 You can substitute `scroll` for either `energy` or `spectrum`for the other two effects. 
