@@ -1,25 +1,72 @@
-# Nazberry Pi - Audio Reactive LEDs
+# Dancy Pi: Audio Reactive LEDs
 
-Original Readme text can be found below. You can also go to the main repo for more details. 
+This repo is my implementation of Scott Lawson's work. I did my best to simplify the installation process. The original Readme text can be found below my updated Readme. 
+
+This repo is designed to work with Python 3+. Python 2 is no longer supported but it may still work without (m)any changes. I haven't done an integration with ESP8266 yet but 
+still plan to in the future. 
+
+The steps in this repo can be applied globally on your Pi or inside virtual environments like `venv` or `conda`. My tutorial does everything globally! 
 
 # Demo
-Here is a demo of my implementation of it.  I used the standalone Pi set up: [https://www.youtube.com/watch?v=vY4P0MU62X8](https://www.youtube.com/watch?v=vY4P0MU62X8)
+
+See the new demo at: TBD
+
+Join the Conversation on EasyProgramming at: TBD 
+
+You can also watch the old demo at the following URL. You can see just how much time the new implementation saves: 
+[https://www.youtube.com/watch?v=vY4P0MU62X8](https://www.youtube.com/watch?v=vY4P0MU62X8)
 
 # Tutorial
+
+
 A full video tutorial can be found on YouTube at https://www.youtube.com/watch?v=FA9rMkuVmvQ
 <a href="https://www.youtube.com/watch?v=FA9rMkuVmvQ" target="_blank"><img src="https://www.easyprogramming.net/img/audioReactiveLed.jpg" width="700px" alt="Audio Reactive LED Strip Tutorial"></a>
 
 More information on the tutorial can be found at https://www.easyprogramming.net/raspberrypi/audio_reactive_raspberry_pi_lights.php
 
+See the old tutorial on Branch [v1.0.0](../../tree/v1.0.0).
+
 # Nazberry Pi Modifications
 
-### Install pyqtgraph
+The following assumes that you have Raspberry Pi OS installed and your Pi is up to date with `sudo apt upgrade && sudo apt upgrade`.
 
-One issue i ran into when installing the dependencies is the installation of pyqtgraph. If you run into issues with it, try installing python-pyqtgraph instead:
+### Install Git & Clone repo
+
+I normally start the lite version of Raspberry Pi OS without desktop and recommended software so it usually doesn't come with Git installed. So let's install it:
 
 ```shell
-sudo apt install python-pyqtgraph
+sudo apt install git -y
 ```
+
+After we install git, clone this repo:
+
+```shell
+git clone https://github.com/naztronaut/dancyPi-audio-reactive-led.git
+```
+
+Then let's head into our install directory and continue to the next step:
+
+```shell
+cd dancyPi-audio-reactive-led/python/install
+```
+
+### Install dependencies with `install.py`
+
+In the previous version, there were MANY steps before the lights would work. I tried my best to simply this into one simple command which modifies the audio config files as needed
+and installs all dependencies globally. Once you are in the install directory, run this command:
+
+```shell
+sudo python3 install.py
+```
+
+The installation should take a few minutes (depends on your internet speed and how many of the packages need a full install). The script is very simple. It runs a bunch of `sudo apt install`
+and `pip3 install` commands followed by placing the `asound.conf` file in its proper location and modifying the `alsa.conf` as necessary by commenting out hardware that is not needed/used
+and making sure the correct audio device is used. 
+
+The script also installs the `rpi_ws281x` library which is used to actually turn the lights on and off. In the previous version, this install required about 8 steps on its own. Now it's done
+through the install script. Since it's done this way, there's no more "demo" script that you can run. I will maybe work on one later (may or may not be in another repo). 
+
+You'll still need to make some edits to fit your needs. 
 
 ### `config.py` has been edited as follows:
 
@@ -27,14 +74,15 @@ sudo apt install python-pyqtgraph
 DEVICE = 'pi'
 USE_GUI = False
 DISPLAY_FPS = False
-N_PIXELS = 142
+N_PIXELS = 144
 MIC_RATE = 48000
 FPS = 50
 ```
 
-I'm using the standalone Raspberry Pi with a 142 LED strip (it had 144 but I had to remove two since they were broken). The USB Microphone that I'm using has a rate of 48000 hz. And I turned the FPS down to 50 but i was easily getting 90 FPS without issues. 
+I'm using the standalone Raspberry Pi with a 144 LED strip. The USB Microphone that I'm using has a rate of 48000 hz. And I turned the FPS down to 50 but I was easily getting 
+90 FPS without issues. 
 
-I'm also using this headless so the GUI and FPS have been turned off for better perofrmance. 
+I'm also using this headless so the GUI and FPS have been turned off for better performance. 
 
 ### `visualization.py` has been edited as follows:
 
@@ -43,37 +91,28 @@ Added the following after line 9 to allow reading command line arguments:
 ```python
 import sys
 
-visType = sys.argv[1]
+visualization_type = sys.argv[1]
 ``` 
 
-Also added if/elif statements starting on line 256 to assign the above `visType` variable to `visualization_effect` variable on line 265. 
+Also added if/elif statements starting on line 256 to assign the above `visualization_type` variable to `visualization_effect` variable on line 265. This now accepts an extra 
+command line argument which tells the script which visualization to run. The options are `spectrum`, `energy`, or `scroll`. To run this, simply run:
+
+```shell
+sudo python visualization.py scroll
+``` 
+
+You can substitute `scroll` for either `energy` or `spectrum`for the other two effects. 
 
 ### `off.py` was added to the package
 
-Contains python code to turn off all the LEDs after the off command was sent. Change the `LED_COUNT` if your LED count is different from 142. 
+Contains python code to turn off all the LEDs after the off command was sent. Change the `LED_COUNT` if your LED count is different from 144. 
 
-# CLI Options
-I modified the `visualization.py` script to accept an extra command line argument which tells the script which visualiztion to run. The options are spectrum, energy, or scroll. To run this, simply run:
-
-```shell
-sudo python visualization.py spectrum
-``` 
-
-You can substitute `spectrum` for either `energy` or `scroll` for the other two effects. 
-
-# Browser setup
-
-Still working on completing a full browser UI. But once you clone/download this repository, copy everything in the python/ folder into /var/www/html/ (assuming you installed apache already). You can put it in a sub folder if you'd like. You may need to edit all the files to be owned by www-data (apache2 user). You can do this with the following command to change everything at once:
-
-```shell
-chown www-data:www-data *
-```
-
-Once everything is placed, you can go to `http://ip_addr/control.php?on=spectrum` to turn on the lights. You can substitute `spectrum` for either `energy` or `scroll`. To turn off the lights, just go to `http://ip_addr/control.php?off=1`. 
-
-I'll work in a frontend UI with buttons for easier control at some point. 
 
 ### Troubleshooting
+
+#### Audio Device not recognized
+
+Turn off your pi, plug your USB Mic in, then turn your Pi back on.  I've noticed that sometimes, the Pi won't easily recognize a new usb device. 
 
 #### [#2](/../../issues/2) PHP URL commands not activating visualizations
 Most users should not have to do this but if you are experiencing the following error when trying to run the script via a browser:
@@ -86,6 +125,21 @@ Add the following to your `/etc/sudoers` file:
 ```
 www-data ALL = NOPASSWD: /usr/bin/python
 ```
+
+## Authors
+* **Nazmus Nasir** - [Nazm.us](https://nazm.us) - Owner of EasyProgramming.net
+
+## License
+
+This project is licensed under the MIT License - see the [LICENSE.txt](LICENSE.txt) file for details
+
+# Questions ?
+Have questions? You can reach me through several different channels. You can ask a question in the  [issues forum](/../../issues), 
+on [EasyProgramming.net](https://www.easyprogramming.net), or on the video comments on YouTube. 
+
+
+# Contribute 
+I will accept Pull requests fixing bugs or adding new features after I've vetted them. Feel free to create pull requests! 
 
 ------------------------------------------------------------------------------------
 ------------------------------------------------------------------------------------
@@ -115,12 +169,12 @@ The repository includes everything needed to build an LED strip music visualizer
   - Constructing 1D visualizations ([visualization.py](python/visualization.py))
   - Sending pixel information to the ESP8266 over WiFi ([led.py](python/led.py))
   - Configuration and settings ([config.py](python/config.py))
-- Arduino firmware for the ESP8266 ([ws2812_controller.ino](arduino/ws2812_controller/ws2812_controller.ino))
+- Arduino firmware for the ESP8266 ([ws2812_controller_esp8266.ino](arduino/ws2812_controller_esp8266/ws2812_controller_esp8266.ino))
 
 # What do I need to make one?
 ## Computer + ESP8266
 To build a visualizer using a computer and ESP8266, you will need:
-- Computer with Python 2.7 or 3.5 ([Anaconda](https://www.continuum.io/downloads) is recommended on Windows)
+- Computer with Python 2.7 or 3.5 ([Anaconda](https://www.anaconda.com/distribution/) is recommended on Windows)
 - ESP8266 module with RX1 pin exposed. These modules can be purchased for as little as $5 USD. These modules are known to be compatible, but many others will work too:
   - NodeMCU v3
   - Adafruit HUZZAH
@@ -152,7 +206,7 @@ Visualization code is compatible with Python 2.7 or 3.5. A few Python dependenci
 - PyQtGraph (for GUI visualization)
 - PyAudio (for recording audio with microphone)
 
-On Windows machines, the use of [Anaconda](https://www.continuum.io/downloads) is **highly recommended**. Anaconda simplifies the installation of Python dependencies, which is sometimes difficult on Windows.
+On Windows machines, the use of [Anaconda](https://www.anaconda.com/distribution/) is **highly recommended**. Anaconda simplifies the installation of Python dependencies, which is sometimes difficult on Windows.
 
 ### Installing dependencies with Anaconda
 Create a [conda virtual environment](http://conda.pydata.org/docs/using/envs.html) (this step is optional but recommended)
@@ -179,10 +233,6 @@ If `pip` is not found try using `python -m pip install` instead.
 ## Arduino dependencies
 ESP8266 firmare is uploaded using the Arduino IDE. See [this tutorial](https://learn.sparkfun.com/tutorials/esp8266-thing-hookup-guide/installing-the-esp8266-arduino-addon) to setup the Arduino IDE for ESP8266.
 
-After installing the Arduino IDE and ESP8266 addon, use the [Arduino Library Manager](https://www.arduino.cc/en/Guide/Libraries#toc3) to install the "WebSocketServer" library.
-
-<!-- This [ws2812b i2s library](https://github.com/JoDaNl/esp8266_ws2812_i2s) must be downloaded and installed in the Arduino libraries folder.
- -->
 ## Hardware Connections
 ### ESP8266
 The ESP8266 has hardware support for [I²S](https://en.wikipedia.org/wiki/I%C2%B2S) and this peripheral is used <!-- by the [ws2812b i2s library](https://github.com/JoDaNl/esp8266_ws2812_i2s)  -->to control the ws2812b LED strip. This signficantly improves performance compared to bit-banging the IO pin. Unfortunately, this means that the LED strip **must** be connected to the RX1 pin, which is not accessible in some ESP8266 modules (such as the ESP-01).
@@ -205,7 +255,7 @@ The connections are:
 
 * Connect GND on the power supply to GND on the LED strip and GND on the Raspberry Pi (they MUST share a common GND connection)
 * Connect +5V on the power supply to +5V on the LED strip
-* Connect a PWM GPIO pin on the Raspberry Pi to the data pin on the LED strip. If using the Raspberry Pi 2 or 3, then try Pin 18.
+* Connect a PWM GPIO pin on the Raspberry Pi to the data pin on the LED strip. If using the Raspberry Pi 2 or 3, then try Pin 18(GPIO5).
 
 # Setup and Configuration
 1. Install Python and Python dependencies
@@ -227,6 +277,8 @@ The connections are:
 # Installation for Raspberry Pi
 If you encounter any problems running the visualization on a Raspberry Pi, please [open a new issue](https://github.com/scottlawsonbc/audio-reactive-led-strip/issues). Also, please consider opening an issue if you have any questions or suggestions for improving the installation process.
 
+Download and extract all of the files in this repository onto your pi to begin.
+
 ## Installing the Python dependencies
 Install python dependencies using apt-get
 ```
@@ -234,16 +286,8 @@ sudo apt-get update
 sudo apt-get install python-numpy python-scipy python-pyaudio
 ```
 
-## Install ws281x library
-To install the ws281x library I recommend following this [Adafruit tutorial](https://learn.adafruit.com/neopixels-on-raspberry-pi/software).
-```
-sudo apt-get install build-essential python-dev git scons swig
-git clone https://github.com/jgarff/rpi_ws281x.git
-cd rpi_ws281x
-scons
-cd python
-sudo python setup.py install
-```
+## Install NeoPixelBus library
+[Download Here](https://github.com/Makuna/NeoPixelBus) or using library manager, search for "NeoPixelBus".
 
 ## Audio device configuration
 For the Raspberry Pi, a USB audio device needs to be configured as the default audio device.
