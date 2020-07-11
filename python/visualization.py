@@ -126,6 +126,27 @@ def visualize_scroll(y):
     # Update the LED strip
     return np.concatenate((p[:, ::-1], p), axis=1)
 
+def visualize_scroll_in(y):
+    """Effect that originates in the outside and scrolls inwards"""
+    global p
+    y = y**2.0
+    gain.update(y)
+    y /= gain.value
+    y *= 255.0
+    r = int(np.max(y[:len(y) // 3]))
+    g = int(np.max(y[len(y) // 3: 2 * len(y) // 3]))
+    b = int(np.max(y[2 * len(y) // 3:]))
+    # Scrolling effect window
+    p[:, 1:] = p[:, :-1]
+    p *= 0.98
+    p = gaussian_filter1d(p, sigma=0.2)
+    # Create new color originating at the center
+    p[0, 0] = r
+    p[1, 0] = g
+    p[2, 0] = b
+    # Update the LED strip
+    return np.concatenate((p[:, :], p[:, ::-1]), axis=1)
+
 
 def visualize_energy(y):
     """Effect that expands from the center with increasing sound energy"""
@@ -257,6 +278,8 @@ elif sys.argv[1] == "energy":
         visualization_type = visualize_energy
 elif sys.argv[1] == "scroll":
         visualization_type = visualize_scroll
+elif sys.argv[1] == "scroll_in":
+        visualization_type = visualize_scroll_in
 else:
         visualization_type = visualize_spectrum
 
