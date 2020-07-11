@@ -10,6 +10,7 @@ import led
 import sys
 
 visualization_type = sys.argv[1]
+scroll_divisor_config = 4 if sys.argv[1] == "scroll_quad" else 2
 
 _time_prev = time.time() * 1000.0
 """The previous time that the frames_per_second() function was called"""
@@ -100,7 +101,8 @@ common_mode = dsp.ExpFilter(np.tile(0.01, config.N_PIXELS // 2),
                        alpha_decay=0.99, alpha_rise=0.01)
 p_filt = dsp.ExpFilter(np.tile(1, (3, config.N_PIXELS // 2)),
                        alpha_decay=0.1, alpha_rise=0.99)
-p = np.tile(1.0, (3, config.N_PIXELS // 2))
+# scroll_divisor_config config is set to 2 if scroll_quad is sent in the arg
+p = np.tile(1.0, (3, config.N_PIXELS // scroll_divisor_config))
 gain = dsp.ExpFilter(np.tile(0.01, config.N_FFT_BINS),
                      alpha_decay=0.001, alpha_rise=0.99)
 
@@ -125,6 +127,31 @@ def visualize_scroll(y):
     p[2, 0] = b
     # Update the LED strip
     return np.concatenate((p[:, ::-1], p), axis=1)
+
+
+def visualize_scroll_quad(y):
+    """Effect that originates in two center points and scrolls outwards
+    Should only be used with LED count that is divisible by 4
+    """
+    global p
+    y = y**2.0
+    gain.update(y)
+    y /= gain.value
+    y *= 255.0
+    r = int(np.max(y[:len(y) // 3]))
+    g = int(np.max(y[len(y) // 3: 2 * len(y) // 3]))
+    b = int(np.max(y[2 * len(y) // 3:]))
+    # Scrolling effect window
+    p[:, 1:] = p[:, :-1]
+    p *= 0.98
+    p = gaussian_filter1d(p, sigma=0.2)
+    # Create new color originating at the center
+    p[0, 0] = r
+    p[1, 0] = g
+    p[2, 0] = b
+    # Update the LED strip
+    return np.concatenate((p[:, ::-1], p, p[:, ::-1], p), axis=1)
+
 
 def visualize_scroll_in(y):
     """Effect that originates in the outside and scrolls inwards"""
@@ -280,6 +307,8 @@ elif sys.argv[1] == "scroll":
         visualization_type = visualize_scroll
 elif sys.argv[1] == "scroll_in":
         visualization_type = visualize_scroll_in
+elif sys.argv[1] == "scroll_quad":
+        visualization_type = visualize_scroll_quad
 else:
         visualization_type = visualize_spectrum
 
