@@ -100,7 +100,14 @@ command line argument which tells the script which visualization to run. The opt
 sudo python3 visualization.py scroll
 ``` 
 
-You can substitute `scroll` for either `energy` or `spectrum`for the other two effects. 
+You can substitute `scroll` for either `energy` or `spectrum`for the other two primary effects.
+
+I've also added a couple of "sub-scroll" effects. They are `scroll_in` and `scroll_quad`. 
+
+The `scroll_in` effect is like the scroll effect BUT the lights start from the outside and
+scroll their way to the center to converge.  
+
+The `scroll_quad` effect is like the scroll effect but it has two midpoints where the lights start and spread out. It looks like you have two mini LED strips in one. 
 
 ### `off.py` was added to the package
 
