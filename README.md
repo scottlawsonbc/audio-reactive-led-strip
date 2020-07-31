@@ -82,6 +82,9 @@ If `pip` is not found try using `python -m pip install` instead.
 ## Arduino dependencies
 ESP8266 firmare is uploaded using the Arduino IDE. See [this tutorial](https://learn.sparkfun.com/tutorials/esp8266-thing-hookup-guide/installing-the-esp8266-arduino-addon) to setup the Arduino IDE for ESP8266.
 
+### Install NeoPixelBus library
+[Download Here](https://github.com/Makuna/NeoPixelBus) or using library manager, search for "NeoPixelBus".
+
 ## Hardware Connections
 ### ESP8266
 The ESP8266 has hardware support for [I²S](https://en.wikipedia.org/wiki/I%C2%B2S) and this peripheral is used <!-- by the [ws2812b i2s library](https://github.com/JoDaNl/esp8266_ws2812_i2s)  -->to control the ws2812b LED strip. This signficantly improves performance compared to bit-banging the IO pin. Unfortunately, this means that the LED strip **must** be connected to the RX1 pin, which is not accessible in some ESP8266 modules (such as the ESP-01).
@@ -134,9 +137,6 @@ Install python dependencies using apt-get
 sudo apt-get update
 sudo apt-get install python-numpy python-scipy python-pyaudio
 ```
-
-## Install NeoPixelBus library
-[Download Here](https://github.com/Makuna/NeoPixelBus) or using library manager, search for "NeoPixelBus".
 
 ## Audio device configuration
 For the Raspberry Pi, a USB audio device needs to be configured as the default audio device.
