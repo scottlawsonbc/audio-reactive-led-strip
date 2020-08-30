@@ -5,8 +5,11 @@ import platform
 import numpy as np
 import config
 
+if config.DEVICE == 'artnet':
+    import socket
+    _sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 # ESP8266 uses WiFi communication
-if config.DEVICE == 'esp8266':
+elif config.DEVICE == 'esp8266':
     import socket
     _sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 # Raspberry Pi controls the LED strip directly
@@ -41,6 +44,41 @@ pixels = np.tile(1, (3, config.N_PIXELS))
 """Pixel values for the LED strip"""
 
 _is_python_2 = int(platform.python_version_tuple()[0]) == 2
+
+def _make_artnet_message(data, universe=None):
+    start = bytearray('Art-Net'.encode('latin-1'))
+    start.append(0x00)
+
+    opcode = struct.pack("<H", 0x5000)  # low byte first
+    protocol = struct.pack("!H", 14)  # high byte first
+    head = opcode + protocol
+
+    sequence = struct.pack("!x")  # 0x00 to disable
+    pyhsical = struct.pack("!x")  # for information only
+
+    if universe is None:
+        universe = struct.pack("!H", 0b0000000000000000)
+
+    length = struct.pack("!H", len(data))
+
+    print(len(data))
+    return start + head + sequence + pyhsical + port + length + data
+
+def _update_artnet():
+    global pixels, _prev_pixels
+    # Truncate values and cast to integer
+    pixels = np.clip(pixels, 0, 255).astype(int)
+    # Optionally apply gamma correc tio
+    p = _gamma[pixels] if config.SOFTWARE_GAMMA_CORRECTION else np.copy(pixels)
+
+    m = bytearray()
+    for i in range(0, config.N_PIXELS):
+        m.append(p[0][i]) # R
+        m.append(p[1][i]) # G
+        m.append(p[2][i]) # B
+        m.append(int((int(p[0][i]) + int(p[1][i]) + int(p[2][i]) >> 2))) # W
+    data = _make_artnet_message(m)
+    _sock.sendto(data, (config.UDP_IP, 6454))
 
 def _update_esp8266():
     """Sends UDP packets to ESP8266 to update LED strip values
