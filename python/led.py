@@ -73,10 +73,27 @@ def _update_artnet():
 
     m = bytearray()
     for i in range(0, config.N_PIXELS):
-        m.append(p[0][i]) # R
-        m.append(p[1][i]) # G
-        m.append(p[2][i]) # B
-        m.append(int((int(p[0][i]) + int(p[1][i]) + int(p[2][i]) >> 2))) # W
+        if config.ARTNET_FIXTURE == 'RGBW':
+            m.append(p[0][i]) # R
+            m.append(p[1][i]) # G
+            m.append(p[2][i]) # B
+            m.append(int((int(p[0][i]) + int(p[1][i]) + int(p[2][i]) >> 2))) # W
+        elif config.ARTNET_FIXTURE == 'RGB':
+            m.append(p[0][i]) # R
+            m.append(p[1][i]) # G
+            m.append(p[2][i]) # B
+        elif config.ARTNET_FIXTURE == 'GRB':
+            m.append(p[1][i]) # G
+            m.append(p[0][i]) # R
+            m.append(p[2][i]) # B
+        elif config.ARTNET_FIXTURE == 'GRBW':
+            m.append(p[1][i]) # G
+            m.append(p[0][i]) # R
+            m.append(p[2][i]) # B
+            m.append(int((int(p[0][i]) + int(p[1][i]) + int(p[2][i]) >> 2))) # W
+        elif config.ARTNET_FIXTURE == 'L':
+             m.append(int((int(p[0][i]) + int(p[1][i]) + int(p[2][i]) >> 2))) # W
+            
     data = _make_artnet_message(m)
     _sock.sendto(data, (config.UDP_IP, 6454))
 
