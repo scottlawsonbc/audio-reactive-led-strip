@@ -3,7 +3,7 @@ from __future__ import print_function
 from __future__ import division
 import os
 
-DEVICE = 'esp8266'
+DEVICE = 'arduino_serial'
 #DEVICE = 'pi'
 """Device used to control LED strip. Must be 'pi',  'esp8266' or 'blinkstick'
 
@@ -16,7 +16,6 @@ audio input and control the LED strip directly.
 'blinkstick' means that a BlinkstickPro is connected to this PC which will be used
 to control the leds connected to it.
 """
-
 if DEVICE == 'esp8266':
     UDP_IP = '192.168.0.150'
     """IP address of the ESP8266. Must match IP in ws2812_controller.ino"""
@@ -24,7 +23,9 @@ if DEVICE == 'esp8266':
     """Port number used for socket communication between Python and ESP8266"""
     SOFTWARE_GAMMA_CORRECTION = False
     """Set to False because the firmware handles gamma correction + dither"""
-
+if DEVICE == 'arduino_serial':
+    SOFTWARE_GAMMA_CORRECTION = False
+    """Set to False because the firmware handles gamma correction + dither"""
 if DEVICE == 'pi':
     LED_PIN = 18
     """GPIO pin connected to the LED strip pixels (must support PWM)"""
