@@ -1,3 +1,10 @@
+  
+/*
+* This example works for ESP8266 and uses the NeoPixelBus library instead of the one bundle
+* Sketch contributed to by Joey Babcock - https://joeybabcock.me/blog/
+* Codebase created by ScottLawsonBC - https://github.com/scottlawsonbc
+*/
+
 #include <Arduino.h>
 #include <ESP8266WiFi.h>
 #include <WiFiUdp.h>
@@ -33,6 +40,7 @@ IPAddress subnet(255, 255, 255, 0);
 
 void setup() {
     Serial.begin(115200);
+    
     WiFi.config(ip, gateway, subnet);
     WiFi.begin(ssid, password);
     Serial.println("");
