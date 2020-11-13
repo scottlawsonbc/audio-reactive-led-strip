@@ -1,14 +1,15 @@
 /*
-*This example works for ESP32 and uses the NeoPixelBus library instead of the one bundle
-*
+* This example works for ESP32 and uses the NeoPixelBus library instead of the one bundle
+* Sketch Written by Joey Babcock - https://joeybabcock.me/blog/
+* Codebase cretaed by ScottLawsonBC - https://github.com/scottlawsonbc
 */
+
 #include <Arduino.h>
 #include <WiFi.h>
 #include <WiFiUdp.h>
 #include <NeoPixelBus.h>
 
 // Set to the number of LEDs in your LED strip
-
 #define NUM_LEDS 60
 // Maximum number of packets to hold in the buffer. Don't change this.
 #define BUFFER_LEN 1024
@@ -37,6 +38,7 @@ NeoPixelBus<NeoGrbFeature, Neo800KbpsMethod> ledstrip(NUM_LEDS, PixelPin);
 
 void setup() {
     Serial.begin(115200);
+    WiFi.mode(WIFI_STA);
     WiFi.config(ip, gateway, subnet);
     WiFi.begin(ssid, password);
     Serial.println("");
@@ -45,12 +47,15 @@ void setup() {
         delay(500);
         Serial.print(".");
     }
+    
     Serial.println("");
     Serial.print("Connected to ");
     Serial.println(ssid);
     Serial.print("IP address: ");
     Serial.println(WiFi.localIP());
+    
     port.begin(localPort);
+    
     ledstrip.Begin();//Begin output
     ledstrip.Show();//Clear the strip for use
 }
