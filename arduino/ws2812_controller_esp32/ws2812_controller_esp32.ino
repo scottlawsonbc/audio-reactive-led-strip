@@ -1,7 +1,7 @@
 /*
 * This example works for ESP32 and uses the NeoPixelBus library instead of the one bundle
 * Sketch Written by Joey Babcock - https://joeybabcock.me/blog/
-* Codebase cretaed by ScottLawsonBC - https://github.com/scottlawsonbc
+* Codebase created by ScottLawsonBC - https://github.com/scottlawsonbc
 */
 
 #include <Arduino.h>
