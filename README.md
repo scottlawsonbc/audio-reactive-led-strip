@@ -80,7 +80,7 @@ pip install pyaudio
 If `pip` is not found try using `python -m pip install` instead.
 
 ### Installing macOS dependencies
-On macOS you have to use python3 and also install `portaudio` for `pyaudio` to install.
+On macOS, python3 is required and `portaudio` must be used in place of `pyaudio`.
 If you don't have brew installed you can get it here: https://brew.sh
 
 ```
@@ -92,7 +92,7 @@ pip3 install pyqtgraph
 pip3 install pyaudio
 ```
 
-Run visualization like this.
+Running the visualization can be done using the command below.
 `python3 visualization.py /tmp`
 
 ## Arduino dependencies
