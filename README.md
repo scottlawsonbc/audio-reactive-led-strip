@@ -93,6 +93,7 @@ pip3 install pyaudio
 ```
 
 Running the visualization can be done using the command below.
+
 `python3 visualization.py /tmp`
 
 ## Arduino dependencies
