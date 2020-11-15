@@ -79,6 +79,22 @@ pip install pyaudio
 ```
 If `pip` is not found try using `python -m pip install` instead.
 
+### Installing macOS dependencies
+On macOS, python3 is required and `portaudio` must be used in place of `pyaudio`.
+If you don't have brew installed you can get it here: https://brew.sh
+
+```
+brew install portaudio
+brew install pyqt5
+pip3 install numpy
+pip3 install scipy
+pip3 install pyqtgraph
+pip3 install pyaudio
+```
+
+Running the visualization can be done using the command below.
+`python3 visualization.py /tmp`
+
 ## Arduino dependencies
 ESP8266 firmare is uploaded using the Arduino IDE. See [this tutorial](https://learn.sparkfun.com/tutorials/esp8266-thing-hookup-guide/installing-the-esp8266-arduino-addon) to setup the Arduino IDE for ESP8266.
 
