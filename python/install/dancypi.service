@@ -1,0 +1,14 @@
+#/etc/systemd/system/led-visualization.service
+[Unit]
+Description=LED visualization
+After=network.target
+
+[Service]
+Restart=always
+RestartSec=10
+PermissionsStartOnly=true
+ExecStart=/home/pi/dancyPi-audio-reactive-led/python/visualization.py scroll
+ExecStopPost=/home/pi/dancyPi-audio-reactive-led/python/off.py
+
+[Install]
+WantedBy=multi-user.target

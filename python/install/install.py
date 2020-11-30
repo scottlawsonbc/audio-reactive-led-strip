@@ -37,7 +37,7 @@ def install_dependencies():
 
 def replace_asound():
     print("================== Copying asound.conf ==================")
-    copy2('asound.conf', '/etc/asound.conf')
+    copy2('sc_asound.conf', '/etc/asound.conf')
     print("================== Completed copying to /etc/asound.conf ==================")
 
 
@@ -49,8 +49,8 @@ def edit_alsa_conf():
     print("================== Replacing text in alsa.conf ==================")
     with open('/usr/share/alsa/alsa.conf', 'r') as file:
         filedata = file.read()
-        filedata = filedata.replace("defaults.ctl.card 0", "defaults.ctl.card 1")
-        filedata = filedata.replace("defaults.pcm.card 0", "defaults.pcm.card 1")
+        # filedata = filedata.replace("defaults.ctl.card 0", "defaults.ctl.card 1")
+        # filedata = filedata.replace("defaults.pcm.card 0", "defaults.pcm.card 1")
         filedata = filedata.replace("pcm.front cards.pcm.front", "# pcm.front cards.pcm.front")
         filedata = filedata.replace("pcm.rear cards.pcm.rear", "# pcm.rear cards.pcm.rear")
         filedata = filedata.replace("pcm.center_lfe cards.pcm.center_lfe", "# pcm.center_lfe cards.pcm.center_lfe")
@@ -70,6 +70,13 @@ def edit_alsa_conf():
         file.write(filedata)
 
     print("================== Completed replacing text in alsa.conf ==================")
+
+    print("================== Installing DancyPi Service ==================")
+    copy2('dancypi.service', '/etc/systemd/system/dancypi.service')
+    os.system('sudo systemctl daemon-reload')
+    os.system('sudo systemctl enable dancypi.service')
+    os.system('sudo service dancypi start')
+    print("================== Installing DancyPi Service ==================")
 
 
 install_dependencies()
