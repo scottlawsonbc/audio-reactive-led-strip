@@ -1,6 +1,6 @@
 # install.py
-# Version: 1.0.0
-# Installs dependences needed for Dancy Pi
+# Version: 1.1.0
+# Installs dependencies needed for Dancy Pi
 # Author: Nazmus Nasir
 # Website: https://www.easyprogramming.net
 
@@ -34,11 +34,22 @@ def install_dependencies():
     os.system("sudo pip3 install rpi_ws281x")
     print("================== Completed Installing rpi_ws281x ==================")
 
+    print("================== Start Installing Pydub for playing audio ==================")
+    os.system("sudo pip3 install pydub")
+    print("================== Completed Installing Pydub ==================")
+
 
 def replace_asound():
     print("================== Copying asound.conf ==================")
     copy2('sc_asound.conf', '/etc/asound.conf')
     print("================== Completed copying to /etc/asound.conf ==================")
+
+
+def edit_modules():
+    print("================== Editing Modules with snd-aloop ==================")
+    with open('/etc/modules', 'a+') as f:
+        f.write('snd-aloop')
+    print("================== Completed Editing Modules with snd-aloop ==================")
 
 
 def edit_alsa_conf():
@@ -81,4 +92,7 @@ def edit_alsa_conf():
 
 install_dependencies()
 replace_asound()
-edit_alsa_conf()
+edit_modules()
+#edit_alsa_conf()
+
+print("INSTALLATION COMPLETE - PLEASE REBOOT")
