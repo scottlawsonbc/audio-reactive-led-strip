@@ -1,4 +1,4 @@
-# Dancy Pi: Audio Reactive LEDs
+# Dancy Pi: Audio Reactive LEDs - No Mic 
 
 This repo is my implementation of Scott Lawson's work. I did my best to simplify the installation process. The original Readme text can be found below my updated Readme. 
 
@@ -9,17 +9,17 @@ The steps in this repo can be applied globally on your Pi or inside virtual envi
 
 # Demo
 
-See the new demo at: https://www.youtube.com/watch?v=7YLF-N0596I
+See the new demo at: https://www.youtube.com/watch?v=PjrAjsKZ-Fk
 
-Join the Conversation on EasyProgramming at: https://www.easyprogramming.net/raspberrypi/audio_reactive_led.php
+Join the Conversation on EasyProgramming at: https://www.easyprogramming.net/raspberrypi/audio_reactive_holiday_leds.php
 
 You can also watch the old demo at the following URL. You can see just how much time the new implementation saves: 
-[https://www.youtube.com/watch?v=vY4P0MU62X8](https://www.youtube.com/watch?v=vY4P0MU62X8)
+[https://www.youtube.com/watch?v=PjrAjsKZ-Fk](https://www.youtube.com/watch?v=PjrAjsKZ-Fk)
 
 # Tutorial
 
-A full video tutorial can be found on YouTube at https://www.youtube.com/watch?v=7YLF-N0596I
-<a href="https://www.youtube.com/watch?v=7YLF-N0596I" target="_blank"><img src="https://raw.githubusercontent.com/naztronaut/dancyPi-audio-reactive-led/master/images/thumbnail.jpg" width="700px" alt="Audio Reactive LED Strip Tutorial"></a>
+A full video tutorial can be found on YouTube at https://www.youtube.com/watch?v=PjrAjsKZ-Fk
+<a href="https://www.youtube.com/watch?v=PjrAjsKZ-Fk" target="_blank"><img src="https://raw.githubusercontent.com/naztronaut/dancyPi-audio-reactive-led/master/images/noMicThumbnail.jpg" width="700px" alt="Audio Reactive Holiday LED Strip Tutorial"></a>
 
 More information on the tutorial can be found at https://www.easyprogramming.net/raspberrypi/audio_reactive_led.php
 
@@ -27,11 +27,25 @@ See the old tutorial on Branch [v1.0.0](../../tree/v1.0.0).
 
 # Nazberry Pi Modifications
 
-The following assumes that you have Raspberry Pi OS installed and your Pi is up to date with `sudo apt upgrade && sudo apt upgrade`.
+The following assumes that you have Raspberry Pi OS installed and your Pi is up to date with `sudo apt upgrade && sudo apt upgrade`. For the "No Mic" version, you need to have
+the full version of Raspberry Pi OS installed and the lights can only be run from the GUI. Unfortunately, I still have to figure out how to get everything to run from the CLI. 
+
+###  Hardware & Other Requirements for No Mic solution
+
+You should have the following for the No Mic solution:
+
+| Item | Notes |
+|--------------|---------|
+| Raspberry Pi 2/3/4 | This will not work (well) in Raspberry Pi Zero and has not been tested on Raspberry Pi 1 |
+| Bluetooth or USB Speaker | this will NOT work with a 3.5mm jack speaker. With a 3.5mm speaker, you can either play  music, or have the lights dance, not both.| 
+| WS281x lights | this project can work with most addressable lights, but WS281x lights are the most common and supported |
+| Power source | I recommend at least a 3A power source if you'll power your Lights through your Pi. You can also power your lights through an external power source.|
+| Raspberry Pi Full OS | You should install Raspberry Pi Full OS and not the lite version
+| VNC/GUI Access   |  We'll need to access the GUI of the pi to run the lights. You can either use VNC or just KVM into the Pi | 
 
 ### Install Git & Clone repo
 
-I normally start the lite version of Raspberry Pi OS without desktop and recommended software so it usually doesn't come with Git installed. So let's install it:
+If you have the full version fo Raspberry Pi OS, you don't need to install git as it should already come pre-installed, But just in case `git` isn't a recognized command, run this:
 
 ```shell
 sudo apt install git -y
@@ -40,7 +54,13 @@ sudo apt install git -y
 After we install git, clone this repo:
 
 ```shell
-git clone https://github.com/naztronaut/dancyPi-audio-reactive-led.git
+sudo git clone https://github.com/naztronaut/dancyPi-audio-reactive-led.git
+```
+
+Check out the `no_mic` branch:
+
+```shell
+sudo git checkout no_mic
 ```
 
 Then let's head into our install directory and continue to the next step:
@@ -59,8 +79,7 @@ sudo python3 install.py
 ```
 
 The installation should take a few minutes (depends on your internet speed and how many of the packages need a full install). The script is very simple. It runs a bunch of `sudo apt install`
-and `pip3 install` commands followed by placing the `asound.conf` file in its proper location and modifying the `alsa.conf` as necessary by commenting out hardware that is not needed/used
-and making sure the correct audio device is used. 
+and `pip3 install` commands followed by placing the `asound.conf` file in its proper location. After everything is done, you need to reboot your Pi. 
 
 The script also installs the `rpi_ws281x` library which is used to actually turn the lights on and off. In the previous version, this install required about 8 steps on its own. Now it's done
 through the install script. Since it's done this way, there's no more "demo" script that you can run. I will maybe work on one later (may or may not be in another repo). 
@@ -74,14 +93,15 @@ DEVICE = 'pi'
 USE_GUI = False
 DISPLAY_FPS = False
 N_PIXELS = 144
-MIC_RATE = 48000
+MIC_RATE = 44100
 FPS = 50
 ```
 
-I'm using the standalone Raspberry Pi with a 144 LED strip. The USB Microphone that I'm using has a rate of 48000 hz. And I turned the FPS down to 50 but I was easily getting 
-90 FPS without issues. 
+I'm using the standalone Raspberry Pi with a 144 LED strip. The USB Microphone that I'm using has a rate of 44100Hz. Previous version had it at 48000 but I found this mic-less version
+to work best with 44.1kHz. 
 
-I'm also using this headless so the GUI and FPS have been turned off for better performance. 
+**Note**: The LED Count must be divisible by 2! 
+
 
 ### `visualization.py` has been edited as follows:
 
@@ -94,25 +114,53 @@ visualization_type = sys.argv[1]
 ``` 
 
 Also added if/elif statements starting on line 256 to assign the above `visualization_type` variable to `visualization_effect` variable on line 265. This now accepts an extra 
-command line argument which tells the script which visualization to run. The options are `spectrum`, `energy`, or `scroll`. To run this, simply run:
+command line argument which tells the script which visualization to run. The options are `spectrum`, `energy`, `scroll`, `scroll_in`, or `scroll_quad`. To run this, simply run:
 
 ```shell
 sudo python3 visualization.py scroll
 ``` 
 
-You can substitute `scroll` for either `energy` or `spectrum`for the other two primary effects.
+You can substitute `scroll` for either `spectrum`, `energy`, `scroll_in`, or `scroll_quad`. The last two were added as I was learning Numpy. 
 
-I've also added a couple of "sub-scroll" effects. They are `scroll_in` and `scroll_quad`. 
-
-The `scroll_in` effect is like the scroll effect BUT the lights start from the outside and
-scroll their way to the center to converge.  
+The `scroll_in` effect is like the scroll effect BUT the lights start from the outside and scroll their way to the center to converge.  
 
 The `scroll_quad` effect is like the scroll effect but it has two midpoints where the lights start and spread out. It looks like you have two mini LED strips in one. 
 
 ### `off.py` was added to the package
 
-Contains python code to turn off all the LEDs after the off command was sent. Change the `LED_COUNT` if your LED count is different from 144. 
+Contains python code to turn off all the LEDs after the off command was sent. 
 
+### Playing Audio
+
+You can play audio a few ways. The first way is the simplest: Go into your GUI file explorer, find the audio file, and play with VLC. If `visualization.py` is running, then the lights 
+will pick up the audio and dance. 
+
+Second method is to use the CLI to run it.  You can use `mplayer` to do this pretty easily. If you don't have that installed, install it then run the command:
+
+```shell
+sudo apt install mplayer -y
+mplayer '/path/to/your/mp3.mp3'
+```
+
+Third way is to use the `music.py` script that comes with this project. This first requires you to have all of your audio files in `/home/pi/music` (Lower-case m). Second, all audio files
+must be MP3s. If you want to use another directory, edit `music.py` and change the value on line 11:
+
+```python
+os.scandir('/home/pi/music')
+```
+
+Then when you're in the same dir as `music.py`, run it with this:
+
+```shell
+python3 music.py
+```
+
+This will bundle all of the MP3s and play them one after an other and stop when done. 
+
+This is a very simple script, so limitations exist (e.g. only MP3s, only from a single folder). It uses Pydub to play the music. But feel free to use anything you'd like to play. As
+long as the `visualization.py` script is run from a shell window in the GUI, any audio will work. 
+
+You can also play music on a browser or even stream something to Spotify and the audio will be picked up. 
 
 ### Troubleshooting
 
@@ -120,7 +168,7 @@ Contains python code to turn off all the LEDs after the off command was sent. Ch
 
 Turn off your pi, plug your USB Mic in, then turn your Pi back on.  I've noticed that sometimes, the Pi won't easily recognize a new usb device. 
 
-#### [#2](/../../issues/2) PHP URL commands not activating visualizations
+#### [#2](/../../issues/2) PHP URL commands not activating visualizations (Deprecated)
 Most users should not have to do this but if you are experiencing the following error when trying to run the script via a browser:
 
 ```
@@ -131,6 +179,27 @@ Add the following to your `/etc/sudoers` file:
 ```
 www-data ALL = NOPASSWD: /usr/bin/python
 ```
+
+#### No audio in speaker
+
+Run the following command and make sure your bluetooth device shows up:
+
+```shell
+aplay -l
+```
+
+You can also do the following to make sure the virtual input appears as a capture device:
+
+```shell
+arecord -l
+```
+
+If they don't appear, make sure you run the `install.py` script. 
+
+#### Music plays but lights don't dance
+
+Check your connections, make sure they work. If the connections are good, make sure you run `visualization.py` from a shell window within the Raspberry Pi GUI. Doing the no_mic version
+from headless mode will **not** work. 
 
 ## Authors
 * **Nazmus Nasir** - [Nazm.us](https://nazm.us) - Owner of EasyProgramming.net
