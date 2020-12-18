@@ -9,17 +9,17 @@ The steps in this repo can be applied globally on your Pi or inside virtual envi
 
 # Demo
 
-See the new demo at: https://www.youtube.com/watch?v=PjrAjsKZ-Fk
+See the new demo at: https://www.youtube.com/watch?v=fjtvba2i1pk
 
 Join the Conversation on EasyProgramming at: https://www.easyprogramming.net/raspberrypi/audio_reactive_holiday_leds.php
 
 You can also watch the old demo at the following URL. You can see just how much time the new implementation saves: 
-[https://www.youtube.com/watch?v=PjrAjsKZ-Fk](https://www.youtube.com/watch?v=PjrAjsKZ-Fk)
+[https://www.youtube.com/watch?v=fjtvba2i1pk](https://www.youtube.com/watch?v=fjtvba2i1pk)
 
 # Tutorial
 
 A full video tutorial can be found on YouTube at https://www.youtube.com/watch?v=PjrAjsKZ-Fk
-<a href="https://www.youtube.com/watch?v=PjrAjsKZ-Fk" target="_blank"><img src="https://raw.githubusercontent.com/naztronaut/dancyPi-audio-reactive-led/no_mic/images/noMicThumbnail.jpg" width="700px" alt="Audio Reactive Holiday LED Strip Tutorial"></a>
+<a href="https://www.youtube.com/watch?v=fjtvba2i1pk" target="_blank"><img src="https://raw.githubusercontent.com/naztronaut/dancyPi-audio-reactive-led/no_mic/images/noMicThumbnail.jpg" width="700px" alt="Audio Reactive Holiday LED Strip Tutorial"></a>
 
 More information on the tutorial can be found at https://www.easyprogramming.net/raspberrypi/audio_reactive_led.php
 
