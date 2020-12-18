@@ -21,7 +21,7 @@ You can also watch the old demo at the following URL. You can see just how much 
 A full video tutorial can be found on YouTube at https://www.youtube.com/watch?v=PjrAjsKZ-Fk
 <a href="https://www.youtube.com/watch?v=fjtvba2i1pk" target="_blank"><img src="https://raw.githubusercontent.com/naztronaut/dancyPi-audio-reactive-led/no_mic/images/noMicThumbnail.jpg" width="700px" alt="Audio Reactive Holiday LED Strip Tutorial"></a>
 
-More information on the tutorial can be found at https://www.easyprogramming.net/raspberrypi/audio_reactive_led.php
+More information on the tutorial can be found at https://www.easyprogramming.net/raspberrypi/audio_reactive_holiday_leds.php
 
 See the old tutorial on Branch [v1.0.0](../../tree/v1.0.0).
 
