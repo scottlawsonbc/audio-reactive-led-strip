@@ -43,6 +43,7 @@ void setup() {
     
     WiFi.config(ip, gateway, subnet);
     WiFi.begin(ssid, password);
+    WiFi.mode(WIFI_STA);
     Serial.println("");
     // Connect to wifi and print the IP address over serial
     while (WiFi.status() != WL_CONNECTED) {
