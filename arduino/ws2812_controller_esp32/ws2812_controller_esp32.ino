@@ -25,7 +25,7 @@ const char* password = "YOUR_WIFI_PASSWORD";
 unsigned int localPort = 7777;
 char packetBuffer[BUFFER_LEN];
 
-uint8_t N = 0;
+uint16_t N = 0;
 
 WiFiUDP port;
 // Network information
@@ -73,8 +73,8 @@ void loop() {
         int len = port.read(packetBuffer, BUFFER_LEN);
         for(int i = 0; i < len; i+=4) {
             packetBuffer[len] = 0;
-            N = packetBuffer[i];
-            RgbColor pixel((uint8_t)packetBuffer[i+1], (uint8_t)packetBuffer[i+2], (uint8_t)packetBuffer[i+3]);//color
+            N = ((packetBuffer[i] << 8) + packetBuffer[i + 1]);
+            RgbColor pixel((uint8_t)packetBuffer[i+2], (uint8_t)packetBuffer[i+3], (uint8_t)packetBuffer[i+4]);//color
             ledstrip.SetPixelColor(N, pixel);//N is the pixel number
         } 
         ledstrip.Show();
