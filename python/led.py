@@ -150,7 +150,7 @@ def update():
 
 # Execute this file to run a LED strand test
 # If everything is working, you should see a red, green, and blue pixel scroll
-# across the LED strip continously
+# across the LED strip continuously
 if __name__ == '__main__':
     import time
     # Turn all pixels off
