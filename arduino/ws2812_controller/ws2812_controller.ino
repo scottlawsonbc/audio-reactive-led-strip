@@ -3,9 +3,11 @@
 * Sketch written by Joey Babcock - https://joeybabcock.me/blog/, and Scott Lawson (Below) 
 * Codebase created by ScottLawsonBC - https://github.com/scottlawsonbc
 */
+#include <NeoPixelBus.h>
 
 #if defined(ESP8266)
 #include <ESP8266WiFi.h>
+#include <WiFiUdp.h>
 #elif defined(ESP32)
 #include <WiFi.h>
 #else
