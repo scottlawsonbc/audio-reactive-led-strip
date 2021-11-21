@@ -12,10 +12,13 @@ if config.DEVICE == 'esp8266':
 # Raspberry Pi controls the LED strip directly
 elif config.DEVICE == 'pi':
     import neopixel
+    '''
     strip = neopixel.Adafruit_NeoPixel(config.N_PIXELS, config.LED_PIN,
                                        config.LED_FREQ_HZ, config.LED_DMA,
                                        config.LED_INVERT, config.BRIGHTNESS)
-    strip.begin()
+    '''
+    strip = neopixel.NeoPixel(config.LED_PIN, config.N_PIXELS, pixel_order=config.PIXEL_ORDER)
+    #strip.begin()
 elif config.DEVICE == 'blinkstick':
     from blinkstick import blinkstick
     import signal
@@ -30,6 +33,25 @@ elif config.DEVICE == 'blinkstick':
     # Create a listener that turns the leds off when the program terminates
     signal.signal(signal.SIGTERM, signal_handler)
     signal.signal(signal.SIGINT, signal_handler)
+
+elif config.DEVICE == 'arduino-nano':
+    import signal
+    import sys
+    from arduino import Arduino
+    '''
+    #Will turn all leds off when invoked.
+    def signal_handler(signal, frame):
+        all_off = [0]*(config.N_PIXELS*3)
+        board.write_data(all_off)
+        sys.exit(0)
+    '''
+
+    board = Arduino(config.SERIAL_PORT, config.BAUD_RATE, timeout=2)
+    '''
+    # Create a listener that turns the leds off when the program terminates
+    signal.signal(signal.SIGTERM, signal_handler)
+    signal.signal(signal.SIGINT, signal_handler)
+    '''
 
 _gamma = np.load(config.GAMMA_TABLE_PATH)
 """Gamma lookup table used for nonlinear brightness correction"""
@@ -105,9 +127,50 @@ def _update_pi():
         if np.array_equal(p[:, i], _prev_pixels[:, i]):
             continue
         #strip._led_data[i] = rgb[i]
-        strip._led_data[i] = int(rgb[i])
+        #strip._led_data[i] = int(rgb[i])
+        strip[i] = int(rgb[i])
     _prev_pixels = np.copy(p)
     strip.show()
+
+def _update_arduino_nano():
+    global pixels, _prev_pixels
+    """Writes new LED values to the Arduino Nano
+
+        Arduino nano uses FastLED to control the LED strip
+        This function updates the Arduino nano with new values to provide to the LED strip.
+    The packet encoding scheme is:
+        |i|r|g|b|
+    where
+        i (0 to 255): Index of LED to change (zero-based)
+        r (0 to 255): Red value of LED
+        g (0 to 255): Green value of LED
+        b (0 to 255): Blue value of LED
+    """
+    global pixels, _prev_pixels
+    # Truncate values and cast to integer
+    pixels = np.clip(pixels, 0, 255).astype(int)
+    # Optionally apply gamma correc tio
+    p = _gamma[pixels] if config.SOFTWARE_GAMMA_CORRECTION else np.copy(pixels)
+    MAX_PIXELS_PER_PACKET = 126
+    # Pixel indices
+    idx = range(pixels.shape[1])
+    idx = [i for i in idx if not np.array_equal(p[:, i], _prev_pixels[:, i])]
+    n_packets = len(idx) // MAX_PIXELS_PER_PACKET + 1
+    idx = np.array_split(idx, n_packets)
+    for packet_indices in idx:
+        m = '' if _is_python_2 else []
+        for i in packet_indices:
+            if _is_python_2:
+                m += chr(i) + chr(p[0][i]) + chr(p[1][i]) + chr(p[2][i])
+            else:
+                m.append(i)  # Index of pixel to change 
+                m.append(p[0][i])  # Pixel red value
+                m.append(p[1][i])  # Pixel green value
+                m.append(p[2][i])  # Pixel blue value
+        #m = m if _is_python_2 else bytes(m)
+        board.write_data(m)
+        print('Data: ', [x for x in m])
+    _prev_pixels = np.copy(p)
 
 def _update_blinkstick():
     """Writes new LED values to the Blinkstick.
@@ -144,6 +207,8 @@ def update():
         _update_pi()
     elif config.DEVICE == 'blinkstick':
         _update_blinkstick()
+    elif config.DEVICE == 'arduino-nano':
+        _update_arduino_nano()
     else:
         raise ValueError('Invalid device selected')
 

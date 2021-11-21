@@ -3,8 +3,9 @@ from __future__ import print_function
 from __future__ import division
 import os
 
-DEVICE = 'esp8266'
-#DEVICE = 'pi'
+#DEVICE = 'esp8266'
+DEVICE = 'pi'
+#DEVICE = 'arduino-nano'
 """Device used to control LED strip. Must be 'pi',  'esp8266' or 'blinkstick'
 
 'esp8266' means that you are using an ESP8266 module to control the LED strip
@@ -26,36 +27,50 @@ if DEVICE == 'esp8266':
     """Set to False because the firmware handles gamma correction + dither"""
 
 if DEVICE == 'pi':
-    LED_PIN = 18
+    import neopixel
+    import board
+    LED_PIN = board.D18
+    #LED_PIN = 18
     """GPIO pin connected to the LED strip pixels (must support PWM)"""
     LED_FREQ_HZ = 800000
     """LED signal frequency in Hz (usually 800kHz)"""
-    LED_DMA = 5
+    #LED_DMA = 5
+    LED_DMA = 10          # DMA channel to use for generating signal (try 10)
     """DMA channel used for generating PWM signal (try 5)"""
     BRIGHTNESS = 255
     """Brightness of LED strip between 0 and 255"""
-    LED_INVERT = True
+    LED_INVERT = False
     """Set True if using an inverting logic level converter"""
     SOFTWARE_GAMMA_CORRECTION = True
     """Set to True because Raspberry Pi doesn't use hardware dithering"""
+    PIXEL_ORDER = neopixel.RGB
 
 if DEVICE == 'blinkstick':
     SOFTWARE_GAMMA_CORRECTION = True
     """Set to True because blinkstick doesn't use hardware dithering"""
 
-USE_GUI = True
+if DEVICE == 'arduino-nano':
+    SERIAL_PORT = '/dev/ttyS0'
+    BAUD_RATE = 9600
+    SOFTWARE_GAMMA_CORRECTION = False
+    """Set to False because the firmware handles gamma correction + dither"""
+
+#USE_GUI = True
+USE_GUI = False
 """Whether or not to display a PyQtGraph GUI plot of visualization"""
 
-DISPLAY_FPS = True
+#DISPLAY_FPS = True
+DISPLAY_FPS = False
 """Whether to display the FPS when running (can reduce performance)"""
 
-N_PIXELS = 60
+#N_PIXELS = 150
+N_PIXELS = 10
 """Number of pixels in the LED strip (must match ESP8266 firmware)"""
 
 GAMMA_TABLE_PATH = os.path.join(os.path.dirname(__file__), 'gamma_table.npy')
 """Location of the gamma correction table"""
 
-MIC_RATE = 44100
+MIC_RATE = 48000
 """Sampling frequency of the microphone in Hz"""
 
 FPS = 60
