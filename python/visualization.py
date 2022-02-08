@@ -306,9 +306,9 @@ if __name__ == '__main__':
             config.MAX_FREQUENCY = maxf
             dsp.create_mel_bank()
         freq_slider = pg.TickSliderItem(orientation='bottom', allowAdd=False)
+        freq_slider.tickMoveFinished = freq_slider_change
         freq_slider.addTick((config.MIN_FREQUENCY / (config.MIC_RATE / 2.0))**0.5)
         freq_slider.addTick((config.MAX_FREQUENCY / (config.MIC_RATE / 2.0))**0.5)
-        freq_slider.tickMoveFinished = freq_slider_change
         freq_label.setText('Frequency range: {} - {} Hz'.format(
             config.MIN_FREQUENCY,
             config.MAX_FREQUENCY))
