@@ -14,7 +14,7 @@ elif config.DEVICE == 'pi':
     import neopixel
     strip = neopixel.Adafruit_NeoPixel(config.N_PIXELS, config.LED_PIN,
                                        config.LED_FREQ_HZ, config.LED_DMA,
-                                       config.LED_INVERT, config.BRIGHTNESS)
+                                       config.LED_INVERT, config.PI_BRIGHTNESS)
     strip.begin()
 elif config.DEVICE == 'blinkstick':
     from blinkstick import blinkstick
@@ -72,12 +72,12 @@ def _update_esp8266():
         m = '' if _is_python_2 else []
         for i in packet_indices:
             if _is_python_2:
-                m += chr(i) + chr(p[0][i]) + chr(p[1][i]) + chr(p[2][i])
+                m += chr(i) + chr(int(p[0][i]*config.BRIGHTNESS)) + chr(int(p[1][i]*config.BRIGHTNESS)) + chr(int(p[2][i]*config.BRIGHTNESS))
             else:
                 m.append(i)  # Index of pixel to change
-                m.append(p[0][i])  # Pixel red value
-                m.append(p[1][i])  # Pixel green value
-                m.append(p[2][i])  # Pixel blue value
+                m.append(int(p[0][i]*config.BRIGHTNESS))  # Pixel red value
+                m.append(int(p[1][i]*config.BRIGHTNESS))  # Pixel green value
+                m.append(int(p[2][i]*config.BRIGHTNESS))  # Pixel blue value
         m = m if _is_python_2 else bytes(m)
         _sock.sendto(m, (config.UDP_IP, config.UDP_PORT))
     _prev_pixels = np.copy(p)
@@ -120,9 +120,9 @@ def _update_blinkstick():
     # Optional gamma correction
     p = _gamma[pixels] if config.SOFTWARE_GAMMA_CORRECTION else np.copy(pixels)
     # Read the rgb values
-    r = p[0][:].astype(int)
-    g = p[1][:].astype(int)
-    b = p[2][:].astype(int)
+    r = (config.BRIGHTNESS*p[0][:]).astype(int)
+    g = (config.BRIGHTNESS*p[1][:]).astype(int)
+    b = (config.BRIGHTNESS*p[2][:]).astype(int)
 
     #create array in which we will store the led states
     newstrip = [None]*(config.N_PIXELS*3)
