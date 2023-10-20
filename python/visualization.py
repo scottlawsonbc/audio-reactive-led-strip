@@ -255,9 +255,9 @@ visualization_effect = visualize_spectrum
 if __name__ == '__main__':
     if config.USE_GUI:
         import pyqtgraph as pg
-        from pyqtgraph.Qt import QtGui, QtCore
+        from PyQt5.QtWidgets import QApplication
         # Create GUI window
-        app = QtGui.QApplication([])
+        app = QApplication([])
         view = pg.GraphicsView()
         layout = pg.GraphicsLayout(border=(100,100,100))
         view.setCentralItem(layout)
