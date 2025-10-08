@@ -7,6 +7,7 @@ import config
 import microphone
 import dsp
 import led
+import sys
 
 _time_prev = time.time() * 1000.0
 """The previous time that the frames_per_second() function was called"""
@@ -248,9 +249,21 @@ samples_per_frame = int(config.MIC_RATE / config.FPS)
 # Array containing the rolling audio sample window
 y_roll = np.random.rand(config.N_ROLLING_HISTORY, samples_per_frame) / 1e16
 
-visualization_effect = visualize_spectrum
-"""Visualization effect to display on the LED strip"""
 
+
+"""Visualization effect to display on the LED strip"""
+if len(sys.argv) == 1:
+    """No args were passed"""
+    visualization_effect = visualize_spectrum
+else:
+    if sys.argv[1] == "spectrum":
+        visualization_effect = visualize_spectrum
+    elif sys.argv[1] == "energy":
+        visualization_effect = visualize_energy
+    elif sys.argv[1] == "scroll":
+        visualization_effect = visualize_scroll
+    else:
+        print("Invalid argument! - Possible values are: spectrum, energy, scroll")
 
 if __name__ == '__main__':
     if config.USE_GUI:
@@ -340,7 +353,18 @@ if __name__ == '__main__':
         energy_label.mousePressEvent = energy_click
         scroll_label.mousePressEvent = scroll_click
         spectrum_label.mousePressEvent = spectrum_click
-        energy_click(0)
+        """Start GUI page based on args"""
+        if len(sys.argv) == 1:
+            spectrum_click(0)
+        else:
+            if sys.argv[1] == "energy":
+                energy_click(0)
+            elif sys.argv[1] == "spectrum":
+                spectrum_click(0)
+            elif sys.argv[1] == "scroll":
+                scroll_click(0)
+            else:
+                print("Error choosing default GUI page due to unknown user arg")
         # Layout
         layout.nextRow()
         layout.addItem(freq_label, colspan=3)
