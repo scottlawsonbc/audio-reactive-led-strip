@@ -17,6 +17,9 @@ audio input and control the LED strip directly.
 to control the leds connected to it.
 """
 
+BRIGHTNESS = 1
+"""Set between 0 and 1 to control LED brightness for pi,esp8266,and blinkstick"""
+
 if DEVICE == 'esp8266':
     UDP_IP = '192.168.0.150'
     """IP address of the ESP8266. Must match IP in ws2812_controller.ino"""
@@ -32,7 +35,7 @@ if DEVICE == 'pi':
     """LED signal frequency in Hz (usually 800kHz)"""
     LED_DMA = 5
     """DMA channel used for generating PWM signal (try 5)"""
-    BRIGHTNESS = 255
+    PI_BRIGHTNESS = 255 * BRIGHTNESS
     """Brightness of LED strip between 0 and 255"""
     LED_INVERT = True
     """Set True if using an inverting logic level converter"""
